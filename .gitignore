@@ -1,0 +1,332 @@
+# ============================================================================
+# kubelm .gitignore
+# ============================================================================
+# Covers: Python ML workflows, model/dataset artifacts, K8s manifests,
+# common IDEs, and macOS/Linux clutter. Keep this file curated — additions
+# should be deliberate, not reflexive.
+# ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# Python
+# ----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django/Flask (unlikely needed but cheap to include)
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+instance/
+.webassets-cache
+
+# Sphinx documentation
+docs/_build/
+
+# Jupyter
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+profile_default/
+ipython_config.py
+
+
+# ----------------------------------------------------------------------------
+# Virtual environments
+# ----------------------------------------------------------------------------
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+.tool-versions
+
+
+# ----------------------------------------------------------------------------
+# Package managers (modern Python)
+# ----------------------------------------------------------------------------
+# uv
+.uv/
+uv.lock.bak
+
+# Poetry — keep poetry.lock committed, ignore caches
+.poetry/
+
+# pdm
+.pdm-python
+.pdm.toml
+__pypackages__/
+
+# pixi
+.pixi/
+
+# pipenv — keep Pipfile.lock committed
+
+
+# ----------------------------------------------------------------------------
+# Secrets and credentials
+# ----------------------------------------------------------------------------
+# Generic env files (override with explicit allow if needed)
+.env.local
+.env.*.local
+.envrc
+*.pem
+*.key
+*.crt
+secrets/
+credentials/
+*.secret
+.secrets.baseline
+
+# API keys / tokens — paranoid layer
+.huggingface/
+.openai/
+.anthropic/
+*api_key*
+*api-key*
+*.apikey
+
+
+# ----------------------------------------------------------------------------
+# ML / model artifacts — DO NOT COMMIT
+# ----------------------------------------------------------------------------
+# These can be hundreds of MB to tens of GB. They belong on Hugging Face
+# Hub, not in git. Use git-lfs or release artifacts only with deliberate intent.
+
+# Model weights and checkpoints
+*.bin
+*.safetensors
+*.gguf
+*.ggml
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.onnx
+*.msgpack
+*.tflite
+*.pb
+*.npz
+*.npy
+
+# Hugging Face cache
+.cache/
+.cache/huggingface/
+huggingface_cache/
+
+# Training outputs and runs
+runs/
+outputs/
+checkpoints/
+wandb/
+mlruns/
+tensorboard/
+tb_logs/
+lightning_logs/
+training_logs/
+experiments/
+
+# Quantized model artifacts
+*.q4_0
+*.q4_1
+*.q4_k
+*.q5_0
+*.q5_1
+*.q5_k
+*.q8_0
+
+# LoRA adapters (case-by-case — comment out if you want to commit small adapters)
+adapters/
+adapter_model.bin
+adapter_model.safetensors
+
+
+# ----------------------------------------------------------------------------
+# Datasets — handle deliberately
+# ----------------------------------------------------------------------------
+# Raw / large / WIP datasets. Curated public datasets belong on Hugging Face.
+# Small seed datasets (a few hundred examples) can be committed if explicitly
+# placed under a tracked path like `datasets/seed/`.
+
+data/raw/
+data/interim/
+data/processed/
+data/external/
+data/scratch/
+*.parquet
+*.arrow
+*.feather
+*.tar.gz
+
+# Common data formats only ignored at top-level — committed datasets in
+# explicit folders should override with `!` in subfolder .gitignore if needed.
+/*.csv
+/*.tsv
+/*.jsonl
+/*.json.gz
+
+
+# ----------------------------------------------------------------------------
+# Kubernetes / Helm / infra
+# ----------------------------------------------------------------------------
+# Local kubeconfigs and cluster state — never commit
+kubeconfig
+*.kubeconfig
+.kube/
+
+# Helm
+charts/*.tgz
+**/charts/*.tgz
+*.lock
+
+# Terraform (in case you add IaC later)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Local cluster state
+kind-config-*.yaml
+.minikube/
+
+
+# ----------------------------------------------------------------------------
+# IDE / editor
+# ----------------------------------------------------------------------------
+# VSCode — keep settings.json optional, ignore everything else by default
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains (PyCharm, IntelliJ, etc.)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim / Emacs
+*.swp
+*.swo
+*~
+.\#*
+\#*\#
+.netrwhist
+
+# Sublime
+*.sublime-project
+*.sublime-workspace
+
+# Cursor / Zed / other AI editors
+.cursor/
+.zed/
+.aider*
+
+
+# ----------------------------------------------------------------------------
+# OS clutter
+# ----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+.AppleDouble
+.LSOverride
+Icon?
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+
+# ----------------------------------------------------------------------------
+# Project-specific scratch
+# ----------------------------------------------------------------------------
+# Use these for "I'm experimenting and don't want to commit yet" work.
+# Anything you want versioned should go in a tracked folder.
+scratch/
+sandbox/
+tmp/
+TODO.local.md
+NOTES.local.md
