@@ -103,12 +103,12 @@ failure?
 
 ### Phase 2 checklist
 
-- [ ] Scenario format documented
-- [ ] First 10 scenarios with kind setup scripts and reference trajectories
-- [ ] Scenario runner integrated with eval harness
+- [x] Scenario format documented
+- [ ] First 10 scenarios with kind setup scripts and reference trajectories  *(8 of 10 shipped in v0.1; 2 to follow)*
+- [x] Scenario runner integrated with eval harness
 - [ ] 30–50 scenarios covering top failure modes
-- [ ] Scenario library publicly committed
-- [ ] Blog post draft on the scenario methodology
+- [x] Scenario library publicly committed
+- [x] Blog post draft on the scenario methodology
 
 ---
 
