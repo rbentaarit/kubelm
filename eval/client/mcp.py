@@ -66,9 +66,7 @@ class MCPClient:
         return resp.json()
 
     def _post(self, payload: dict[str, Any]) -> dict[str, Any] | None:
-        resp = self.http.post(
-            self.url, json=payload, headers=self._headers(), timeout=self.timeout
-        )
+        resp = self.http.post(self.url, json=payload, headers=self._headers(), timeout=self.timeout)
         resp.raise_for_status()
         sid = resp.headers.get("Mcp-Session-Id")
         if sid:
