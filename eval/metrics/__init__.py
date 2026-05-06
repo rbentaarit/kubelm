@@ -8,12 +8,18 @@ from eval.metrics.schema import (
     TrajectorySchemaReport,
     validate_trajectory,
 )
+from eval.metrics.termination import (
+    TerminationReport,
+    classify_termination,
+)
 
 __all__ = [
     "FactCheck",
     "GroundingReport",
+    "TerminationReport",
     "ToolCallValidation",
     "TrajectorySchemaReport",
     "analyze_grounding",
+    "classify_termination",
     "validate_trajectory",
 ]
