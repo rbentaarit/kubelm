@@ -113,6 +113,45 @@ def test_kubectl_apply_pipes_manifest_to_stdin(fake_run: _FakeRun, tmp_path: Pat
     assert call["input"] == "kind: Pod\n"
 
 
+def test_kubectl_apply_retries_on_default_sa_not_found(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The namespace default SA race: kubelet can take ~1s to create it."""
+    seq: list[tuple[int, str, str]] = [
+        (1, "namespace/x created\n", 'serviceaccount "default" not found'),
+        (1, "namespace/x created\n", 'serviceaccount "default" not found'),
+        (0, "pod/p created\n", ""),
+    ]
+    monkeypatch.setattr(subprocess, "run", _FakeRun(responder=lambda _cmd: seq.pop(0)))
+    sleeps: list[float] = []
+    monkeypatch.setattr("eval.scenarios.cluster.time.sleep", lambda s: sleeps.append(s))
+
+    kubectl_apply("kind: Pod\n", kubeconfig_path=tmp_path / "kc")
+    assert seq == []  # consumed all three responses
+    assert len(sleeps) == 2  # slept between the three attempts
+
+
+def test_kubectl_apply_does_not_retry_on_real_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(subprocess, "run", _FakeRun([(1, "", "syntax error: unknown field")]))
+    with pytest.raises(CommandError):
+        kubectl_apply("garbage", kubeconfig_path=tmp_path / "kc")
+
+
+def test_kubectl_apply_gives_up_after_retries(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        _FakeRun(responder=lambda _cmd: (1, "", 'serviceaccount "default" not found')),
+    )
+    monkeypatch.setattr("eval.scenarios.cluster.time.sleep", lambda _s: None)
+    with pytest.raises(CommandError):
+        kubectl_apply("kind: Pod\n", kubeconfig_path=tmp_path / "kc", retries=3)
+
+
 def test_kubectl_apply_file_passes_path(fake_run: _FakeRun, tmp_path: Path) -> None:
     f = tmp_path / "m.yaml"
     f.write_text("kind: Pod\n")

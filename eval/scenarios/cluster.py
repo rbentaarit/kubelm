@@ -128,16 +128,50 @@ def kind_list_clusters(timeout: float = 10) -> list[str]:
 # ---------- kubectl ----------
 
 
+# When a namespace is freshly created, its default ServiceAccount is created
+# asynchronously by the SA controller. Pods scheduled into the namespace before
+# that controller catches up are rejected with these stderr patterns. We retry
+# specifically on these to avoid masking real errors. Same applies to the
+# "no endpoints available" race against the Service controller.
+_APPLY_TRANSIENT_PATTERNS = (
+    'serviceaccount "default" not found',
+    "no endpoints available",
+)
+
+
+def _apply_with_transient_retry(
+    cmd: list[str],
+    *,
+    input_text: str | None,
+    timeout: float,
+    retries: int,
+    retry_delay: float,
+) -> None:
+    for attempt in range(retries):
+        try:
+            _run(cmd, input_text=input_text, timeout=timeout)
+            return
+        except CommandError as exc:
+            transient = any(p in (exc.stderr or "") for p in _APPLY_TRANSIENT_PATTERNS)
+            if not transient or attempt == retries - 1:
+                raise
+            time.sleep(retry_delay)
+
+
 def kubectl_apply(
     manifest_yaml: str,
     *,
     kubeconfig_path: Path,
     timeout: float = 60,
+    retries: int = 6,
+    retry_delay: float = 1.0,
 ) -> None:
-    _run(
+    _apply_with_transient_retry(
         ["kubectl", "--kubeconfig", str(kubeconfig_path), "apply", "-f", "-"],
         input_text=manifest_yaml,
         timeout=timeout,
+        retries=retries,
+        retry_delay=retry_delay,
     )
 
 
@@ -146,10 +180,15 @@ def kubectl_apply_file(
     *,
     kubeconfig_path: Path,
     timeout: float = 60,
+    retries: int = 6,
+    retry_delay: float = 1.0,
 ) -> None:
-    _run(
+    _apply_with_transient_retry(
         ["kubectl", "--kubeconfig", str(kubeconfig_path), "apply", "-f", str(path)],
+        input_text=None,
         timeout=timeout,
+        retries=retries,
+        retry_delay=retry_delay,
     )
 
 
