@@ -238,6 +238,7 @@ kubeconfig
 charts/*.tgz
 **/charts/*.tgz
 *.lock
+!uv.lock
 
 # Terraform (in case you add IaC later)
 *.tfstate

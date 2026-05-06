@@ -1,0 +1,32 @@
+[project]
+name = "kubelm"
+version = "0.0.0"
+description = "Small, CPU-only language model specialized for reliable tool-use against K8sGPT's MCP server."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Ramzi Ben Taarit" }]
+dependencies = [
+    "requests>=2.31",
+    "jsonschema>=4.21",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["eval"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
