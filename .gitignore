@@ -240,6 +240,11 @@ charts/*.tgz
 *.lock
 !uv.lock
 
+# Eval results: ignore per-run outputs but keep committed summaries
+/eval/results/*
+!/eval/results/summaries
+!/eval/results/summaries/**
+
 # Terraform (in case you add IaC later)
 *.tfstate
 *.tfstate.*
