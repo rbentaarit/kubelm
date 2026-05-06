@@ -127,3 +127,69 @@ def test_emit_results_creates_output_dir(tmp_path: Path) -> None:
     data = json.loads(output.read_text())
     # Zero successful tool calls + a conclusion is correctly "premature".
     assert data["termination_report"]["label"] == "premature"
+
+
+def test_emit_results_omits_scenario_reports_when_none(tmp_path: Path) -> None:
+    traj = tmp_path / "trajectory.jsonl"
+    with TrajectoryRecorder(path=traj, goal="g") as rec:
+        rec.assistant(text="ok")
+        rec.end("complete")
+
+    output = tmp_path / "results.json"
+    emit_results(
+        trajectory_path=traj,
+        tools=[],
+        output_path=output,
+        started_at="2026-05-06T12:00:00.000+00:00",
+    )
+    data = json.loads(output.read_text())
+    assert "reference_calls_report" not in data
+    assert "conclusion_rubric_report" not in data
+
+
+def test_emit_results_with_scenario_includes_both_reports(tmp_path: Path) -> None:
+    from eval.scenarios.spec import (
+        ConclusionRubric,
+        ExpectedOutcome,
+        ReferenceCall,
+        ReferenceCalls,
+        Scenario,
+    )
+
+    traj = tmp_path / "trajectory.jsonl"
+    with TrajectoryRecorder(path=traj, goal="list ns", scenario_id="scn-1") as rec:
+        rec.assistant(
+            text="",
+            tool_calls=[ToolCall("c1", "list-namespaces", {})],
+            latency_ms=10.0,
+        )
+        rec.tool_result(
+            ToolResult("c1", "list-namespaces", {"items": ["default"]}),
+            latency_ms=2.0,
+        )
+        rec.assistant(text="The default namespace exists.", latency_ms=5.0)
+        rec.end("complete")
+
+    scenario = Scenario(
+        id="scn-1",
+        profile="base",
+        goal="list ns",
+        expected=ExpectedOutcome(
+            reference_calls=ReferenceCalls(must_include=[ReferenceCall(name="list-namespaces")]),
+            conclusion_rubric=ConclusionRubric(must_mention=["default"]),
+        ),
+    )
+
+    output = tmp_path / "results.json"
+    emit_results(
+        trajectory_path=traj,
+        tools=[_tool("list-namespaces")],
+        output_path=output,
+        started_at="2026-05-06T12:00:00.000+00:00",
+        scenario=scenario,
+    )
+    data = json.loads(output.read_text())
+    assert data["reference_calls_report"]["passed"] is True
+    assert data["reference_calls_report"]["must_include_hits"] == 1
+    assert data["conclusion_rubric_report"]["passed"] is True
+    assert data["conclusion_rubric_report"]["missing_mentions"] == []

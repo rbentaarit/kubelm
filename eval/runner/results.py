@@ -17,13 +17,18 @@ from typing import Any
 
 from eval.client import Tool
 from eval.metrics import (
+    ConclusionRubricReport,
     GroundingReport,
+    ReferenceCallsReport,
     TerminationReport,
     TrajectorySchemaReport,
     analyze_grounding,
     classify_termination,
+    evaluate_conclusion_rubric,
+    evaluate_reference_calls,
     validate_trajectory,
 )
+from eval.scenarios.spec import Scenario
 from eval.trajectory import load_trajectory
 
 RESULTS_SCHEMA_VERSION = 1
@@ -91,6 +96,27 @@ def _termination_dict(report: TerminationReport) -> dict[str, Any]:
     }
 
 
+def _reference_calls_dict(report: ReferenceCallsReport) -> dict[str, Any]:
+    return {
+        "must_include_hits": report.must_include_hits,
+        "must_include_misses": report.must_include_misses,
+        "forbidden_hits": report.forbidden_hits,
+        "passed": report.passed,
+        "must_include": [asdict(m) for m in report.must_include],
+        "forbidden": [asdict(m) for m in report.forbidden],
+    }
+
+
+def _conclusion_rubric_dict(report: ConclusionRubricReport) -> dict[str, Any]:
+    return {
+        "passed": report.passed,
+        "missing_mentions": report.missing_mentions,
+        "forbidden_mentions": report.forbidden_mentions,
+        "semantic_intent": report.semantic_intent,
+        "conclusion_text": report.conclusion_text,
+    }
+
+
 def emit_results(
     *,
     trajectory_path: Path,
@@ -98,6 +124,7 @@ def emit_results(
     output_path: Path,
     started_at: str,
     ended_at: str | None = None,
+    scenario: Scenario | None = None,
 ) -> dict[str, Any]:
     events = load_trajectory(trajectory_path)
     meta = next(e for e in events if e.get("kind") == "meta")
@@ -125,6 +152,12 @@ def emit_results(
         "grounding_report": _grounding_dict(grounding_report),
         "termination_report": _termination_dict(termination_report),
     }
+
+    if scenario is not None:
+        ref_report = evaluate_reference_calls(events, scenario.expected.reference_calls)
+        rubric_report = evaluate_conclusion_rubric(events, scenario.expected.conclusion_rubric)
+        results["reference_calls_report"] = _reference_calls_dict(ref_report)
+        results["conclusion_rubric_report"] = _conclusion_rubric_dict(rubric_report)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
