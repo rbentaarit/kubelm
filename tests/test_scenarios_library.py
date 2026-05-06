@@ -34,7 +34,7 @@ def shipped_profiles() -> dict[str, object]:
 
 
 def test_scenarios_load_cleanly(shipped_scenarios: list[Scenario]) -> None:
-    assert len(shipped_scenarios) >= 8, "expected the v0.1 8-scenario coverage"
+    assert len(shipped_scenarios) >= 10, "expected at least 10 scenarios per ROADMAP Phase 2"
 
 
 def test_scenario_ids_are_unique(shipped_scenarios: list[Scenario]) -> None:
@@ -75,7 +75,7 @@ def test_every_scenario_has_at_least_one_must_include_reference_call(
 
 
 def test_v0_1_coverage_targets_are_met(shipped_scenarios: list[Scenario]) -> None:
-    """ROADMAP.md Phase 2: pod-startup, networking, resources, RBAC, storage."""
+    """ROADMAP.md Phase 2: pod-startup, networking, resources, RBAC, storage, config, scheduling."""
     ids = {s.id for s in shipped_scenarios}
     assert "pod-crashloop-001" in ids
     assert "image-pull-001" in ids
@@ -85,6 +85,8 @@ def test_v0_1_coverage_targets_are_met(shipped_scenarios: list[Scenario]) -> Non
     assert "rbac-denied-001" in ids
     assert "pvc-unbound-001" in ids
     assert "resource-quota-block-001" in ids
+    assert "secret-missing-001" in ids
+    assert "node-selector-unschedulable-001" in ids
 
 
 def test_profiles_load_cleanly(shipped_profiles: dict[str, object]) -> None:

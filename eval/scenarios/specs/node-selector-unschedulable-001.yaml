@@ -1,0 +1,48 @@
+id: node-selector-unschedulable-001
+profile: base
+description: |
+  A Pod has a nodeSelector that no node in the cluster satisfies. The Pod
+  is stuck in Pending phase indefinitely; the scheduler emits an
+  Unschedulable Event explaining the mismatch.
+
+goal: "Why is picky-pod in scenario-node-selector-unschedulable-001 not running?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-node-selector-unschedulable-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: picky-pod
+        namespace: scenario-node-selector-unschedulable-001
+      spec:
+        nodeSelector:
+          specialty: unobtanium
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+
+settle:
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-node-selector-unschedulable-001
+      name: picky-pod
+      phase: Pending
+      timeout: 30s
+
+expected:
+  reference_calls:
+    must_include:
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-events,    args_match: {} }
+    forbidden: []
+  conclusion_rubric:
+    must_mention: ["picky-pod", "Pending"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies the pod, recognizes the unschedulable state, and ties
+      it back to the nodeSelector / unsatisfiable label requirement.
