@@ -59,13 +59,13 @@ reliability metrics.
 
 ### Phase 1 checklist
 
-- [ ] MCP HTTP client implementation (initialize, tools/list, tools/call)
-- [ ] Trajectory recorder format defined (JSONL schema)
-- [ ] Argument-schema validator
-- [ ] Grounding analyzer (rule-based; LLM-judge variant as v0.2)
-- [ ] Termination classifier
-- [ ] CLI runner
-- [ ] First end-to-end test: run a model against K8sGPT, record trajectory
+- [x] MCP HTTP client implementation (initialize, tools/list, tools/call)
+- [x] Trajectory recorder format defined (JSONL schema)
+- [x] Argument-schema validator
+- [x] Grounding analyzer (rule-based; LLM-judge variant as v0.2)
+- [x] Termination classifier
+- [x] CLI runner
+- [x] First end-to-end test: run a model against K8sGPT, record trajectory
 
 ---
 
