@@ -13,6 +13,11 @@ or recover; that's the runner's job.
 match conditions but not container-state reason fields like
 "CrashLoopBackOff", which is what scenarios actually need to settle on.
 We poll `kubectl get -o json` and inspect the parsed status manually.
+
+`k8sgpt_mcp_server` is a context manager that spawns
+`k8sgpt serve --mcp --mcp-http` on an ephemeral port pointed at a
+specific kubeconfig, yields the MCP URL, and tears the process down on
+exit. The scenario CLI and the live integration test share it.
 """
 
 from __future__ import annotations
@@ -20,9 +25,11 @@ from __future__ import annotations
 import json
 import logging
 import os
+import socket
 import subprocess
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import closing, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -309,3 +316,52 @@ def helm_install(
     if version:
         cmd += ["--version", version]
     _run(cmd, env=_helm_env(helm_home), timeout=timeout + 30)
+
+
+# ---------- k8sgpt MCP server ----------
+
+
+def find_free_port() -> int:
+    """Bind, read, release. Inherits the SO_REUSEADDR window."""
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def wait_for_port(port: int, *, timeout: float = 15.0) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.5):
+                return
+        except OSError:
+            time.sleep(0.1)
+    raise TimeoutError(f"port {port} did not accept connections within {timeout}s")
+
+
+@contextmanager
+def k8sgpt_mcp_server(kubeconfig_path: Path) -> Iterator[str]:
+    """Spawn `k8sgpt serve --mcp --mcp-http` against a kubeconfig.
+
+    Yields the MCP HTTP URL. Tears the process down on exit, even if
+    the body raises. Uses an ephemeral port so multiple scenarios can
+    run in parallel without colliding.
+    """
+    port = find_free_port()
+    env = dict(os.environ)
+    env["KUBECONFIG"] = str(kubeconfig_path)
+    proc = subprocess.Popen(
+        ["k8sgpt", "serve", "--mcp", "--mcp-http", "--mcp-port", str(port)],
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        wait_for_port(port)
+        yield f"http://127.0.0.1:{port}/mcp"
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
