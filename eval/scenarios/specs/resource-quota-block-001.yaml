@@ -1,0 +1,56 @@
+id: resource-quota-block-001
+profile: base
+description: |
+  A namespace has a ResourceQuota that allows zero pods. Any attempt to
+  create a Pod is rejected at admission with a quota error visible in
+  Events. The Pod resource never materializes; the failure surfaces
+  through Events, not through Pod status. No settle on Pod state.
+
+goal: "Why does no Deployment make progress in scenario-resource-quota-block-001?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-resource-quota-block-001
+      ---
+      apiVersion: v1
+      kind: ResourceQuota
+      metadata:
+        name: zero-pods
+        namespace: scenario-resource-quota-block-001
+      spec:
+        hard:
+          pods: "0"
+      ---
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: blocked-app
+        namespace: scenario-resource-quota-block-001
+      spec:
+        replicas: 1
+        selector: { matchLabels: { app: blocked-app } }
+        template:
+          metadata: { labels: { app: blocked-app } }
+          spec:
+            containers:
+              - name: app
+                image: nginx:1.27-alpine
+
+settle: []
+
+expected:
+  reference_calls:
+    must_include:
+      - { name: list-events,    args_match: {} }
+      - { name: list-resources, args_match: { resourceType: resourcequotas } }
+    forbidden: []
+  conclusion_rubric:
+    must_mention: ["ResourceQuota", "zero-pods"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies the ResourceQuota that caps pods at zero and explains
+      that the Deployment's ReplicaSet cannot create any pods because
+      the admission controller is rejecting the requests.

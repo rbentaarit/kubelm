@@ -1,0 +1,48 @@
+id: pvc-unbound-001
+profile: base
+description: |
+  A PersistentVolumeClaim referencing a storage class that does not exist
+  in the cluster. The PVC remains in Pending phase indefinitely because no
+  provisioner can satisfy it.
+
+goal: "Why is the data-pvc in scenario-pvc-unbound-001 not bound?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-pvc-unbound-001
+      ---
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: data-pvc
+        namespace: scenario-pvc-unbound-001
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: nonexistent-fast-ssd
+        resources:
+          requests:
+            storage: 1Gi
+
+settle:
+  - wait_for_status:
+      kind: PersistentVolumeClaim
+      namespace: scenario-pvc-unbound-001
+      name: data-pvc
+      phase: Pending
+      timeout: 60s
+
+expected:
+  reference_calls:
+    must_include:
+      - { name: list-resources, args_match: { resourceType: persistentvolumeclaims } }
+      - { name: get-resource,   args_match: { resourceType: persistentvolumeclaim, name: data-pvc } }
+    forbidden: []
+  conclusion_rubric:
+    must_mention: ["data-pvc", "nonexistent-fast-ssd"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies the PVC, names the missing StorageClass, and explains
+      that no provisioner can bind the claim.

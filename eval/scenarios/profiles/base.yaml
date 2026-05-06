@@ -1,0 +1,4 @@
+# Base profile: minimal kind cluster, no operators.
+# All v0.1 scenarios extend or use this profile directly.
+name: base
+node_image: kindest/node:v1.31.4

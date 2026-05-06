@@ -1,0 +1,22 @@
+# Argo CD profile: base + Argo CD installed via helm.
+# Reserved for Argo CD-dependent scenarios; none ship in v0.1 of the
+# scenario library. Kept here as a worked example of profile composition
+# for future contributors and to exercise the extends mechanism in real
+# YAML.
+name: argocd
+extends: base
+install:
+  - helm_repo:
+      name: argo
+      url: https://argoproj.github.io/argo-helm
+  - helm_install:
+      name: argocd
+      chart: argo/argo-cd
+      namespace: argocd
+      version: 7.6.12
+wait_for:
+  - kind: Deployment
+    namespace: argocd
+    name: argocd-server
+    condition: Available
+    timeout: 3m

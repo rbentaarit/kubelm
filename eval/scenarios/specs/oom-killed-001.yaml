@@ -1,0 +1,51 @@
+id: oom-killed-001
+profile: base
+description: |
+  A Pod whose container allocates more memory than its limit allows, causing
+  the kernel OOM killer to terminate it. After kubelet restarts it, the
+  container's lastState.terminated reason is OOMKilled.
+
+goal: "Why is the hungry-pod in scenario-oom-killed-001 unhealthy?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-oom-killed-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: hungry-pod
+        namespace: scenario-oom-killed-001
+      spec:
+        restartPolicy: Always
+        containers:
+          - name: app
+            image: polinux/stress:1.0.4
+            command: ["stress"]
+            args: ["--vm", "1", "--vm-bytes", "200M", "--vm-hang", "0"]
+            resources:
+              limits:
+                memory: "32Mi"
+
+settle:
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-oom-killed-001
+      name: hungry-pod
+      reason: OOMKilled
+      timeout: 120s
+
+expected:
+  reference_calls:
+    must_include:
+      - { name: get-resource, args_match: { resourceType: pod, name: hungry-pod } }
+    forbidden: []
+  conclusion_rubric:
+    must_mention: ["OOMKilled", "hungry-pod"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies the pod, names the failure mode (OOMKilled), and
+      references the memory limit as the cause.

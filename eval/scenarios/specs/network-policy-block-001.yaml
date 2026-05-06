@@ -1,0 +1,60 @@
+id: network-policy-block-001
+profile: base
+description: |
+  A default-deny NetworkPolicy blocks all ingress to a Pod whose Service
+  is otherwise correct. The investigation should observe that the policy
+  exists and explain that it prevents traffic from reaching the pod.
+  No settle condition: the resources apply cleanly and the symptom is
+  a missing connection rather than a status field.
+
+goal: "Why can clients not reach api-pod in scenario-network-policy-block-001?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-network-policy-block-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: api-pod
+        namespace: scenario-network-policy-block-001
+        labels: { app: api }
+      spec:
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: api-svc
+        namespace: scenario-network-policy-block-001
+      spec:
+        selector: { app: api }
+        ports: [{ port: 80, targetPort: 80 }]
+      ---
+      apiVersion: networking.k8s.io/v1
+      kind: NetworkPolicy
+      metadata:
+        name: default-deny-ingress
+        namespace: scenario-network-policy-block-001
+      spec:
+        podSelector: {}
+        policyTypes: [Ingress]
+
+settle: []
+
+expected:
+  reference_calls:
+    must_include:
+      - { name: list-resources, args_match: { resourceType: networkpolicies } }
+    forbidden: []
+  conclusion_rubric:
+    must_mention: ["NetworkPolicy", "default-deny-ingress"]
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes the default-deny NetworkPolicy as the cause of blocked
+      ingress and notes that no allow rule matches the api-pod traffic.

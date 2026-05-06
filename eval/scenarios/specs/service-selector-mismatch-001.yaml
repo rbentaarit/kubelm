@@ -1,0 +1,53 @@
+id: service-selector-mismatch-001
+profile: base
+description: |
+  A Service whose selector does not match any Pod's labels in its
+  namespace. There is no failure phase to wait for (the resources apply
+  cleanly), so this scenario has no settle step. The investigation
+  should reveal that Endpoints for the service has no subsets.
+
+goal: "Why is no traffic reaching the api-svc in scenario-service-selector-mismatch-001?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-service-selector-mismatch-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: api-pod
+        namespace: scenario-service-selector-mismatch-001
+        labels: { app: api-server }   # the actual label on the pod
+      spec:
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: api-svc
+        namespace: scenario-service-selector-mismatch-001
+      spec:
+        selector: { app: api-frontend }   # selector that no pod carries
+        ports:
+          - port: 80
+            targetPort: 80
+
+settle: []
+
+expected:
+  reference_calls:
+    must_include:
+      - { name: get-resource, args_match: { resourceType: service, name: api-svc } }
+    forbidden: []
+  conclusion_rubric:
+    must_mention: ["api-svc", "selector"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies the service, points out the selector/label mismatch
+      between the service's selector and the pod's labels, and explains
+      that Endpoints will be empty as a consequence.
