@@ -100,9 +100,12 @@ def _reference_calls_dict(report: ReferenceCallsReport) -> dict[str, Any]:
     return {
         "must_include_hits": report.must_include_hits,
         "must_include_misses": report.must_include_misses,
+        "any_of_hits": report.any_of_hits,
+        "any_of_satisfied": report.any_of_satisfied,
         "forbidden_hits": report.forbidden_hits,
         "passed": report.passed,
         "must_include": [asdict(m) for m in report.must_include],
+        "any_of": [asdict(m) for m in report.any_of],
         "forbidden": [asdict(m) for m in report.forbidden],
     }
 

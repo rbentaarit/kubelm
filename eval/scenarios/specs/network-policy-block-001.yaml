@@ -49,8 +49,10 @@ settle: []
 
 expected:
   reference_calls:
-    must_include:
+    must_include: []
+    any_of:
       - { name: list-resources, args_match: { resourceType: networkpolicies } }
+      - { name: get-resource,   args_match: { resourceType: networkpolicy, name: default-deny-ingress } }
     forbidden: []
   conclusion_rubric:
     must_mention: ["NetworkPolicy", "default-deny-ingress"]

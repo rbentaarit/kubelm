@@ -40,8 +40,11 @@ settle:
 
 expected:
   reference_calls:
-    must_include:
+    must_include: []
+    any_of:
       - { name: get-resource, args_match: { resourceType: pod, name: hungry-pod } }
+      - { name: list-events,  args_match: { involvedObjectName: hungry-pod } }
+      - { name: list-resources, args_match: { resourceType: pods } }
     forbidden: []
   conclusion_rubric:
     must_mention: ["OOMKilled", "hungry-pod"]

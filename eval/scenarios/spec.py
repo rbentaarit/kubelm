@@ -52,6 +52,7 @@ class ReferenceCall:
 @dataclass
 class ReferenceCalls:
     must_include: list[ReferenceCall] = field(default_factory=list)
+    any_of: list[ReferenceCall] = field(default_factory=list)
     forbidden: list[ReferenceCall] = field(default_factory=list)
 
 
@@ -147,6 +148,10 @@ def _parse_expected(raw: dict[str, Any], ctx: str) -> ExpectedOutcome:
             must_include=[
                 _parse_reference_call(c, f"{ctx}.reference_calls.must_include[{i}]")
                 for i, c in enumerate(rc_raw.get("must_include") or [])
+            ],
+            any_of=[
+                _parse_reference_call(c, f"{ctx}.reference_calls.any_of[{i}]")
+                for i, c in enumerate(rc_raw.get("any_of") or [])
             ],
             forbidden=[
                 _parse_reference_call(c, f"{ctx}.reference_calls.forbidden[{i}]")

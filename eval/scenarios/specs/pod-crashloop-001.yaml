@@ -41,7 +41,9 @@ expected:
   reference_calls:
     must_include:
       - { name: list-resources, args_match: { resourceType: pods } }
-      - { name: get-logs,       args_match: { podName: crash-pod } }
+    any_of:
+      - { name: get-logs,     args_match: { podName: crash-pod } }
+      - { name: list-events,  args_match: { involvedObjectName: crash-pod } }
     forbidden: []
   conclusion_rubric:
     must_mention: ["CrashLoopBackOff", "crash-pod"]

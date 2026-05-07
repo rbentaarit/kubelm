@@ -35,7 +35,9 @@ expected:
   reference_calls:
     must_include:
       - { name: list-resources, args_match: { resourceType: pods } }
-      - { name: get-resource,   args_match: { resourceType: pod, name: bad-image } }
+    any_of:
+      - { name: get-resource, args_match: { resourceType: pod, name: bad-image } }
+      - { name: list-events,  args_match: { involvedObjectName: bad-image } }
     forbidden: []
   conclusion_rubric:
     must_mention: ["ImagePullBackOff", "bad-image"]

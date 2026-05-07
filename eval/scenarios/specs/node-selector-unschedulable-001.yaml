@@ -38,7 +38,9 @@ expected:
   reference_calls:
     must_include:
       - { name: list-resources, args_match: { resourceType: pods } }
-      - { name: list-events,    args_match: {} }
+    any_of:
+      - { name: list-events }
+      - { name: get-resource, args_match: { resourceType: pod, name: picky-pod } }
     forbidden: []
   conclusion_rubric:
     must_mention: ["picky-pod", "Pending"]

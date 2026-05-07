@@ -43,9 +43,11 @@ settle: []
 
 expected:
   reference_calls:
-    must_include:
-      - { name: list-events,    args_match: {} }
+    must_include: []
+    any_of:
+      - { name: list-events }
       - { name: list-resources, args_match: { resourceType: resourcequotas } }
+      - { name: get-resource,   args_match: { resourceType: resourcequota, name: zero-pods } }
     forbidden: []
   conclusion_rubric:
     must_mention: ["ResourceQuota", "zero-pods"]

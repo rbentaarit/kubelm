@@ -65,12 +65,14 @@ def test_every_scenario_has_a_conclusion_rubric_with_at_least_one_mention(
         assert rubric.must_mention, f"{s.id}: conclusion_rubric.must_mention is empty"
 
 
-def test_every_scenario_has_at_least_one_must_include_reference_call(
+def test_every_scenario_has_at_least_one_reference_call_constraint(
     shipped_scenarios: list[Scenario],
 ) -> None:
+    """Either must_include (AND) or any_of (OR) must be non-empty per scenario."""
     for s in shipped_scenarios:
-        assert s.expected.reference_calls.must_include, (
-            f"{s.id}: reference_calls.must_include is empty"
+        rc = s.expected.reference_calls
+        assert rc.must_include or rc.any_of, (
+            f"{s.id}: reference_calls has neither must_include nor any_of"
         )
 
 

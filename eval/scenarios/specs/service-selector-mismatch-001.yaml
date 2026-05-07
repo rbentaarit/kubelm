@@ -41,8 +41,11 @@ settle: []
 
 expected:
   reference_calls:
-    must_include:
-      - { name: get-resource, args_match: { resourceType: service, name: api-svc } }
+    must_include: []
+    any_of:
+      - { name: get-resource,   args_match: { resourceType: service, name: api-svc } }
+      - { name: list-resources, args_match: { resourceType: services } }
+      - { name: list-resources, args_match: { resourceType: endpoints } }
     forbidden: []
   conclusion_rubric:
     must_mention: ["api-svc", "selector"]

@@ -95,3 +95,59 @@ def test_multiple_must_include_partial_pass(tmp_path: Path) -> None:
 def test_empty_expected_passes_trivially(tmp_path: Path) -> None:
     events = _record(tmp_path / "t.jsonl", [])
     assert evaluate_reference_calls(events, ReferenceCalls()).passed
+
+
+def test_any_of_satisfied_when_one_matches(tmp_path: Path) -> None:
+    """any_of: at least one matcher must hit (multiple valid investigation paths)."""
+    events = _record(
+        tmp_path / "t.jsonl",
+        [ToolCall("c1", "list-events", {"involvedObjectName": "crash-pod"})],
+    )
+    expected = ReferenceCalls(
+        any_of=[
+            ReferenceCall(name="get-logs", args_match={"podName": "crash-pod"}),
+            ReferenceCall(name="list-events", args_match={"involvedObjectName": "crash-pod"}),
+        ]
+    )
+    report = evaluate_reference_calls(events, expected)
+    assert report.passed
+    assert report.any_of_hits == 1
+    assert report.any_of_satisfied
+
+
+def test_any_of_unsatisfied_when_none_match(tmp_path: Path) -> None:
+    events = _record(tmp_path / "t.jsonl", [ToolCall("c1", "cluster-info", {})])
+    expected = ReferenceCalls(
+        any_of=[
+            ReferenceCall(name="get-logs"),
+            ReferenceCall(name="list-events"),
+        ]
+    )
+    report = evaluate_reference_calls(events, expected)
+    assert not report.passed
+    assert report.any_of_hits == 0
+
+
+def test_any_of_empty_means_no_constraint(tmp_path: Path) -> None:
+    events = _record(tmp_path / "t.jsonl", [ToolCall("c1", "cluster-info", {})])
+    report = evaluate_reference_calls(events, ReferenceCalls())
+    assert report.any_of_satisfied  # vacuously true
+
+
+def test_must_include_and_any_of_combined(tmp_path: Path) -> None:
+    """must_include passes (AND), any_of passes (one of)."""
+    events = _record(
+        tmp_path / "t.jsonl",
+        [
+            ToolCall("c1", "list-resources", {"resourceType": "pods"}),
+            ToolCall("c2", "list-events", {}),
+        ],
+    )
+    expected = ReferenceCalls(
+        must_include=[ReferenceCall(name="list-resources", args_match={"resourceType": "pods"})],
+        any_of=[
+            ReferenceCall(name="get-logs"),
+            ReferenceCall(name="list-events"),
+        ],
+    )
+    assert evaluate_reference_calls(events, expected).passed

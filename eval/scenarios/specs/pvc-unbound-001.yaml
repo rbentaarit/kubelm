@@ -36,9 +36,11 @@ settle:
 
 expected:
   reference_calls:
-    must_include:
+    must_include: []
+    any_of:
       - { name: list-resources, args_match: { resourceType: persistentvolumeclaims } }
       - { name: get-resource,   args_match: { resourceType: persistentvolumeclaim, name: data-pvc } }
+      - { name: list-events,    args_match: { involvedObjectName: data-pvc } }
     forbidden: []
   conclusion_rubric:
     must_mention: ["data-pvc", "nonexistent-fast-ssd"]

@@ -30,10 +30,20 @@ setup:
         restartPolicy: Always
         containers:
           - name: probe
-            image: bitnami/kubectl:1.31
+            image: curlimages/curl:8.10.1
             command: ["/bin/sh", "-c"]
             args:
-              - 'kubectl get pods -n kube-system; exit_code=$?; if [ $exit_code -ne 0 ]; then echo "RBAC denied"; exit 1; fi'
+              - |
+                TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+                STATUS=$(curl -sS -o /tmp/body -w "%{http_code}" \
+                    --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+                    -H "Authorization: Bearer $TOKEN" \
+                    https://kubernetes.default.svc/api/v1/namespaces/kube-system/pods)
+                cat /tmp/body
+                if [ "$STATUS" = "403" ]; then
+                    echo "RBAC denied: Forbidden (HTTP $STATUS)"
+                    exit 1
+                fi
 
 settle:
   - wait_for_status:
@@ -47,7 +57,9 @@ expected:
   reference_calls:
     must_include:
       - { name: list-resources, args_match: { resourceType: pods } }
-      - { name: get-logs,       args_match: { podName: rbac-probe } }
+    any_of:
+      - { name: get-logs,    args_match: { podName: rbac-probe } }
+      - { name: list-events, args_match: { involvedObjectName: rbac-probe } }
     forbidden: []
   conclusion_rubric:
     must_mention: ["rbac-probe", "Forbidden"]
