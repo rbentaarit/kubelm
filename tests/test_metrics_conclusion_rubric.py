@@ -82,3 +82,30 @@ def test_semantic_intent_preserved_in_report(tmp_path: Path) -> None:
 def test_empty_rubric_passes(tmp_path: Path) -> None:
     events = _record(tmp_path / "t.jsonl", "anything")
     assert evaluate_conclusion_rubric(events, ConclusionRubric()).passed
+
+
+def test_synonym_slot_passes_when_any_alternative_present(tmp_path: Path) -> None:
+    """A list slot is satisfied if any one alternative appears."""
+    events = _record(tmp_path / "t.jsonl", "the pod is unschedulable due to node taint")
+    rubric = ConclusionRubric(must_mention=[["Pending", "unschedulable"]])
+    report = evaluate_conclusion_rubric(events, rubric)
+    assert report.passed
+    assert report.missing_mentions == []
+
+
+def test_synonym_slot_fails_when_no_alternative_present(tmp_path: Path) -> None:
+    events = _record(tmp_path / "t.jsonl", "the pod is fine and running")
+    rubric = ConclusionRubric(must_mention=[["Pending", "unschedulable"]])
+    report = evaluate_conclusion_rubric(events, rubric)
+    assert not report.passed
+    assert report.missing_mentions == ["Pending | unschedulable"]
+
+
+def test_string_and_synonym_slots_combined(tmp_path: Path) -> None:
+    """A required string slot AND a synonym slot — both must hit."""
+    events = _record(
+        tmp_path / "t.jsonl",
+        "the pod picky-pod is unschedulable due to node taint",
+    )
+    rubric = ConclusionRubric(must_mention=["picky-pod", ["Pending", "unschedulable"]])
+    assert evaluate_conclusion_rubric(events, rubric).passed

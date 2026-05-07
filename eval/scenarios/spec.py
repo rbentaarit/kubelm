@@ -58,7 +58,19 @@ class ReferenceCalls:
 
 @dataclass
 class ConclusionRubric:
-    must_mention: list[str] = field(default_factory=list)
+    """Substring rubric for the final assistant text.
+
+    ``must_mention`` is a list of *slots*. Each slot is either:
+
+      - a string: the exact (case-insensitive) substring must appear
+      - a list of strings: at least one of them must appear
+        (synonym set — captures phrasings like "Pending" vs.
+        "unschedulable" that mean the same thing for grading)
+
+    ``must_not_mention`` is a flat list of strings that may not appear.
+    """
+
+    must_mention: list[str | list[str]] = field(default_factory=list)
     must_not_mention: list[str] = field(default_factory=list)
     semantic_intent: str = ""
 
@@ -159,7 +171,10 @@ def _parse_expected(raw: dict[str, Any], ctx: str) -> ExpectedOutcome:
             ],
         ),
         conclusion_rubric=ConclusionRubric(
-            must_mention=list(cr_raw.get("must_mention") or []),
+            must_mention=[
+                item if isinstance(item, str) else list(item)
+                for item in (cr_raw.get("must_mention") or [])
+            ],
             must_not_mention=list(cr_raw.get("must_not_mention") or []),
             semantic_intent=cr_raw.get("semantic_intent") or "",
         ),

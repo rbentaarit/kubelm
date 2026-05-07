@@ -45,7 +45,17 @@ setup:
         podSelector: {}
         policyTypes: [Ingress]
 
-settle: []
+settle:
+  # Without this, kind's control-plane node may still be tainted
+  # NotReady when the bench's MockBackend / model first calls
+  # list-resources, and the pod surfaces as Pending (taint) instead of
+  # Running with NetworkPolicy ingress denied. Wait for Ready first.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-network-policy-block-001
+      name: api-pod
+      condition: Ready
+      timeout: 90s
 
 expected:
   reference_calls:

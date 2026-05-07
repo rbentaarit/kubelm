@@ -43,7 +43,9 @@ expected:
       - { name: get-resource, args_match: { resourceType: pod, name: picky-pod } }
     forbidden: []
   conclusion_rubric:
-    must_mention: ["picky-pod", "Pending"]
+    must_mention:
+      - "picky-pod"
+      - ["Pending", "unschedulable"]
     must_not_mention: []
     semantic_intent: |
       Identifies the pod, recognizes the unschedulable state, and ties

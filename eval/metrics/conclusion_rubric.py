@@ -3,8 +3,10 @@
 Checks the *final* assistant text against a scenario's
 ``ConclusionRubric``:
 
-  - ``must_mention``: every entry must appear (case-insensitive substring)
-  - ``must_not_mention``: no entry may appear
+  - ``must_mention``: each slot must be satisfied (case-insensitive
+    substring). A slot is either a string (exact match required) or a
+    list of strings (any one of them satisfies the slot — synonym set).
+  - ``must_not_mention``: no entry may appear.
 
 ``semantic_intent`` is preserved on the report but not auto-evaluated;
 v0.2 adds an LLM-judge variant for that, parallel to the grounding
@@ -40,13 +42,27 @@ def _last_assistant_text(events: Iterable[Mapping[str, object]]) -> str:
     return last_text
 
 
+def _slot_satisfied(slot: str | list[str], text_lower: str) -> bool:
+    if isinstance(slot, str):
+        return slot.lower() in text_lower
+    return any(s.lower() in text_lower for s in slot)
+
+
+def _format_slot(slot: str | list[str]) -> str:
+    if isinstance(slot, str):
+        return slot
+    return " | ".join(slot)
+
+
 def evaluate_conclusion_rubric(
     events: Iterable[Mapping[str, object]],
     rubric: ConclusionRubric,
 ) -> ConclusionRubricReport:
     text = _last_assistant_text(events)
     text_lower = text.lower()
-    missing = [m for m in rubric.must_mention if m.lower() not in text_lower]
+    missing = [
+        _format_slot(slot) for slot in rubric.must_mention if not _slot_satisfied(slot, text_lower)
+    ]
     forbidden_hits = [m for m in rubric.must_not_mention if m.lower() in text_lower]
     return ConclusionRubricReport(
         conclusion_text=text,
