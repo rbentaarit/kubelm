@@ -267,7 +267,10 @@ are scenario-specific (Phase 2).
    Premature is conclusion-with-zero-successful-tool-calls.
 4. **Reference-call coverage** *(Phase 2)*. The scenario's
    `must_include` matchers (subset-semantic on arguments) all hit at
-   least once; no `forbidden` matcher hits.
+   least once; `any_of` matchers (at least one of N) are satisfied; no
+   `forbidden` matcher hits. The `any_of` semantics capture the
+   "multiple valid investigation paths" reality — `get-logs` and
+   `list-events` both surface a pod failure cause; either is fine.
 5. **Conclusion rubric** *(Phase 2)*. The scenario's `must_mention`
    strings all appear (case-insensitive substring) in the final
    assistant text; no `must_not_mention` does. `semantic_intent` is
@@ -306,6 +309,107 @@ egregious cases; v0.2's LLM-judge will close the long tail.
 
 **No prebuilt operator images.** Documented as the v0.2 optimization;
 ships when it actually saves minutes on a real benchmark run.
+
+---
+
+## First baseline results (2026-05-07)
+
+The library above produced its first cross-model numbers. Two passes
+on a single M1 Max 64 GB at `parallelism=1` (so latency is trustworthy
+but the dataset is tiny — n=10 scenarios, single seed).
+
+**Shape B — 4 models across the size spectrum** (`eval/results/summaries/shape-b-2026-05-07.json`):
+
+| model         | complete | schema | ground_fail | ref_pass | rubric_pass | duration_s |
+|---------------|----------|--------|-------------|----------|-------------|------------|
+| `llama3.2:3b` | 0/10     | 10/10  | 9           | 0/10     | 1/10        | 295        |
+| `qwen2.5:7b`  | 10/10    | 10/10  | 6           | 5/10     | 5/10        | 454        |
+| `qwen2.5:32b` | 10/10    | 10/10  | 5           | 4/10     | 5/10        | 878        |
+| `gpt-4o`      | 10/10    | 10/10  | 6           | 6/10     | 6/10        | 303        |
+
+`llama3.3:70b` was the original local-large target but OOM'd on a
+64 GB M1 Max with the bench's kind clusters running concurrently
+(~42 GB model + KV cache + ~5 GB harness > free memory). `qwen2.5:32b`
+is the local stand-in until a proper GPU-box benchmark fills in the
+70B point.
+
+The data tells a sharper story than the original PROJECT.md thesis
+predicted:
+
+**1. The 3B → 7B step is a phase change, not a curve.** The 3B model
+cannot drive a multi-step investigation against this surface at all —
+zero `complete` terminations across ten scenarios. At 7B and above,
+every model reaches `complete` 10/10. Whatever capability is required
+to "see a tool result, decide what to call next, recognize when to
+stop and synthesize" emerges somewhere between 3B and 7B and either
+exists or doesn't.
+
+When you watch a 3B trajectory, the failure is concrete: the model
+confuses the namespace name with a pod name on the first call, gets a
+"not found" back, and concludes the pod doesn't exist. It then tries
+to call `get-events` *by writing JSON inside the text body* rather
+than emitting a structured tool_call. Tool-use infrastructure is
+present; tool-use *competence* is not.
+
+**2. Above 7B, the curve is essentially flat.** `qwen2.5:7b`,
+`qwen2.5:32b`, and `gpt-4o` cluster at 5–6/10 on rubric, 4–6/10 on
+reference-call coverage, 5–6 grounding failures out of 10. The 32B
+model does not measurably outperform the 7B model. The cloud frontier
+reference is barely better than a free 4.7 GB local model. **More
+parameters past 7B produce no measurable improvement on this task.**
+
+**3. Schema is clean across all 30 successful 7B+ runs.** Zero
+tool-name hallucinations, zero argument hallucinations. None of the
+failures are syntactic. All of them are strategic — *what* to call,
+*when* to stop, *whether* to keep investigating after the first
+result.
+
+### What this implies for kubelm's thesis
+
+The original PROJECT.md framing assumed the curve sloped smoothly: as
+parameters increase, tool-use reliability improves, and a specialized
+small model would close the gap to a large generic model. The data
+suggests something different. There is no smooth curve to close. There
+is a cliff between 3B and 7B, and a flat plateau above 7B.
+
+This actually *strengthens* the case for kubelm:
+
+- The capability gap to close is between a 3B and a 7B-class model.
+  That is exactly the size range where local-CPU inference is most
+  valuable (sub-3 GB vs. ~5 GB Q4 weights). A specialized 3B that
+  matches 7B-generic on K8sGPT MCP tool-use would deliver outsized
+  practical value.
+- Spending compute to fine-tune at the 32B–70B range has low expected
+  payoff, because generic models in that range are already competent
+  enough that the rubric/grounding gap looks more like noise than
+  signal.
+
+It also raises a question we couldn't answer before: *is the 7B-class
+plateau the actual ceiling for this task, or is it the rubric's
+ceiling?* The 4–6/10 cluster on `ref_pass`/`rubric_pass` may partly
+reflect scenario-rubric strictness. Iteration on matchers and a
+larger scenario set will tell.
+
+### Caveats
+
+These numbers are a v0.1 baseline, not a publication-ready benchmark.
+
+- **n = 10 scenarios.** Statistically too small to read a single-row
+  difference into. The 3B-vs-rest gap is the only signal robust enough
+  to lean on.
+- **Single-seed runs.** No variance estimate. Re-running the same
+  configuration could land 1–2 metrics apart on any given row.
+- **Rubric noise.** The 4–6/10 cluster above 7B partly reflects
+  matcher strictness. The ongoing rubric iteration may compress that
+  range up or down.
+- **No 70B local point.** Important data missing from the curve. The
+  ROADMAP "rented GPU box" remains the right home for it.
+- **No pre-Llama-3 family models.** The whole lineup is recent
+  instruction-tuned models trained with tool-use in mind.
+
+A real publication needs n ≥ 30 scenarios, multiple seeds per
+configuration, and the 70B point. These results are the methodology
+working — not the final number.
 
 ---
 
