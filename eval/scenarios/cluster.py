@@ -404,3 +404,90 @@ def k8sgpt_mcp_server(kubeconfig_path: Path) -> Iterator[str]:
             proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             proc.kill()
+
+
+# ---------- ollama ----------
+
+OLLAMA_DEFAULT_PORT = 11434
+
+
+def is_local_ollama(backend_url: str) -> bool:
+    """Heuristic: a model URL is a local Ollama daemon if it points at
+    localhost (or 127.0.0.1) on Ollama's default port 11434.
+    """
+    return f"://localhost:{OLLAMA_DEFAULT_PORT}" in backend_url or (
+        f"://127.0.0.1:{OLLAMA_DEFAULT_PORT}" in backend_url
+    )
+
+
+def _ollama_health_check(timeout_seconds: float = 1.0) -> bool:
+    try:
+        with socket.create_connection(("127.0.0.1", OLLAMA_DEFAULT_PORT), timeout=timeout_seconds):
+            return True
+    except OSError:
+        return False
+
+
+def _ollama_wait_ready(timeout_seconds: float = 15.0) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if _ollama_health_check():
+            return
+        time.sleep(0.5)
+    raise TimeoutError(f"ollama did not start within {timeout_seconds}s")
+
+
+def _ollama_unload_model(model: str) -> None:
+    """Best-effort unload via Ollama's keep_alive=0 hint to free memory."""
+    import urllib.error
+    import urllib.request
+
+    payload = json.dumps({"model": model, "keep_alive": 0}).encode("utf-8")
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{OLLAMA_DEFAULT_PORT}/api/generate",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+    except (OSError, urllib.error.URLError) as exc:
+        log.warning("ollama unload of %r failed: %s", model, exc)
+
+
+@contextmanager
+def manage_ollama(models_to_unload: list[str] | None = None) -> Iterator[None]:
+    """Ensure ``ollama serve`` is running for the duration of the with-block.
+
+    - If the daemon is already running, leave it alone (someone else
+      manages it). On exit, unload any ``models_to_unload`` to free GPU
+      memory between bench runs even though the daemon stays up.
+    - If the daemon isn't running, spawn it as a child process. On exit,
+      unload models *and* stop the child we started. We never kill a
+      daemon we didn't start.
+    """
+    proc: subprocess.Popen[bytes] | None = None
+    if not _ollama_health_check():
+        log.info("starting `ollama serve`")
+        proc = subprocess.Popen(
+            ["ollama", "serve"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            _ollama_wait_ready()
+        except TimeoutError:
+            proc.terminate()
+            raise
+    try:
+        yield
+    finally:
+        for m in models_to_unload or []:
+            _ollama_unload_model(m)
+        if proc is not None:
+            log.info("stopping `ollama serve` (we started it)")
+            proc.terminate()
+            try:
+                proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                proc.kill()

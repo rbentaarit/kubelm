@@ -45,6 +45,7 @@ from eval.scenarios.bench import (
     run_bench,
     run_one_scenario,
 )
+from eval.scenarios.cluster import is_local_ollama, manage_ollama
 
 DEFAULT_SCENARIOS_DIR = Path(__file__).parent / "specs"
 DEFAULT_PROFILES_DIR = Path(__file__).parent / "profiles"
@@ -218,15 +219,18 @@ def cmd_bench(args: argparse.Namespace) -> int:
                 f"  ({rec.duration_seconds:.0f}s)"
             )
 
-    summary = run_bench(
-        scenarios=scenarios,
-        profiles=profiles,
-        models=models,
-        output_root=args.output_dir,
-        max_steps=args.max_steps,
-        on_run_start=on_run_start,
-        on_run_end=on_run_end,
-    )
+    ollama_models = [m.model for m in models if is_local_ollama(m.backend_url)]
+
+    with manage_ollama(models_to_unload=ollama_models):
+        summary = run_bench(
+            scenarios=scenarios,
+            profiles=profiles,
+            models=models,
+            output_root=args.output_dir,
+            max_steps=args.max_steps,
+            on_run_start=on_run_start,
+            on_run_end=on_run_end,
+        )
 
     print(f"\nbench_id: {summary['bench_id']}")
     print(f"summary:  {args.output_dir / 'benchmarks' / summary['bench_id'] / 'summary.json'}\n")
