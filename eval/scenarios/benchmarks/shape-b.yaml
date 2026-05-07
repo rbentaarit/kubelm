@@ -1,0 +1,44 @@
+# Shape B: 4-model Phase 3 first-cut against the kubelm scenario library.
+#
+# Spans the size spectrum the published baseline cares about:
+#   - small CPU local (kubelm's competition)
+#   - mid-size local
+#   - large local (today's "rented GPU box" recommendation, but fits on
+#     a 64 GB M1 Max at Q4)
+#   - cloud frontier reference
+#
+# This produces the headline hallucination-vs-size curve.
+#
+# Run with:
+#     uv run python -m eval.scenarios bench \
+#         --models-file eval/scenarios/benchmarks/shape-b.yaml
+#
+# Provide OPENAI_API_KEY in your shell (see .env.example).
+#
+# Wall-time on M1 Max 64 GB: roughly 45–60 minutes serial.
+# Cost: ~$0.20 in gpt-4o usage; the local models are free.
+
+- name: llama3.2-3b
+  backend_url: http://localhost:11434/v1
+  model: llama3.2:3b
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: qwen2.5-7b
+  backend_url: http://localhost:11434/v1
+  model: qwen2.5:7b
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: llama3.3-70b
+  backend_url: http://localhost:11434/v1
+  model: llama3.3:70b
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: gpt-4o
+  backend_url: https://api.openai.com/v1
+  model: gpt-4o
+  api_key_env: OPENAI_API_KEY
+  temperature: 0.0
+  max_tokens: 2048

@@ -259,6 +259,22 @@ def test_shape_a_models_file_loads() -> None:
     assert {"llama3.2-3b", "gpt-4o-mini"} <= names
 
 
+def test_shape_b_models_file_loads() -> None:
+    """Ship-time validation of the bundled Shape B (4-model) config."""
+    from eval.scenarios.bench import load_models as _load
+
+    repo_models = (
+        Path(__file__).resolve().parent.parent
+        / "eval"
+        / "scenarios"
+        / "benchmarks"
+        / "shape-b.yaml"
+    )
+    models = _load(repo_models)
+    names = {m.name for m in models}
+    assert {"llama3.2-3b", "qwen2.5-7b", "llama3.3-70b", "gpt-4o"} <= names
+
+
 def test_bench_schema_version_constant() -> None:
     assert BENCH_SCHEMA_VERSION == 1
 
