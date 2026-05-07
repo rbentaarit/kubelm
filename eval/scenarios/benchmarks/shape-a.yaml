@@ -1,0 +1,24 @@
+# Shape A: 2-model smoke against the kubelm scenario library.
+#
+# A small CPU-only Ollama model (kubelm's competition) versus a frontier
+# cloud model (the upper bound). The headline contrast: does the small
+# local model hallucinate where the cloud frontier does not?
+#
+# Run with:
+#     uv run python -m eval.scenarios bench \
+#         --models-file eval/scenarios/benchmarks/shape-a.yaml
+#
+# Provide OPENAI_API_KEY in your shell (see .env.example).
+
+- name: llama3.2-3b
+  backend_url: http://localhost:11434/v1
+  model: llama3.2:3b
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: gpt-4o-mini
+  backend_url: https://api.openai.com/v1
+  model: gpt-4o-mini
+  api_key_env: OPENAI_API_KEY
+  temperature: 0.0
+  max_tokens: 2048

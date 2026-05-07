@@ -1,40 +1,36 @@
-"""CLI: run a model against one scenario end-to-end.
+"""CLI: run a model (or several) against the kubelm scenario library.
 
-Usage:
+Subcommands:
+
+    run    -- one model x one scenario, end to end.
+    bench  -- list of models x list of scenarios, with a summary.json
+              and a per-model totals table.
+
+Both invocations bring up a fresh kind cluster per scenario (the
+determinism floor — see docs/blog/scenario-methodology.md), spawn a
+per-cluster k8sgpt MCP server, drive the model through run_trajectory,
+compute all five metrics, and tear the cluster down.
+
+Examples:
+
     uv run python -m eval.scenarios run \\
         --scenario-id pod-crashloop-001 \\
         --backend-url http://localhost:11434/v1 \\
         --model llama3.2:3b
 
-For every scenario the CLI brings up a fresh kind cluster (per-scenario
-fresh is the determinism floor), installs the composed profile, applies
-the scenario manifests, settles, spawns a per-cluster k8sgpt MCP server
-on an ephemeral port, drives the model through run_trajectory, computes
-all five metrics, writes trajectory.jsonl + results.json, and tears
-the cluster down.
-
-The run is sequential (parallelism=1) by design — Phase 3 introduces
-parallel reliability passes plus a serial latency pass per the
-parallel-vs-serial protocol in docs/blog/scenario-methodology.md.
+    uv run python -m eval.scenarios bench \\
+        --models-file eval/scenarios/benchmarks/shape-a.yaml
 """
 
 from __future__ import annotations
 
 import argparse
 import logging
-import os
 import sys
 import uuid
-from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
-from eval.client import MCPClient
-from eval.runner import (
-    DEFAULT_SYSTEM_PROMPT,
-    OpenAICompatBackend,
-    emit_results,
-    run_trajectory,
-)
 from eval.scenarios import (
     Scenario,
     compose_profile,
@@ -42,9 +38,13 @@ from eval.scenarios import (
     load_scenario,
     load_scenarios,
 )
-from eval.scenarios.cluster import k8sgpt_mcp_server
-from eval.scenarios.runner import scenario_context
-from eval.trajectory import TrajectoryRecorder
+from eval.scenarios.bench import (
+    ModelConfig,
+    format_summary_table,
+    load_models,
+    run_bench,
+    run_one_scenario,
+)
 
 DEFAULT_SCENARIOS_DIR = Path(__file__).parent / "specs"
 DEFAULT_PROFILES_DIR = Path(__file__).parent / "profiles"
@@ -57,7 +57,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     sub = p.add_subparsers(dest="command", required=True)
 
-    run = sub.add_parser("run", help="Run a model against one scenario")
+    run = sub.add_parser("run", help="Run one model against one scenario")
     target = run.add_mutually_exclusive_group(required=True)
     target.add_argument("--scenario", type=Path, help="Path to a scenario YAML.")
     target.add_argument(
@@ -66,7 +66,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     run.add_argument("--backend-url", required=True)
     run.add_argument("--model", required=True)
-    run.add_argument("--api-key", default=None, help="API key (falls back to $OPENAI_API_KEY).")
+    run.add_argument(
+        "--api-key-env",
+        default="OPENAI_API_KEY",
+        help="Env var holding the API key (default OPENAI_API_KEY; ignored if unset).",
+    )
     run.add_argument("--temperature", type=float, default=0.0)
     run.add_argument("--max-tokens", type=int, default=2048)
     run.add_argument("--max-steps", type=int, default=16)
@@ -78,6 +82,26 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     run.add_argument("--scenarios-dir", type=Path, default=DEFAULT_SCENARIOS_DIR)
     run.add_argument("--profiles-dir", type=Path, default=DEFAULT_PROFILES_DIR)
+
+    bench = sub.add_parser(
+        "bench", help="Run a list of models against (some of) the scenario library"
+    )
+    bench.add_argument("--models-file", type=Path, required=True)
+    bench.add_argument(
+        "--scenarios",
+        nargs="+",
+        default=None,
+        help="Scenario ids to include (default: all scenarios in --scenarios-dir).",
+    )
+    bench.add_argument("--max-steps", type=int, default=16)
+    bench.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("eval/results"),
+    )
+    bench.add_argument("--scenarios-dir", type=Path, default=DEFAULT_SCENARIOS_DIR)
+    bench.add_argument("--profiles-dir", type=Path, default=DEFAULT_PROFILES_DIR)
+
     return p.parse_args(argv)
 
 
@@ -90,6 +114,17 @@ def _resolve_scenario(args: argparse.Namespace) -> Scenario:
             return s
     available = ", ".join(sorted(s.id for s in library)) or "(none)"
     raise SystemExit(f"error: no scenario with id {args.scenario_id!r}; available: {available}")
+
+
+def _filter_scenarios(library: list[Scenario], ids: list[str] | None) -> list[Scenario]:
+    if ids is None:
+        return library
+    by_id = {s.id: s for s in library}
+    missing = [i for i in ids if i not in by_id]
+    if missing:
+        available = ", ".join(sorted(by_id)) or "(none)"
+        raise SystemExit(f"error: unknown scenario ids: {missing}; available: {available}")
+    return [by_id[i] for i in ids]
 
 
 def _print_summary(results: dict, output_dir: Path) -> None:
@@ -134,74 +169,68 @@ def cmd_run(args: argparse.Namespace) -> int:
     profiles = load_profiles(args.profiles_dir)
     profile = compose_profile(scenario.profile, profiles)
 
-    api_key = args.api_key or os.environ.get("OPENAI_API_KEY")
-    backend = OpenAICompatBackend(
-        base_url=args.backend_url,
+    model_cfg = ModelConfig(
+        name=args.model,
+        backend_url=args.backend_url,
         model=args.model,
-        api_key=api_key,
+        api_key_env=args.api_key_env,
         temperature=args.temperature,
         max_tokens=args.max_tokens,
     )
-
     run_id = str(uuid.uuid4())
-    started_at = datetime.now(UTC).isoformat(timespec="milliseconds")
+    results = run_one_scenario(
+        scenario=scenario,
+        profile=profile,
+        model_cfg=model_cfg,
+        run_id=run_id,
+        output_root=args.output_dir,
+        max_steps=args.max_steps,
+    )
+    output_dir = args.output_dir / run_id / scenario.id
+    _print_summary(results, output_dir)
+    return 0
 
-    with (
-        scenario_context(
-            scenario=scenario,
-            profile=profile,
-            run_id=run_id,
-            output_root=args.output_dir,
-        ) as ctx,
-        k8sgpt_mcp_server(ctx.kubeconfig_path) as mcp_url,
-    ):
-        client = MCPClient(url=mcp_url)
-        client.initialize()
-        client.list_tools()
 
-        traj_path = ctx.output_dir / "trajectory.jsonl"
-        extra_meta = {
-            "system_prompt": DEFAULT_SYSTEM_PROMPT,
-            "backend": {
-                "base_url": backend.base_url,
-                "model": backend.model,
-                "temperature": backend.temperature,
-                "max_tokens": backend.max_tokens,
-            },
-            "max_steps": args.max_steps,
-            "cluster_strategy": "fresh",
-            "parallelism": 1,
-        }
+def cmd_bench(args: argparse.Namespace) -> int:
+    models = load_models(args.models_file)
+    profiles = load_profiles(args.profiles_dir)
+    library = load_scenarios(args.scenarios_dir)
+    scenarios = _filter_scenarios(library, args.scenarios)
 
-        with TrajectoryRecorder(
-            path=traj_path,
-            run_id=run_id,
-            model=args.model,
-            scenario_id=scenario.id,
-            goal=scenario.goal,
-            extra_meta=extra_meta,
-        ) as rec:
-            run_trajectory(
-                goal=scenario.goal,
-                backend=backend,
-                tools=list(client.tools.values()),
-                call_tool=client.call_tool,
-                recorder=rec,
-                system_prompt=DEFAULT_SYSTEM_PROMPT,
-                max_steps=args.max_steps,
+    total = len(models) * len(scenarios)
+    print(f"bench: {len(models)} models x {len(scenarios)} scenarios = {total} runs")
+    for m in models:
+        print(f"  - {m.name:20s}  {m.backend_url}  ({m.model})")
+    print(f"  scenarios: {[s.id for s in scenarios]}\n")
+
+    def on_run_start(model_cfg: ModelConfig, scenario: Scenario) -> None:
+        print(f"=== {model_cfg.name} x {scenario.id} ===")
+
+    def on_run_end(rec: Any) -> None:
+        if rec.error:
+            print(f"  ERROR: {rec.error}")
+        else:
+            print(
+                f"  label={rec.termination_label}"
+                f"  schema_pass={rec.schema_passed}"
+                f"  ref={rec.reference_calls_passed}"
+                f"  rubric={rec.conclusion_rubric_passed}"
+                f"  ({rec.duration_seconds:.0f}s)"
             )
 
-        ended_at = datetime.now(UTC).isoformat(timespec="milliseconds")
-        results = emit_results(
-            trajectory_path=traj_path,
-            tools=list(client.tools.values()),
-            output_path=ctx.output_dir / "results.json",
-            started_at=started_at,
-            ended_at=ended_at,
-            scenario=scenario,
-        )
+    summary = run_bench(
+        scenarios=scenarios,
+        profiles=profiles,
+        models=models,
+        output_root=args.output_dir,
+        max_steps=args.max_steps,
+        on_run_start=on_run_start,
+        on_run_end=on_run_end,
+    )
 
-    _print_summary(results, ctx.output_dir)
+    print(f"\nbench_id: {summary['bench_id']}")
+    print(f"summary:  {args.output_dir / 'benchmarks' / summary['bench_id'] / 'summary.json'}\n")
+    print(format_summary_table(summary))
     return 0
 
 
@@ -210,6 +239,8 @@ def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     if args.command == "run":
         return cmd_run(args)
+    if args.command == "bench":
+        return cmd_bench(args)
     return 2
 
 
