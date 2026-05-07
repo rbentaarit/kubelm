@@ -3,11 +3,15 @@
 # Spans the size spectrum the published baseline cares about:
 #   - small CPU local (kubelm's competition)
 #   - mid-size local
-#   - large local (today's "rented GPU box" recommendation, but fits on
-#     a 64 GB M1 Max at Q4)
+#   - large local (mid-30s parameter range; fits comfortably on a
+#     64 GB M1 Max at Q4 alongside kind + Docker)
 #   - cloud frontier reference
 #
-# This produces the headline hallucination-vs-size curve.
+# Note: llama3.3:70b at Q4 was the original "large local" point but
+# OOM'd on a 64 GB M1 Max with the bench's kind clusters running at
+# the same time (~42 GB model + KV cache + ~5 GB Docker overhead
+# crossed the unified-memory threshold). qwen2.5:32b is the local
+# stand-in until a proper GPU-box benchmark fills in the 70B point.
 #
 # Run with:
 #     uv run python -m eval.scenarios bench \
@@ -15,7 +19,7 @@
 #
 # Provide OPENAI_API_KEY in your shell (see .env.example).
 #
-# Wall-time on M1 Max 64 GB: roughly 45–60 minutes serial.
+# Wall-time on M1 Max 64 GB: roughly 30–45 minutes serial.
 # Cost: ~$0.20 in gpt-4o usage; the local models are free.
 
 - name: llama3.2-3b
@@ -30,9 +34,9 @@
   temperature: 0.0
   max_tokens: 2048
 
-- name: llama3.3-70b
+- name: qwen2.5-32b
   backend_url: http://localhost:11434/v1
-  model: llama3.3:70b
+  model: qwen2.5:32b
   temperature: 0.0
   max_tokens: 2048
 

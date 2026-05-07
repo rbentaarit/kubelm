@@ -272,7 +272,7 @@ def test_shape_b_models_file_loads() -> None:
     )
     models = _load(repo_models)
     names = {m.name for m in models}
-    assert {"llama3.2-3b", "qwen2.5-7b", "llama3.3-70b", "gpt-4o"} <= names
+    assert {"llama3.2-3b", "qwen2.5-7b", "qwen2.5-32b", "gpt-4o"} <= names
 
 
 def test_bench_schema_version_constant() -> None:
