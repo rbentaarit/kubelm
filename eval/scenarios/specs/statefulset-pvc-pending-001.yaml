@@ -1,0 +1,106 @@
+id: statefulset-pvc-pending-001
+profile: base
+description: |
+  A StatefulSet with a `volumeClaimTemplate` that references a
+  StorageClass (`nonexistent-fast-ssd`) that doesn't exist in the
+  cluster. The StatefulSet controller creates the first pod (db-0)
+  and its accompanying PVC; the PVC stays Pending because no
+  StorageClass can satisfy it; db-0 stays Pending because its
+  PVC isn't bound. Subsequent replicas never get created
+  (StatefulSets create pods one at a time, in order).
+
+  First StatefulSet scenario in the library. Tests reasoning about
+  ordered StatefulSet pod creation and the dependency chain
+  StatefulSet → PVC (from template) → StorageClass. Distinct from
+  pvc-unbound-001 (a standalone PVC) and from pod-pvc-not-found-001
+  (a Pod referencing a PVC that doesn't exist). Here the PVC is
+  *created automatically* from the StatefulSet's template — the
+  model has to navigate StatefulSet → its PVC → its StorageClass
+  reference to reach the root cause.
+
+goal: "Why is the db StatefulSet in scenario-statefulset-pvc-pending-001 not creating any Pods past db-0?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-statefulset-pvc-pending-001
+      ---
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: db
+        namespace: scenario-statefulset-pvc-pending-001
+      spec:
+        serviceName: db
+        replicas: 3
+        selector:
+          matchLabels: { app: db }
+        template:
+          metadata:
+            labels: { app: db }
+          spec:
+            containers:
+              - name: app
+                image: nginx:1.27-alpine
+                volumeMounts:
+                  - name: data
+                    mountPath: /var/data
+        volumeClaimTemplates:
+          - metadata:
+              name: data
+            spec:
+              accessModes: [ReadWriteOnce]
+              storageClassName: nonexistent-fast-ssd
+              resources:
+                requests:
+                  storage: 1Gi
+
+settle:
+  # Wait for db-0 to reach phase=Pending — it will stick there
+  # because its auto-generated PVC can't bind. The "FailedScheduling"
+  # / "unbound immediate PersistentVolumeClaims" event lands on the
+  # pod within seconds of creation. 90s is comfortable margin.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-statefulset-pvc-pending-001
+      name: db-0
+      phase: Pending
+      timeout: 90s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: {} }
+      - { name: get-resource, args_match: { resourceType: statefulset, name: db } }
+      # K8sGPT MCP accepts both singular and plural resourceType.
+      - { name: list-resources, args_match: { resourceType: statefulset } }
+      - { name: list-resources, args_match: { resourceType: statefulsets } }
+      - { name: list-resources, args_match: { resourceType: persistentvolumeclaim } }
+      - { name: list-resources, args_match: { resourceType: persistentvolumeclaims } }
+      - { name: list-resources, args_match: { resourceType: pod } }
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: get-resource, args_match: { resourceType: pod, name: db-0 } }
+      - { name: list-events, args_match: {} }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must name PVC or StorageClass — the chain element
+    # blocking progress. Generic "storage" is allowed as a synonym
+    # since K8sGPT may report it that way.
+    # Slot 2: must surface either the specific missing StorageClass
+    # or the unbound/pending nature of the PVC. Either is
+    # tool-derivable (analyze on PVC, or get-resource on the
+    # StatefulSet's volumeClaimTemplate).
+    must_mention:
+      - ["PVC", "PersistentVolumeClaim", "persistentvolumeclaim", "StorageClass", "storageClass", "storage class", "storage"]
+      - ["nonexistent-fast-ssd", "not found", "doesn't exist", "does not exist", "unbound", "Pending", "no StorageClass"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies that db-0 stays Pending because its auto-created
+      PVC (from the StatefulSet's volumeClaimTemplate) requests
+      StorageClass `nonexistent-fast-ssd`, which doesn't exist in
+      the cluster, so the PVC never binds. StatefulSets create
+      pods serially, so db-1 and db-2 are never attempted. The fix
+      is to use an existing StorageClass.
