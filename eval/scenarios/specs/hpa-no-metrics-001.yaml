@@ -1,0 +1,110 @@
+id: hpa-no-metrics-001
+profile: base
+description: |
+  A HorizontalPodAutoscaler targets a Deployment but the kind
+  cluster (base profile) doesn't have metrics-server installed.
+  The HPA controller cannot fetch CPU metrics and the HPA's
+  `ScalingActive` condition reports False with reason
+  `FailedGetResourceMetric`. The Deployment runs at its initial
+  replica count; the HPA never scales it.
+
+  Tests autoscaling-controller reasoning that no other v0.1
+  scenario covers. The Pods themselves are fine; the failure is
+  in the HPA object's status conditions. A model that only
+  inspects pods/services finds nothing wrong and has to navigate
+  to the HPA itself to see why it can't scale. Pairs with
+  deployment-rollout-stuck and cronjob-suspended as the third
+  controller-state failure mode in the library.
+
+goal: "Why isn't the web HPA in scenario-hpa-no-metrics-001 scaling its Deployment?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-hpa-no-metrics-001
+      ---
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: web
+        namespace: scenario-hpa-no-metrics-001
+      spec:
+        replicas: 1
+        selector:
+          matchLabels: { app: web }
+        template:
+          metadata:
+            labels: { app: web }
+          spec:
+            containers:
+              - name: app
+                image: nginx:1.27-alpine
+                resources:
+                  requests:
+                    cpu: 100m
+      ---
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: web
+        namespace: scenario-hpa-no-metrics-001
+      spec:
+        scaleTargetRef:
+          apiVersion: apps/v1
+          kind: Deployment
+          name: web
+        minReplicas: 1
+        maxReplicas: 5
+        metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 50
+
+settle:
+  # Give the HPA controller time to attempt at least one metric
+  # fetch and record the failure in status.conditions. 60s is
+  # enough for the controller's sync loop to run multiple times.
+  - wait_for_status:
+      kind: Deployment
+      namespace: scenario-hpa-no-metrics-001
+      name: web
+      condition: Available
+      timeout: 60s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: {} }
+      - { name: get-resource, args_match: { resourceType: horizontalpodautoscaler, name: web } }
+      - { name: get-resource, args_match: { resourceType: hpa, name: web } }
+      - { name: list-resources, args_match: { resourceType: horizontalpodautoscalers } }
+      - { name: list-resources, args_match: { resourceType: horizontalpodautoscaler } }
+      - { name: list-resources, args_match: { resourceType: hpa } }
+      - { name: list-events, args_match: {} }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface "metrics" / "metrics-server" / "metric
+    # API" — the missing component. Catches models that drift to
+    # "HPA misconfigured" or "Deployment is fine" answers.
+    # Slot 2: must surface either the controller-level failure
+    # signal (FailedGetResourceMetric / unable to fetch /
+    # ScalingActive=False) or the fact that metrics-server is
+    # missing/not installed. Both are derivable from K8sGPT
+    # analyze and from HPA status.
+    must_mention:
+      - ["metrics-server", "metrics server", "metrics", "metric API", "metric api"]
+      - ["FailedGetResourceMetric", "unable to fetch", "no metrics", "missing", "not installed", "not available", "not running", "ScalingActive", "cannot fetch"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies that the HPA can't scale because metrics-server
+      is not installed in the cluster — the HPA controller's
+      attempts to fetch CPU utilization fail (FailedGetResourceMetric
+      in status conditions) and ScalingActive is False. The fix
+      is to install metrics-server (e.g., `kubectl apply -f
+      https://github.com/.../metrics-server.../components.yaml`).
