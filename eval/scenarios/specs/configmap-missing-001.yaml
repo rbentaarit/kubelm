@@ -1,0 +1,75 @@
+id: configmap-missing-001
+profile: base
+description: |
+  A Pod whose container takes an environment variable from a ConfigMap
+  that doesn't exist. kubelet refuses to start the container and the
+  Pod stays in `CreateContainerConfigError`. The investigation should
+  identify the missing ConfigMap by name and explain that the env-var
+  reference can't be resolved.
+
+  Mirror of `secret-missing-001` but for ConfigMaps. The two failure
+  modes look identical at the Pod-status layer ("config error") but
+  the missing resource type is different — tests that the model reads
+  the actual reference, not just "something is missing."
+
+goal: "Why won't api-pod in scenario-configmap-missing-001 start?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-configmap-missing-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: api-pod
+        namespace: scenario-configmap-missing-001
+        labels: { app: api }
+      spec:
+        restartPolicy: Always
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+            env:
+              - name: APP_CONFIG
+                valueFrom:
+                  configMapKeyRef:
+                    name: app-settings
+                    key: greeting
+
+settle:
+  # Wait for the container to surface CreateContainerConfigError —
+  # the deterministic signal that kubelet refused to start it
+  # because the referenced ConfigMap doesn't exist. Pod phase is
+  # Pending throughout; waiting on phase would settle too early
+  # (kubelet hasn't tried to start the container yet).
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-configmap-missing-001
+      name: api-pod
+      reason: CreateContainerConfigError
+      timeout: 120s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-configmap-missing-001 } }
+      - { name: get-resource, args_match: { resourceType: pod, name: api-pod, namespace: scenario-configmap-missing-001 } }
+      - { name: list-events, args_match: { namespace: scenario-configmap-missing-001 } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must identify it's a ConfigMap (not Secret, not Pod).
+    # Slot 2: must name the specific missing ConfigMap. K8sGPT's pod
+    # analyzer and the resulting events both surface "configmap
+    # app-settings not found", so this name is in tool output.
+    must_mention:
+      - ["configmap", "ConfigMap", "config map"]
+      - ["app-settings", "not found", "missing", "doesn't exist", "does not exist"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies the missing ConfigMap `app-settings` referenced by
+      the Pod's env (`APP_CONFIG`) and explains that the container
+      cannot start until the ConfigMap exists.
