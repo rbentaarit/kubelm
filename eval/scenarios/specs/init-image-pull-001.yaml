@@ -1,0 +1,83 @@
+id: init-image-pull-001
+profile: base
+description: |
+  A Pod whose init container references a nonexistent image
+  (`busybox:nonexistent-tag-zzz`). The main container can't run
+  until the init container completes, and the init container
+  can't even start because the image pull fails. The Pod hits
+  `Init:ImagePullBackOff` and stays Pending forever.
+
+  Combines two failure shapes that exist separately in the
+  library: init-container-failing-001 (init exits 1) and
+  image-pull-001 (main container's image not found). A model
+  that only knows one failure pattern can mis-diagnose: an
+  "init container failed" reflex misses the image-pull cause;
+  an "image pull" reflex misses the init-container distinction
+  (so the model says "the container can't start" without
+  realizing the broken container is the init one, blocking the
+  main container that's otherwise fine).
+
+goal: "Why is api-pod in scenario-init-image-pull-001 stuck in Init?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-init-image-pull-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: api-pod
+        namespace: scenario-init-image-pull-001
+        labels: { app: api }
+      spec:
+        restartPolicy: Always
+        initContainers:
+          - name: bootstrap
+            image: busybox:nonexistent-tag-zzz
+            command: ["sh", "-c", "echo starting; sleep 1"]
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+
+settle:
+  # Wait for the init container to hit ImagePullBackOff. Same
+  # pattern as init-container-failing-001: settling on phase
+  # alone is too early. The image-pull retry backoff takes
+  # ~30-40s to surface; 120s is comfortable margin.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-init-image-pull-001
+      name: api-pod
+      reason: ImagePullBackOff
+      timeout: 120s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: {} }
+      - { name: get-resource, args_match: { resourceType: pod, name: api-pod } }
+      - { name: list-resources, args_match: { resourceType: pod } }
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-events, args_match: {} }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must identify init container specifically — proves
+    # the model distinguished init from main container.
+    # Slot 2: must surface the image-pull failure shape — the
+    # bad image name, ImagePullBackOff/ErrImagePull, or the pull
+    # mechanism. Both slots together rule out "main container
+    # crashed" or "init script failed" mis-diagnoses.
+    must_mention:
+      - ["init container", "initContainer", "init-container", "bootstrap", "init:"]
+      - ["ImagePullBackOff", "ErrImagePull", "image", "nonexistent-tag-zzz", "pull"]
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes that the Pod is stuck because the init container
+      `bootstrap` cannot pull its image
+      (`busybox:nonexistent-tag-zzz`); the main container is
+      blocked because init containers must complete first. The
+      fix is to correct the init container's image tag.
