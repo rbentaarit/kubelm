@@ -1,0 +1,85 @@
+id: liveness-probe-failing-001
+profile: base
+description: |
+  A Pod whose container starts and runs nginx normally, but whose
+  liveness probe targets a path nginx doesn't serve (`/healthz`).
+  nginx returns 404, the probe records "Liveness probe failed",
+  kubelet kills and restarts the container. Restarts pile up; the
+  Pod hits `CrashLoopBackOff` driven by failing probes rather than
+  by a non-zero exit from the application.
+
+  Tests a reasoning path no other v0.1 scenario covers cleanly.
+  pod-crashloop-001 looks similar at the surface (restarting,
+  CrashLoopBackOff) but its container actually exits 1. Here the
+  container exits 0 from a SIGTERM kubelet sends after probe
+  failure — the restart cause is the probe, not the app. A model
+  that only reads logs ("no error output") may miss this; the
+  probe failure is in events / pod status, not in app logs.
+
+goal: "Why does healthcheck-pod in scenario-liveness-probe-failing-001 keep restarting?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-liveness-probe-failing-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: healthcheck-pod
+        namespace: scenario-liveness-probe-failing-001
+        labels: { app: healthcheck }
+      spec:
+        restartPolicy: Always
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+            ports:
+              - containerPort: 80
+            livenessProbe:
+              httpGet:
+                path: /healthz
+                port: 80
+              initialDelaySeconds: 1
+              periodSeconds: 2
+              failureThreshold: 2
+              successThreshold: 1
+
+settle:
+  # Wait for the container to surface CrashLoopBackOff driven by
+  # the failing probe. Same pattern as init-container-failing-001:
+  # phase alone settles too early. The probe needs to fail enough
+  # times for kubelet to restart and back off.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-liveness-probe-failing-001
+      name: healthcheck-pod
+      reason: CrashLoopBackOff
+      timeout: 120s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-liveness-probe-failing-001 } }
+      - { name: get-resource, args_match: { resourceType: pod, name: healthcheck-pod, namespace: scenario-liveness-probe-failing-001 } }
+      - { name: list-events, args_match: { namespace: scenario-liveness-probe-failing-001 } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface "liveness" or "probe" — distinguishes
+    # this from app-exit-driven crashloops.
+    # Slot 2: must surface the probe-failure shape (404 / /healthz /
+    # unhealthy / liveness probe failed). All derivable from
+    # events. NOT requiring CrashLoopBackOff because the goal
+    # already says "keep restarting" — that part is parrotable.
+    must_mention:
+      - ["liveness probe", "livenessProbe", "liveness"]
+      - ["404", "/healthz", "unhealthy", "probe failed", "non-2xx", "statuscode"]
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes that kubelet is restarting the container because
+      the liveness probe (HTTP GET /healthz) returns 404 — nginx's
+      default config doesn't serve that path. Distinct from
+      pod-crashloop, where the application itself exits non-zero.
