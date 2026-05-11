@@ -1,0 +1,92 @@
+id: taint-no-toleration-001
+profile: base
+description: |
+  A Pod is forced onto the kind control-plane node (via nodeSelector)
+  but carries no toleration for that node's
+  `node-role.kubernetes.io/control-plane:NoSchedule` taint. The
+  scheduler emits `FailedScheduling` with a message naming the
+  untolerated taint; the Pod stays Pending forever. The investigation
+  should identify the taint as the reason and explain that the Pod
+  needs a matching toleration.
+
+  Tests a reasoning path the existing node-selector-unschedulable
+  scenario doesn't cover. nodeSelector failures surface "didn't match
+  Pod's node affinity/selector" in events; taint failures surface
+  "had untolerated taint". The diagnostic vocabulary and the fix
+  (add toleration vs. fix selector) are different.
+
+goal: "Why is workload-pod in scenario-taint-no-toleration-001 stuck Pending?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-taint-no-toleration-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: workload-pod
+        namespace: scenario-taint-no-toleration-001
+        labels: { app: workload }
+      spec:
+        # Force onto the control-plane node, which carries the
+        # node-role.kubernetes.io/control-plane:NoSchedule taint by
+        # default in kind. Without a matching toleration, the
+        # scheduler refuses.
+        nodeSelector:
+          node-role.kubernetes.io/control-plane: ""
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+
+settle:
+  # Pod phase is Pending throughout; what changes is the events
+  # stream + status.conditions. There is no built-in wait for
+  # FailedScheduling, but by the time the bench's first MCP call
+  # lands the scheduler has already tried at least once and the
+  # event is visible. 60s phase=Pending is a low-overhead
+  # confirmation that the Pod object exists.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-taint-no-toleration-001
+      name: workload-pod
+      phase: Pending
+      timeout: 60s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-taint-no-toleration-001 } }
+      - { name: get-resource, args_match: { resourceType: pod, name: workload-pod, namespace: scenario-taint-no-toleration-001 } }
+      - { name: list-events, args_match: { namespace: scenario-taint-no-toleration-001 } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface "taint" as the mechanism — distinguishes
+    # this from node-selector / affinity failures.
+    # Slot 2: must name a specific taint identifier from the event
+    # stream. The scheduler's FailedScheduling message typically
+    # lists ALL untolerated taints on the node — usually
+    # `control-plane:NoSchedule` once the node is Ready, or
+    # `node.kubernetes.io/not-ready` if the node is still warming
+    # up at the time the scheduler last tried. Either is a concrete
+    # taint name pulled from tool output; both prove the model
+    # didn't just parrot "taint" without evidence.
+    must_mention:
+      - ["taint", "untolerated", "toleration"]
+      - [
+          "control-plane",
+          "NoSchedule",
+          "node-role.kubernetes.io/control-plane",
+          "not-ready",
+          "node.kubernetes.io/not-ready",
+        ]
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes that the Pod cannot be scheduled because the only
+      candidate node (the control-plane) carries the
+      `node-role.kubernetes.io/control-plane:NoSchedule` taint and
+      the Pod has no matching toleration. The fix is to add a
+      toleration (or remove the nodeSelector forcing this node).
