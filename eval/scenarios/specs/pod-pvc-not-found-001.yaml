@@ -1,0 +1,87 @@
+id: pod-pvc-not-found-001
+profile: base
+description: |
+  A Pod whose `volumes` list references a PersistentVolumeClaim
+  (`data-volume`) that doesn't exist in the namespace. kubelet
+  cannot mount the missing PVC and the Pod stays Pending with the
+  `FailedMount` event reason. The investigation should identify the
+  missing PVC by name and explain that the Pod can't start until
+  the PVC exists (or until the Pod's volume reference is removed).
+
+  Distinct from `pvc-unbound-001`. That scenario tests a PVC that
+  is itself stuck because its StorageClass doesn't exist (PVC
+  exists, Pending). This scenario tests a Pod referencing a PVC
+  that doesn't exist at all (no PVC object, Pod is Pending). The
+  investigation paths differ: pvc-unbound debugs through PVC
+  status; this scenario debugs through the Pod's events list.
+
+goal: "Why is db-pod in scenario-pod-pvc-not-found-001 stuck Pending?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-pod-pvc-not-found-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: db-pod
+        namespace: scenario-pod-pvc-not-found-001
+        labels: { app: db }
+      spec:
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+            volumeMounts:
+              - name: data
+                mountPath: /var/data
+        volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: data-volume   # no PVC of this name exists
+
+settle:
+  # Pod stays Pending; events stream surfaces FailedMount /
+  # "persistentvolumeclaim ... not found". 60s phase=Pending plus
+  # the time the bench takes to bring up MCP gives the kubelet
+  # enough cycles to log the failure into events.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-pod-pvc-not-found-001
+      name: db-pod
+      phase: Pending
+      timeout: 60s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      # The args_match here deliberately omits `namespace`. Some
+      # models call list-events / get-resource with namespace="",
+      # which the MCP server treats as a wildcard and still surfaces
+      # the right pod (the cluster only has one). The reference is
+      # "did the model call a tool that returns this scenario's
+      # signal", not "did it format the args identically to my
+      # spec". The resource-type/name filters are kept where they
+      # narrow to pod-relevant investigation paths.
+      - { name: analyze, args_match: {} }
+      - { name: get-resource, args_match: { resourceType: pod, name: db-pod } }
+      - { name: list-events, args_match: { involvedObjectName: db-pod } }
+      - { name: list-resources, args_match: { resourceType: pods } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface the PVC concept — pvc, PersistentVolumeClaim,
+    # or claim. Generic "volume" alone is too loose.
+    # Slot 2: must name the specific missing claim. K8sGPT analyze
+    # and the pod events both surface `data-volume` and "not found".
+    must_mention:
+      - ["persistentvolumeclaim", "PersistentVolumeClaim", "PVC", "pvc", "claim"]
+      - ["data-volume", "not found", "doesn't exist", "does not exist", "missing"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies that the Pod references a PVC named `data-volume`
+      that doesn't exist in the namespace and explains that the
+      Pod can't start until the PVC is created (or the volume
+      reference is removed).
