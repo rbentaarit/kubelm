@@ -1,0 +1,124 @@
+id: pod-anti-affinity-001
+profile: base
+description: |
+  Two Deployments (`api-a`, `api-b`) both target the only kind node
+  with a hard pod anti-affinity rule that forbids running alongside
+  any Pod labeled `tier=api`. The first Pod schedules fine; the
+  second Pod can never schedule because the only node is now
+  "occupied" by a tier=api pod and the anti-affinity rule blocks
+  placement. Scheduler emits FailedScheduling with
+  "didn't satisfy pod anti-affinity rules" on the second Pod.
+
+  Tests a scheduling failure no other v0.1 scenario covers.
+  node-selector matches no node by label, taint is a node-level
+  rejection, insufficient-cpu is a capacity miss; anti-affinity
+  is a Pod-vs-Pod constraint that's satisfiable in isolation but
+  unsatisfiable in combination. The model has to reason about
+  pod relationships rather than pod-vs-node fit.
+
+goal: "Why is one of the api-* Pods in scenario-pod-anti-affinity-001 stuck Pending?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-pod-anti-affinity-001
+      ---
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: api-a
+        namespace: scenario-pod-anti-affinity-001
+      spec:
+        replicas: 1
+        selector:
+          matchLabels: { app: api-a, tier: api }
+        template:
+          metadata:
+            labels: { app: api-a, tier: api }
+          spec:
+            affinity:
+              podAntiAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  - labelSelector:
+                      matchExpressions:
+                        - key: tier
+                          operator: In
+                          values: [api]
+                    topologyKey: kubernetes.io/hostname
+            containers:
+              - name: app
+                image: nginx:1.27-alpine
+      ---
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: api-b
+        namespace: scenario-pod-anti-affinity-001
+      spec:
+        replicas: 1
+        selector:
+          matchLabels: { app: api-b, tier: api }
+        template:
+          metadata:
+            labels: { app: api-b, tier: api }
+          spec:
+            affinity:
+              podAntiAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  - labelSelector:
+                      matchExpressions:
+                        - key: tier
+                          operator: In
+                          values: [api]
+                    topologyKey: kubernetes.io/hostname
+            containers:
+              - name: app
+                image: nginx:1.27-alpine
+
+settle:
+  # Wait for api-a Deployment to reach Available — that's the
+  # signal that the scheduler has placed one Pod, made the second
+  # one unschedulable, and recorded the FailedScheduling event.
+  # If the scheduler picks api-b first instead, api-a never
+  # becomes Available and this wait times out — the bench proceeds
+  # anyway and the model still finds a Pending Pod to diagnose.
+  - wait_for_status:
+      kind: Deployment
+      namespace: scenario-pod-anti-affinity-001
+      name: api-a
+      condition: Available
+      timeout: 60s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: {} }
+      - { name: get-resource, args_match: { resourceType: deployment, name: api-a } }
+      - { name: get-resource, args_match: { resourceType: deployment, name: api-b } }
+      - { name: list-resources, args_match: { resourceType: deployment } }
+      - { name: list-resources, args_match: { resourceType: deployments } }
+      - { name: list-resources, args_match: { resourceType: pod } }
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-events, args_match: {} }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface anti-affinity / affinity. Catches models
+    # that lazily blame "node capacity" without reading the spec.
+    # Slot 2: must surface the topology / hostname / pod-vs-pod
+    # nature of the constraint — proves the model parsed the rule
+    # itself, not just noticed FailedScheduling.
+    must_mention:
+      - ["anti-affinity", "antiAffinity", "anti affinity", "podAntiAffinity"]
+      - ["hostname", "topology", "tier=api", "tier: api", "same node", "co-locate", "co-located", "topologyKey", "node", "Pod"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies that the two Deployments have mutually exclusive
+      podAntiAffinity rules (both forbid co-location with any
+      tier=api pod on the same hostname). The kind cluster has
+      only one node, so only one of the two can be scheduled; the
+      second is permanently Pending. The fix is to relax the
+      anti-affinity (preferred instead of required, or different
+      topologyKey) or scale the cluster.
