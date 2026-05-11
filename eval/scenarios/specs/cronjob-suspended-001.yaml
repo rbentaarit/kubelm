@@ -1,0 +1,77 @@
+id: cronjob-suspended-001
+profile: base
+description: |
+  A CronJob configured with `suspend: true`. The schedule is valid
+  and the namespace is otherwise empty, but the CronJob controller
+  silently skips every scheduled tick — no Job is ever created, no
+  Pod ever appears. The cluster looks "fine" from a Pod-level view;
+  the failure is only visible by reading the CronJob spec.
+
+  First CronJob scenario in the library. Tests a controller-level
+  failure that surfaces only in the CronJob object itself. A model
+  that limits its investigation to Pods or Events finds an empty
+  namespace and has to pivot to inspecting the CronJob spec to see
+  `suspend: true`.
+
+  A pure `bad-schedule` scenario was authored first but admission
+  validation rejects malformed schedules at apply time, so the
+  cluster setup itself fails. Suspended is the clean equivalent:
+  same testing intent (read the spec, not the pods), no
+  admission-layer obstacles.
+
+goal: "Why isn't the backup CronJob in scenario-cronjob-suspended-001 running?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-cronjob-suspended-001
+      ---
+      apiVersion: batch/v1
+      kind: CronJob
+      metadata:
+        name: backup
+        namespace: scenario-cronjob-suspended-001
+      spec:
+        schedule: "* * * * *"   # would fire every minute if not suspended
+        suspend: true
+        jobTemplate:
+          spec:
+            template:
+              spec:
+                restartPolicy: OnFailure
+                containers:
+                  - name: app
+                    image: busybox:1.36
+                    command: ["sh", "-c", "echo backing up; exit 0"]
+
+settle: []   # CronJob applies cleanly; the "failure" is the
+             # spec field. No status condition to wait for.
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: {} }
+      - { name: get-resource, args_match: { resourceType: cronjob, name: backup } }
+      - { name: list-resources, args_match: { resourceType: cronjob } }
+      - { name: list-resources, args_match: { resourceType: cronjobs } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface "suspend" — the specific spec field that
+    # explains the silence. Catches models that drift to vague
+    # "schedule problem" / "controller issue" answers.
+    # Slot 2: must surface either the boolean state ("true") or
+    # one of the obvious fix verbs. Together with slot 1 this
+    # forces the model to actually identify the field AND
+    # acknowledge its value.
+    must_mention:
+      - ["suspend", "Suspended", "suspended"]
+      - ["true", "set to true", "resume", "unsuspend", "false", "disable suspension"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies that the CronJob has `suspend: true` set, which is
+      why the controller skips every scheduled tick and no Job is
+      ever created. The fix is to set `suspend: false` (or remove
+      the field, which defaults to false).
