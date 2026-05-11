@@ -92,6 +92,7 @@ ipython_config.py
 # Virtual environments
 # ----------------------------------------------------------------------------
 .env
+.envrc
 .venv
 env/
 venv/
