@@ -1,0 +1,92 @@
+id: readiness-probe-failing-001
+profile: base
+description: |
+  A Pod whose container starts and listens on port 80 (nginx default)
+  but whose readiness probe targets a path nginx doesn't serve
+  (`/healthz`). nginx returns 404 for that path, kubelet marks the
+  Pod NotReady, and the matching Service therefore has no endpoints.
+  The investigation should observe the failing readiness probe and
+  explain that the probed HTTP path returns a non-2xx status.
+
+  Tests a reasoning path no other v0.1 scenario covers: the Pod is
+  Running (no exit, no restart) but its Service is unusable. Models
+  that key only on "is the pod up?" miss this — they have to inspect
+  the Ready condition or the probe events.
+
+goal: "Why isn't healthcheck-pod in scenario-readiness-probe-failing-001 becoming Ready?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-readiness-probe-failing-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: healthcheck-pod
+        namespace: scenario-readiness-probe-failing-001
+        labels: { app: healthcheck }
+      spec:
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+            ports:
+              - containerPort: 80
+            readinessProbe:
+              httpGet:
+                path: /healthz
+                port: 80
+              initialDelaySeconds: 1
+              periodSeconds: 2
+              failureThreshold: 2
+              successThreshold: 1
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: healthcheck-svc
+        namespace: scenario-readiness-probe-failing-001
+      spec:
+        selector: { app: healthcheck }
+        ports: [{ port: 80, targetPort: 80 }]
+
+settle:
+  # Wait for the Pod to reach Running so kubelet has started probing.
+  # We do NOT wait for Ready=True (it never will be in this scenario)
+  # or for an event with reason=Unhealthy (wait_for_status doesn't
+  # match events). 60s is enough margin for image pull + start on a
+  # cold kind cluster; the probe will have already failed several
+  # times by the time the bench's first MCP call lands.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-readiness-probe-failing-001
+      name: healthcheck-pod
+      phase: Running
+      timeout: 90s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-readiness-probe-failing-001 } }
+      - { name: get-resource, args_match: { resourceType: pod, name: healthcheck-pod, namespace: scenario-readiness-probe-failing-001 } }
+      - { name: list-events, args_match: { namespace: scenario-readiness-probe-failing-001 } }
+    forbidden: []
+  conclusion_rubric:
+    # Two slots — mechanism + cause indicator. We deliberately do NOT
+    # require "not Ready" because the goal already states it; that
+    # would be parrotable. The model has to attribute the not-Ready
+    # state to the failing readiness probe and surface either the HTTP
+    # status (404 / non-2xx) or the probed path (/healthz) it could
+    # only have learned from a tool result.
+    must_mention:
+      - ["readiness probe", "readinessProbe", "readiness"]
+      - ["404", "/healthz", "non-2xx", "non-200", "HTTP probe failed", "statuscode"]
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes that the readiness probe is failing because the
+      probed HTTP path (/healthz) returns a non-2xx status — nginx's
+      default config doesn't serve that path — and concludes that
+      this is why the pod is not Ready.
