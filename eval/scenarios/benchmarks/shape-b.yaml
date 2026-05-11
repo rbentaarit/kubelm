@@ -1,11 +1,14 @@
-# Shape B: 4-model Phase 3 first-cut against the kubelm scenario library.
+# Shape B: 5-model Phase 3 first-cut against the kubelm scenario library.
 #
 # Spans the size spectrum the published baseline cares about:
 #   - small CPU local (kubelm's competition)
 #   - mid-size local
 #   - large local (mid-30s parameter range; fits comfortably on a
 #     64 GB M1 Max at Q4 alongside kind + Docker)
-#   - cloud frontier reference
+#   - cloud frontier — gpt-4o for continuity with the prior baseline
+#     plus gpt-5.4 (latest OpenAI model that supports temperature=0;
+#     gpt-5.5 forces temperature=1 and breaks the determinism the rest
+#     of the bench relies on)
 #
 # Note: llama3.3:70b at Q4 was the original "large local" point but
 # OOM'd on a 64 GB M1 Max with the bench's kind clusters running at
@@ -19,8 +22,9 @@
 #
 # Provide OPENAI_API_KEY in your shell (see .env.example).
 #
-# Wall-time on M1 Max 64 GB: roughly 30–45 minutes serial.
-# Cost: ~$0.20 in gpt-4o usage; the local models are free.
+# Wall-time on M1 Max 64 GB: roughly 35–45 minutes serial.
+# Cost: ~$0.30–$0.60 in OpenAI usage across gpt-4o and gpt-5.4;
+# the local models are free.
 
 - name: llama3.2-3b
   backend_url: http://localhost:11434/v1
@@ -43,6 +47,13 @@
 - name: gpt-4o
   backend_url: https://api.openai.com/v1
   model: gpt-4o
+  api_key_env: OPENAI_API_KEY
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: gpt-5.4
+  backend_url: https://api.openai.com/v1
+  model: gpt-5.4
   api_key_env: OPENAI_API_KEY
   temperature: 0.0
   max_tokens: 2048
