@@ -33,6 +33,17 @@ from eval.trajectory import ToolCall
 log = logging.getLogger(__name__)
 
 
+def _uses_max_completion_tokens(model: str) -> bool:
+    """OpenAI's gpt-5 family and o1/o3 reasoning models reject `max_tokens`.
+
+    They require `max_completion_tokens` instead. Local backends (Ollama,
+    llama.cpp) and older OpenAI models still want `max_tokens`. Detection
+    is by model name since that matches the actual API constraint.
+    """
+    name = model.lower()
+    return name.startswith("gpt-5") or name.startswith("o1") or name.startswith("o3")
+
+
 def _tool_to_openai(tool: Tool) -> dict[str, Any]:
     parameters = tool.input_schema or {"type": "object", "properties": {}}
     return {
@@ -64,8 +75,11 @@ class OpenAICompatBackend:
             "model": self.model,
             "messages": messages,
             "temperature": self.temperature,
-            "max_tokens": self.max_tokens,
         }
+        if _uses_max_completion_tokens(self.model):
+            payload["max_completion_tokens"] = self.max_tokens
+        else:
+            payload["max_tokens"] = self.max_tokens
         if tools:
             payload["tools"] = [_tool_to_openai(t) for t in tools]
             payload["tool_choice"] = "auto"

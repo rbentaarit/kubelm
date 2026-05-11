@@ -166,4 +166,30 @@ def test_payload_includes_temperature_and_max_tokens() -> None:
     payload = session.calls[0]["json"]
     assert payload["temperature"] == 0.7
     assert payload["max_tokens"] == 512
+    assert "max_completion_tokens" not in payload
     assert payload["model"] == "test-model"
+
+
+@pytest.mark.parametrize(
+    "model",
+    ["gpt-5", "gpt-5.1", "gpt-5.4", "gpt-5.4-mini", "GPT-5.5", "o1", "o1-mini", "o3", "o3-pro"],
+)
+def test_gpt5_and_reasoning_models_use_max_completion_tokens(model: str) -> None:
+    session = _FakeSession(_resp_text("ok"))
+    OpenAICompatBackend(
+        base_url="https://api.openai.com/v1", model=model, http=session, max_tokens=2048
+    ).chat([], [])
+    payload = session.calls[0]["json"]
+    assert payload["max_completion_tokens"] == 2048
+    assert "max_tokens" not in payload
+
+
+@pytest.mark.parametrize("model", ["gpt-4o", "gpt-4.1", "gpt-3.5-turbo", "qwen2.5:7b", "llama3.2"])
+def test_legacy_models_use_max_tokens(model: str) -> None:
+    session = _FakeSession(_resp_text("ok"))
+    OpenAICompatBackend(
+        base_url="https://api.openai.com/v1", model=model, http=session, max_tokens=2048
+    ).chat([], [])
+    payload = session.calls[0]["json"]
+    assert payload["max_tokens"] == 2048
+    assert "max_completion_tokens" not in payload
