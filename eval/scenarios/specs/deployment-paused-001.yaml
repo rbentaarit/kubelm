@@ -1,0 +1,83 @@
+id: deployment-paused-001
+profile: base
+description: |
+  A Deployment is configured with `spec.paused: true`. The initial
+  rollout completes (Pods come up, Service is reachable), but any
+  subsequent template change is queued and never reconciled — the
+  Deployment controller honors `paused` by skipping its reconcile
+  loop entirely. From outside, the Deployment looks "fine" (1/1
+  available) but is silently frozen.
+
+  This scenario applies the Deployment in a paused state with an
+  obviously-broken image tag in the template. The initial state
+  shows Available=False because the new image can't be pulled,
+  AND the Progressing condition stays at "DeploymentPaused"
+  rather than the usual ProgressDeadlineExceeded.
+
+  Tests reasoning about a Deployment that's been intentionally
+  frozen — a real-world failure mode where rollouts mysteriously
+  "do nothing". Distinct from deployment-rollout-stuck-001 (bad
+  image, but unpaused) and from cronjob-suspended-001 (suspend
+  field on a CronJob).
+
+goal: "Why isn't the api Deployment in scenario-deployment-paused-001 progressing?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-deployment-paused-001
+      ---
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: api
+        namespace: scenario-deployment-paused-001
+      spec:
+        paused: true
+        replicas: 1
+        selector:
+          matchLabels: { app: api }
+        template:
+          metadata:
+            labels: { app: api }
+          spec:
+            containers:
+              - name: app
+                image: nginx:nonexistent-tag-zzz
+
+settle: []
+  # Paused Deployment never reconciles, so no Pods are created.
+  # The Deployment object itself exists immediately with the
+  # paused condition surfaced. No state to wait for.
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: {} }
+      - { name: get-resource, args_match: { resourceType: deployment, name: api } }
+      - { name: list-resources, args_match: { resourceType: deployment } }
+      - { name: list-resources, args_match: { resourceType: deployments } }
+      - { name: list-events, args_match: {} }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface "paused" — the specific spec field that
+    # explains the silence. Catches models that drift to "rollout
+    # stuck" or "image issue" answers (the image IS broken, but
+    # that's not why nothing is happening — the pause is).
+    # Slot 2: must surface a state indicator that confirms the
+    # model saw the field's value ("true", "set to true",
+    # "DeploymentPaused" condition) or the obvious fix verb
+    # ("resume", "unpause", "set to false").
+    must_mention:
+      - ["paused", "Paused"]
+      - ["true", "set to true", "DeploymentPaused", "resume", "unpause", "kubectl rollout resume", "false"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies that the Deployment has `spec.paused: true`, so
+      the controller skips reconciliation and the rollout never
+      progresses — including the obviously-broken image tag in
+      the template. The fix is to set paused to false (or use
+      `kubectl rollout resume`).
