@@ -102,9 +102,18 @@ counted as `errored: 1` in their rows, not as a model competence loss.
 |---|---|---|---|---|---|---|---|
 | llama3.2-3b | 0/10 | 10/10 | 9 | 0/10 | 2/10 | 0 | 314 |
 | qwen2.5-7b | 10/10 | 10/10 | 5 | 4/10 | 6/10 | 0 | 504 |
-| qwen2.5-32b | 9/10 | 9/10 | 3 | 4/10 | 6/10 | 1 | 984 |
-| gpt-4o | 9/10 | 9/10 | 7 | 6/10 | 7/10 | 1 | 334 |
-| gpt-5.4 | 10/10 | 10/10 | 10 | 6/10 | 9/10 | 0 | 360 |
+| qwen2.5-32b | 9/10 | 9/10 | 3 | 3/10 | 6/10 | 1 | 984 |
+| gpt-4o | 9/10 | 9/10 | 7 | 5/10 | 7/10 | 1 | 334 |
+| gpt-5.4 | 10/10 | 10/10 | 10 | 5/10 | 9/10 | 0 | 360 |
+
+`ref_pass` regraded after commit ee8c75c. Three cells flipped from
+True to False — all of them `network-policy-block-001` (qwen2.5-32b,
+gpt-4o, gpt-5.4). See the drill-in below; reproduce with:
+
+```
+uv run python eval/results/summaries/regrade_ref_pass.py \
+    eval/results/summaries/shape-b-2026-05-11.json
+```
 
 **File:** `shape-b-2026-05-11.json`
 
@@ -160,13 +169,16 @@ turned up two issues with the bench, not the model:
   unsatisfiable requirement on the current K8sGPT MCP surface.
   *Action:* file upstream against K8sGPT; either relax this rubric
   or skip the scenario in the meantime.
-- **`ref_pass=True` despite tool error.** The reference-calls metric
-  counted the failing `list-resources(networkpolicies)` call as
-  "reference call passed" because the argument shape matched the
-  scenario's `any_of`, regardless of whether the MCP server actually
-  returned data. That's a bench bug — `ref_pass` should require a
-  non-errored tool result. *Action:* gate the matcher on
-  `isError != true` before publishing the Phase 3 blog.
+- **`ref_pass=True` despite tool error.** *Fixed in commit ee8c75c.*
+  The reference-calls metric used to count the failing
+  `list-resources(networkpolicies)` call as "reference call passed"
+  because the argument shape matched the scenario's `any_of`,
+  regardless of whether the MCP server actually returned data. The
+  fix gates `must_include` and `any_of` matches on the corresponding
+  `tool_result.is_error != true`. `forbidden` matchers still hit on
+  errored calls — the attempt is the violation. The 2026-05-11 table
+  above is regraded; three cells flipped True→False (all on this
+  scenario).
 
 The model itself behaved reasonably: it tried the right tool, fell
 back to inferring "NetworkPolicy blocks ingress" from the scenario
@@ -196,13 +208,15 @@ bug is fixed and the rubric is reconciled with the tool surface.
   filling gaps the tool surface couldn't fill, not inventing
   lookupable facts. Audit per-scenario trajectories before claiming
   this is a real model-level grounding gap.
-- **`ref_pass` over-counts.** As described in the drill-in above,
-  the metric currently passes if the tool-call argument shape
-  matches the scenario's `any_of`, even when the tool returned an
-  error. This affects the published `ref_pass` cells for at least
-  network-policy-block-001 and possibly other scenarios where the
-  reference call hits a K8sGPT MCP unsupported-type response. Fix
-  before publishing the Phase 3 blog.
+- **`ref_pass` regrade applied (was a bench bug).** Commit ee8c75c
+  fixes the metric so a tool call only counts as a reference call
+  when the corresponding `tool_result` did not carry
+  `is_error: true`. The 2026-05-11 `ref_pass` column above is the
+  post-fix number. Three cells flipped True→False, all on
+  network-policy-block-001 (the K8sGPT-MCP unsupported-type case).
+  The 2026-05-07 row is *not* regraded; its trajectories may not
+  all be on disk and the rubric used a different version anyway —
+  treat it as historical.
 - **No 70B point** (same caveat as 2026-05-07).
 - **Wall-time** of this run was inflated by host sleep — bench
   process is correct but the start→end timestamps span hours of
