@@ -11,10 +11,20 @@ Walks the recorded tool_call events and checks them against a scenario's
                       pod failure cause.
   - ``forbidden``:    no matcher may hit any recorded call
 
-A call matches a matcher when the recorded ``name`` equals the matcher's
-``name`` AND the recorded ``arguments`` is a superset of the matcher's
-``args_match`` (every key/value in the matcher must also be in the
-arguments).
+A call matches a matcher when ALL of:
+  - the recorded ``name`` equals the matcher's ``name``
+  - the recorded ``arguments`` is a superset of the matcher's
+    ``args_match`` (every key/value in the matcher must also be in the
+    arguments)
+  - the corresponding ``tool_result`` event did not carry
+    ``is_error: true``. A call that the MCP server rejected
+    (unsupported resource type, schema error, server fault) is not a
+    successful reference call even when the arguments looked right —
+    the model didn't actually obtain the evidence.
+
+``forbidden`` matchers still hit on errored calls: if a scenario
+declares a tool call forbidden, the model attempting it is the
+violation, regardless of whether the server accepted it.
 """
 
 from __future__ import annotations
@@ -69,12 +79,28 @@ def _is_subset(matcher: Mapping[str, Any], arguments: Mapping[str, Any]) -> bool
     return all(k in arguments and arguments[k] == v for k, v in matcher.items())
 
 
-def _find_match(rc: ReferenceCall, events: list[Mapping[str, Any]]) -> int | None:
+def _errored_call_ids(events: list[Mapping[str, Any]]) -> set[str]:
+    return {
+        str(e["tool_call_id"])
+        for e in events
+        if e.get("kind") == "tool_result" and e.get("is_error") and e.get("tool_call_id")
+    }
+
+
+def _find_match(
+    rc: ReferenceCall,
+    events: list[Mapping[str, Any]],
+    errored: set[str],
+    *,
+    skip_errored: bool,
+) -> int | None:
     for event in events:
         if event.get("kind") != "assistant":
             continue
         for call in event.get("tool_calls") or []:
             if call.get("name") != rc.name:
+                continue
+            if skip_errored and call.get("id") in errored:
                 continue
             if _is_subset(rc.args_match or {}, call.get("arguments") or {}):
                 return event.get("step", -1)
@@ -86,9 +112,10 @@ def evaluate_reference_calls(
     expected: ReferenceCalls,
 ) -> ReferenceCallsReport:
     events_list = list(events)
+    errored = _errored_call_ids(events_list)
     report = ReferenceCallsReport()
     for rc in expected.must_include:
-        step = _find_match(rc, events_list)
+        step = _find_match(rc, events_list, errored, skip_errored=True)
         report.must_include.append(
             ReferenceCallMatch(
                 name=rc.name,
@@ -98,7 +125,7 @@ def evaluate_reference_calls(
             )
         )
     for rc in expected.any_of:
-        step = _find_match(rc, events_list)
+        step = _find_match(rc, events_list, errored, skip_errored=True)
         report.any_of.append(
             ReferenceCallMatch(
                 name=rc.name,
@@ -108,7 +135,7 @@ def evaluate_reference_calls(
             )
         )
     for rc in expected.forbidden:
-        step = _find_match(rc, events_list)
+        step = _find_match(rc, events_list, errored, skip_errored=False)
         report.forbidden.append(
             ReferenceCallMatch(
                 name=rc.name,
