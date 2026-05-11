@@ -1,0 +1,81 @@
+id: init-container-failing-001
+profile: base
+description: |
+  A Pod whose init container exits 1 immediately. The main container
+  never starts because init containers must complete successfully
+  first. kubelet restarts the init container, hitting
+  `Init:CrashLoopBackOff`. The Pod phase stays Pending; status shows
+  `initContainerStatuses[0].state.waiting.reason = CrashLoopBackOff`.
+
+  Tests a reasoning path no other v0.1 scenario covers: the failing
+  container is an INIT container, not the main one. A model that only
+  inspects main-container logs/events finds nothing useful and has to
+  pivot to the init container's status before reaching a conclusion.
+
+goal: "Why is api-pod in scenario-init-container-failing-001 stuck in Init?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-init-container-failing-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: api-pod
+        namespace: scenario-init-container-failing-001
+        labels: { app: api }
+      spec:
+        restartPolicy: Always
+        initContainers:
+          - name: db-migrate
+            image: busybox:1.36
+            command:
+              - sh
+              - -c
+              - 'echo "migration failed: cannot reach DB"; exit 1'
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+
+settle:
+  # Wait for the init container to actually hit CrashLoopBackOff
+  # rather than just reaching Pending. Without this, validation
+  # against a fast model fires while events are still empty and the
+  # model has nothing to diagnose. `reason` matches both
+  # containerStatuses and initContainerStatuses (see
+  # eval/scenarios/cluster.py:_has_reason). The exponential backoff
+  # takes ~30-40s to surface; 120s is a comfortable margin.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-init-container-failing-001
+      name: api-pod
+      reason: CrashLoopBackOff
+      timeout: 120s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-init-container-failing-001 } }
+      - { name: get-resource, args_match: { resourceType: pod, name: api-pod, namespace: scenario-init-container-failing-001 } }
+      - { name: list-events, args_match: { namespace: scenario-init-container-failing-001 } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must identify it's the init container (not the main one).
+    # Slot 2: must surface the failure shape — exit 1, crashloop, or the
+    # migration error from the init container's command output. The
+    # goal mentions "Init" but not "db-migrate" or "exit"; the model
+    # has to read tool output to fill those in.
+    must_mention:
+      - ["init container", "initContainer", "init-container", "db-migrate", "init:"]
+      - ["exit 1", "exited", "exitCode: 1", "CrashLoopBackOff", "migration failed", "cannot reach DB"]
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes that the Pod is stuck because its init container
+      (`db-migrate`) is exiting with code 1 — surfacing either the
+      exit code, the migration failure message, or the resulting
+      CrashLoopBackOff — and explains that the main container will
+      not start until the init container completes successfully.
