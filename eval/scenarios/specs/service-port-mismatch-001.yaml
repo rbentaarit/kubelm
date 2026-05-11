@@ -1,0 +1,88 @@
+id: service-port-mismatch-001
+profile: base
+description: |
+  A Service whose `targetPort` references a named container port
+  (`http-port`) that the matching Pod never declares. The selector
+  matches the Pod's labels, but the Endpoints controller can't
+  resolve the named port and produces an Endpoints object with no
+  subsets. Clients connecting to the Service therefore get nothing.
+
+  Distinct from `service-selector-mismatch-001` (which produces the
+  same "no endpoints" symptom from a label-typo cause). The
+  investigation paths differ: here the selector IS correct, so a
+  model that only checks labels will conclude wrongly. The actual
+  fix is in the Service's `targetPort` (or in the Pod's port name),
+  not in the labels.
+
+goal: "Why does the api-svc Service in scenario-service-port-mismatch-001 have no endpoints?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-service-port-mismatch-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: api-pod
+        namespace: scenario-service-port-mismatch-001
+        labels: { app: api }
+      spec:
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+            ports:
+              # Pod declares port 80 (anonymous, no name)
+              - containerPort: 80
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: api-svc
+        namespace: scenario-service-port-mismatch-001
+      spec:
+        selector: { app: api }   # selector IS correct
+        ports:
+          - port: 80
+            targetPort: http-port   # but this name isn't on the Pod
+
+settle:
+  # Wait for the Pod to be Ready so the Endpoints controller has had
+  # a chance to (fail to) populate the endpoint slice. The Pod
+  # itself comes up fine; what stays empty is the Endpoints object.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-service-port-mismatch-001
+      name: api-pod
+      condition: Ready
+      timeout: 60s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-service-port-mismatch-001 } }
+      - { name: get-resource, args_match: { resourceType: service, name: api-svc, namespace: scenario-service-port-mismatch-001 } }
+      - { name: list-resources, args_match: { resourceType: endpoints, namespace: scenario-service-port-mismatch-001 } }
+      - { name: get-resource, args_match: { resourceType: pod, name: api-pod, namespace: scenario-service-port-mismatch-001 } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface that the issue is the port reference
+    # (not the selector). Catches models that lazily blame labels.
+    # Slot 2: must name the specific mismatch — either the unresolved
+    # name `http-port` or just "name" in port context. Derivable
+    # from the Service spec returned by get-resource and from the
+    # Pod's port list.
+    must_mention:
+      - ["targetPort", "target port", "port"]
+      - ["http-port", "named port", "port name", "no matching port", "named", "not declared"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies that the Service's `targetPort: http-port` refers
+      to a named container port the Pod doesn't declare; the
+      selector matches but the named-port lookup fails, so
+      Endpoints has no subsets. The fix is to either name the
+      Pod's port `http-port` or change the Service's targetPort to
+      the numeric 80.
