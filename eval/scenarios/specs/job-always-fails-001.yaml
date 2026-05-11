@@ -1,0 +1,88 @@
+id: job-always-fails-001
+profile: base
+description: |
+  A Job whose template's container exits non-zero on every run.
+  The Job controller retries up to `backoffLimit: 3`; after the
+  fourth failure the Job's status flips to `Failed` with reason
+  `BackoffLimitExceeded`. No future Pods are created. The
+  investigation should identify the Job (not just the failing Pod)
+  and explain that the backoff limit was hit.
+
+  Tests a Job-controller reasoning path no other v0.1 scenario
+  covers. A Pod-only investigation finds a recently-exited Pod
+  and could plausibly identify the immediate exit, but the
+  surrounding context — "this is a Job that has failed
+  permanently" — is only visible by inspecting the Job object's
+  status. Pairs with deployment-rollout-stuck-001 as the second
+  workload-controller scenario.
+
+goal: "Why is the data-import Job in scenario-job-always-fails-001 not completing?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-job-always-fails-001
+      ---
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: data-import
+        namespace: scenario-job-always-fails-001
+      spec:
+        backoffLimit: 3
+        # Short retry backoff so the Job exhausts attempts inside
+        # the bench's settle timeout. Default kubelet/Job backoff
+        # is exponential (10s, 20s, 40s, ...) — 4 attempts to
+        # BackoffLimitExceeded fits in ~2 minutes.
+        template:
+          spec:
+            restartPolicy: Never
+            containers:
+              - name: app
+                image: busybox:1.36
+                command:
+                  - sh
+                  - -c
+                  - 'echo "import failed: source unreachable"; exit 1'
+
+settle:
+  # Wait for the Job to reach BackoffLimitExceeded — the
+  # deterministic terminal state. Earlier-state settles (phase
+  # checks on Pods, etc.) would fire while the Job is still
+  # retrying and miss the "permanently failed" diagnosis we want
+  # the model to surface.
+  - wait_for_status:
+      kind: Job
+      namespace: scenario-job-always-fails-001
+      name: data-import
+      condition: Failed
+      timeout: 180s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: {} }
+      - { name: get-resource, args_match: { resourceType: job, name: data-import } }
+      - { name: list-resources, args_match: { resourceType: jobs } }
+      - { name: list-resources, args_match: { resourceType: job } }
+      - { name: list-events, args_match: {} }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface "Job" / "backoff" — proves the model
+    # reasoned at the controller layer, not just at the Pod.
+    # Slot 2: must surface the limit/exhausted nature of the
+    # failure OR the exit shape from the container command.
+    # K8sGPT analyze surfaces "BackoffLimitExceeded" on Failed Jobs.
+    must_mention:
+      - ["backoff", "BackoffLimit", "backoffLimit", "Job", "job"]
+      - ["BackoffLimitExceeded", "exhausted", "limit", "exceeded", "exit 1", "exited", "exitCode: 1", "import failed", "source unreachable"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies that the data-import Job has retried its Pod up
+      to its backoffLimit and is now in a terminal Failed state
+      with reason BackoffLimitExceeded. The container exits 1
+      every run. The fix is to address the underlying container
+      failure (the "source unreachable" exit message) and re-run.
