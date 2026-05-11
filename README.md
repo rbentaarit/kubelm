@@ -1,5 +1,7 @@
 # kubelm
 
+[![CI](https://github.com/rbentaarit/kubelm/actions/workflows/ci.yml/badge.svg)](https://github.com/rbentaarit/kubelm/actions/workflows/ci.yml)
+
 **A small, CPU-only language model specialized for reliable tool-use against
 K8sGPT's MCP server.**
 
