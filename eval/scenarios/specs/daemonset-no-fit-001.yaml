@@ -1,0 +1,84 @@
+id: daemonset-no-fit-001
+profile: base
+description: |
+  A DaemonSet whose Pod template has a nodeSelector
+  (`workload-class: gpu`) that no node in the cluster carries.
+  The DaemonSet's desiredNumberScheduled stays at zero and no Pods
+  are created.
+
+  First DaemonSet scenario in the library. Tests DaemonSet-controller
+  reasoning. DaemonSets are intended to run "one Pod per matching
+  node" — when no node matches, the controller is silent (no
+  FailedScheduling events on a non-existent Pod). The model has
+  to inspect the DaemonSet object's status (desiredNumberScheduled:
+  0, currentNumberScheduled: 0) and reach the nodeSelector by
+  reading the template.
+
+  Distinct from node-selector-unschedulable-001 (which is a single
+  Pod with a nodeSelector — produces FailedScheduling on the Pod).
+  Here there is no Pod at all to inspect.
+
+goal: "Why isn't the metrics-collector DaemonSet in scenario-daemonset-no-fit-001 running any Pods?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-daemonset-no-fit-001
+      ---
+      apiVersion: apps/v1
+      kind: DaemonSet
+      metadata:
+        name: metrics-collector
+        namespace: scenario-daemonset-no-fit-001
+      spec:
+        selector:
+          matchLabels: { app: metrics-collector }
+        template:
+          metadata:
+            labels: { app: metrics-collector }
+          spec:
+            nodeSelector:
+              workload-class: gpu   # no node has this label
+            containers:
+              - name: app
+                image: nginx:1.27-alpine
+
+settle: []
+  # DaemonSet exists immediately; "no matching node" means the
+  # controller writes status (desiredNumberScheduled: 0) on the
+  # first reconcile. There is no failed-Pod event to wait for
+  # because no Pod is created. By the time the bench's first MCP
+  # call lands the DaemonSet status is settled.
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: {} }
+      - { name: get-resource, args_match: { resourceType: daemonset, name: metrics-collector } }
+      - { name: list-resources, args_match: { resourceType: daemonset } }
+      - { name: list-resources, args_match: { resourceType: daemonsets } }
+      - { name: list-resources, args_match: { resourceType: node } }
+      - { name: list-resources, args_match: { resourceType: nodes } }
+      - { name: list-events, args_match: {} }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface either the nodeSelector mechanism or
+    # the "no matching node" outcome. Catches models that drift
+    # to vague "DaemonSet not configured" answers.
+    # Slot 2: must surface the specific label/value or the
+    # desiredNumberScheduled=0 signal — proves the model read the
+    # spec or status, not just the resource name.
+    must_mention:
+      - ["nodeSelector", "node selector", "no matching node", "no nodes match", "no node matches", "doesn't match", "no nodes available"]
+      - ["workload-class", "gpu", "desiredNumberScheduled", "0", "no node"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies that the DaemonSet's Pod template carries
+      `nodeSelector: {workload-class: gpu}` but no node in the
+      cluster has that label, so the controller has nothing to
+      schedule onto — desiredNumberScheduled is 0 and no Pods
+      are created. The fix is to label a node with
+      `workload-class=gpu` or remove the nodeSelector.
