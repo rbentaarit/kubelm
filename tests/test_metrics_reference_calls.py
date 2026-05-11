@@ -16,9 +16,7 @@ def _record(path: Path, calls: list[ToolCall]) -> list[dict]:
     return load_trajectory(path)
 
 
-def _record_with_errors(
-    path: Path, calls_with_status: list[tuple[ToolCall, bool]]
-) -> list[dict]:
+def _record_with_errors(path: Path, calls_with_status: list[tuple[ToolCall, bool]]) -> list[dict]:
     """Like _record but each call carries an explicit is_error flag for its result."""
     with TrajectoryRecorder(path=path) as rec:
         for c, is_error in calls_with_status:
@@ -217,9 +215,7 @@ def test_forbidden_still_hits_on_errored_call(tmp_path: Path) -> None:
         tmp_path / "t.jsonl",
         [(ToolCall("c1", "add-filters", {"filters": ["Pod"]}), True)],
     )
-    expected = ReferenceCalls(
-        forbidden=[ReferenceCall(name="add-filters", args_match={})]
-    )
+    expected = ReferenceCalls(forbidden=[ReferenceCall(name="add-filters", args_match={})])
     report = evaluate_reference_calls(events, expected)
     assert not report.passed
     assert report.forbidden_hits == 1
@@ -237,9 +233,7 @@ def test_must_include_passes_when_later_non_errored_call_matches(tmp_path: Path)
     )
     expected = ReferenceCalls(
         must_include=[
-            ReferenceCall(
-                name="get-resource", args_match={"resourceType": "pod", "name": "p"}
-            )
+            ReferenceCall(name="get-resource", args_match={"resourceType": "pod", "name": "p"})
         ]
     )
     report = evaluate_reference_calls(events, expected)
