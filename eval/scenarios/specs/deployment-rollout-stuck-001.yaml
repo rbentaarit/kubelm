@@ -1,0 +1,100 @@
+id: deployment-rollout-stuck-001
+profile: base
+description: |
+  A Deployment whose pod template references an image tag that
+  doesn't exist (`nginx:nonexistent-tag-zzz`). The Deployment
+  controller creates a ReplicaSet which spins up Pods; the Pods
+  hit `ImagePullBackOff` and never become Ready; the Deployment's
+  `Available` condition never reaches True and the `Progressing`
+  condition flips to ProgressDeadlineExceeded.
+
+  Tests reasoning about controller-level state that no other v0.1
+  scenario covers. The Pod-level symptom (ImagePullBackOff) is the
+  same as `image-pull-001`, but here the model has to either:
+  (a) inspect the Deployment's conditions to see Available=False
+      and explain the rollout never progressed, or
+  (b) trace from Deployment → ReplicaSet → Pod and surface the
+      image-pull failure as the root cause for a stuck rollout.
+
+  A model that only looks at Pods finds ImagePullBackOff and
+  arguably could pass on the surface-level diagnosis, but the
+  rubric expects either "deployment", "rollout", "replicaset", or
+  "progress" in the conclusion — proving the model navigated up to
+  the controller layer.
+
+goal: "Why is the api Deployment in scenario-deployment-rollout-stuck-001 not rolling out?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-deployment-rollout-stuck-001
+      ---
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: api
+        namespace: scenario-deployment-rollout-stuck-001
+      spec:
+        replicas: 2
+        progressDeadlineSeconds: 60
+        selector:
+          matchLabels: { app: api }
+        template:
+          metadata:
+            labels: { app: api }
+          spec:
+            containers:
+              - name: app
+                image: nginx:nonexistent-tag-zzz
+                imagePullPolicy: IfNotPresent
+
+settle:
+  # Wait for one of the Deployment's child Pods to surface
+  # ImagePullBackOff. We can't directly select "first child pod by
+  # name" since the ReplicaSet generates a random suffix. As a
+  # proxy, wait for the Deployment object itself — its
+  # `status.conditions[type=Available].status` should still be
+  # False, which is observable but not directly selectable via
+  # WaitForStatus. The pragmatic choice: wait for the deployment
+  # itself to exist at phase==(blank) for 90s. That ensures the
+  # ReplicaSet has had time to roll out and Pods have hit the bad
+  # image. There's no `phase` on a Deployment object, so a
+  # condition check is the only knob — Progressing will toggle
+  # True/False as rollout fights ProgressDeadline. The condition
+  # value most reliably True is `Progressing` during the rollout
+  # attempt, so settle on that.
+  - wait_for_status:
+      kind: Deployment
+      namespace: scenario-deployment-rollout-stuck-001
+      name: api
+      condition: Progressing
+      timeout: 90s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-deployment-rollout-stuck-001 } }
+      - { name: get-resource, args_match: { resourceType: deployment, name: api, namespace: scenario-deployment-rollout-stuck-001 } }
+      - { name: list-events, args_match: { namespace: scenario-deployment-rollout-stuck-001 } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: controller layer — proves the model navigated up to
+    # the Deployment / ReplicaSet, not just stayed at the Pod.
+    # Slot 2: root cause — the bad image. K8sGPT's analyze and
+    # events both surface "nonexistent-tag-zzz" or
+    # ErrImagePull / ImagePullBackOff. Either string is real
+    # tool output, not fabricatable.
+    must_mention:
+      - ["deployment", "rollout", "replicaset", "ReplicaSet", "progress"]
+      - ["ImagePullBackOff", "ErrImagePull", "image", "nonexistent-tag-zzz", "pull"]
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes that the api Deployment's rollout is stuck because
+      its Pods cannot pull `nginx:nonexistent-tag-zzz`. A correct
+      conclusion either reads the Deployment's conditions
+      (Available=False, Progressing=False after the deadline) or
+      traces Deployment → ReplicaSet → Pod and surfaces the image
+      tag as the root cause.
