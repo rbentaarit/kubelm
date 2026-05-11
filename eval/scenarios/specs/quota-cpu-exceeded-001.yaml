@@ -1,0 +1,100 @@
+id: quota-cpu-exceeded-001
+profile: base
+description: |
+  A namespace has a ResourceQuota that caps total `requests.cpu`
+  at 100m. A Deployment template requests 500m CPU per pod — well
+  above the quota. Admission rejects every Pod-creation attempt
+  from the ReplicaSet with "exceeded quota" mentioning the actual
+  vs. requested values. No Pods are ever created; the Deployment
+  never reaches Available.
+
+  Distinct from the existing resource-quota-block-001, which caps
+  `pods: "0"` (zero pods allowed regardless of resource shape).
+  This scenario tests the more realistic case where the quota
+  permits Pods in principle but the request exceeds a specific
+  dimension. The investigation must surface both the quota and
+  the specific dimension/value mismatch.
+
+goal: "Why is the worker Deployment in scenario-quota-cpu-exceeded-001 not creating Pods?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-quota-cpu-exceeded-001
+      ---
+      apiVersion: v1
+      kind: ResourceQuota
+      metadata:
+        name: tight-cpu
+        namespace: scenario-quota-cpu-exceeded-001
+      spec:
+        hard:
+          requests.cpu: 100m
+      ---
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: worker
+        namespace: scenario-quota-cpu-exceeded-001
+      spec:
+        replicas: 1
+        selector:
+          matchLabels: { app: worker }
+        template:
+          metadata:
+            labels: { app: worker }
+          spec:
+            containers:
+              - name: app
+                image: nginx:1.27-alpine
+                resources:
+                  requests:
+                    cpu: 500m   # 5x the quota
+
+settle:
+  # The Deployment is created, the ReplicaSet is created, the
+  # ReplicaSet immediately fails to create Pods due to the quota.
+  # Wait for the Deployment object to be observed; the
+  # FailedCreate event lands within seconds. No phase on
+  # Deployment — Progressing flips True briefly during reconcile.
+  - wait_for_status:
+      kind: Deployment
+      namespace: scenario-quota-cpu-exceeded-001
+      name: worker
+      condition: Progressing
+      timeout: 60s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: {} }
+      - { name: get-resource, args_match: { resourceType: deployment, name: worker } }
+      - { name: list-resources, args_match: { resourceType: deployment } }
+      - { name: list-resources, args_match: { resourceType: deployments } }
+      - { name: list-resources, args_match: { resourceType: resourcequota } }
+      - { name: list-resources, args_match: { resourceType: resourcequotas } }
+      - { name: get-resource, args_match: { resourceType: resourcequota, name: tight-cpu } }
+      - { name: list-events, args_match: {} }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface "quota" / "ResourceQuota" — the limit
+    # mechanism.
+    # Slot 2: must surface the CPU-specific dimension or the
+    # exceeds/limit phrasing. Catches models that say "quota
+    # problem" without specifying which dimension. Either the
+    # quota name (tight-cpu), the limit (100m), the request
+    # (500m), or specific phrasing.
+    must_mention:
+      - ["quota", "ResourceQuota", "resourcequota", "resource quota"]
+      - ["tight-cpu", "100m", "500m", "requests.cpu", "exceeded", "exceeds", "exceed", "cpu limit", "cpu request"]
+    must_not_mention: []
+    semantic_intent: |
+      Identifies that the namespace's ResourceQuota (`tight-cpu`)
+      caps `requests.cpu` at 100m, while the Deployment's Pod
+      template requests 500m. Every ReplicaSet→Pod creation is
+      rejected at admission with "exceeded quota: tight-cpu,
+      requested: requests.cpu=500m, used: ..., limited: 100m".
+      The fix is to raise the quota or lower the request.
