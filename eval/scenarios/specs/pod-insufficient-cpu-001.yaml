@@ -1,0 +1,100 @@
+id: pod-insufficient-cpu-001
+profile: base
+description: |
+  A Pod that requests 100 CPUs — orders of magnitude more than any
+  kind node can offer. The scheduler emits `FailedScheduling` with
+  the message "0/1 nodes are available: 1 Insufficient cpu"; the
+  Pod stays Pending forever.
+
+  Tests a scheduling failure mode the other v0.1 scheduling
+  scenarios don't cover. node-selector-unschedulable matches no
+  candidate node by label; taint-no-toleration matches by label
+  but is rejected by a taint; this scenario matches by label AND
+  has no taint problem — the node simply doesn't have the capacity
+  to host the Pod. Distinct failure message, distinct fix (reduce
+  the request, scale up the cluster, or split the workload).
+
+goal: "Why is heavy-pod in scenario-pod-insufficient-cpu-001 stuck Pending?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-pod-insufficient-cpu-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: heavy-pod
+        namespace: scenario-pod-insufficient-cpu-001
+        labels: { app: heavy }
+      spec:
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+            resources:
+              requests:
+                cpu: "100"   # 100 cores — no kind node will have this
+
+settle:
+  # Pod stays Pending. Scheduler will try and fail; FailedScheduling
+  # event appears in the namespace event stream. 60s phase=Pending
+  # is a low-overhead confirmation the Pod object exists; by the
+  # time the bench's first MCP call lands the scheduler has retried
+  # and the event is visible.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-pod-insufficient-cpu-001
+      name: heavy-pod
+      phase: Pending
+      timeout: 60s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-pod-insufficient-cpu-001 } }
+      - { name: get-resource, args_match: { resourceType: pod, name: heavy-pod, namespace: scenario-pod-insufficient-cpu-001 } }
+      - { name: list-events, args_match: { namespace: scenario-pod-insufficient-cpu-001 } }
+      # list-resources(pods) is also a valid first call — it returns
+      # each pod's status (including .status.conditions and the
+      # scheduler's message) and the spec (so the CPU request is
+      # visible). qwen2.5:32b chose this path and got the right
+      # answer fully grounded.
+      - { name: list-resources, args_match: { resourceType: pods, namespace: scenario-pod-insufficient-cpu-001 } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface CPU specifically as the constrained
+    # resource. Generic "resources" / "capacity" was too loose in
+    # the first draft — a model that hallucinated a taint failure
+    # passed by saying "resources". The fix forces "cpu" to appear.
+    # Slot 2: must surface the specific request value (100 / 100
+    # cores / cpu: "100"). Proves the model actually read the Pod
+    # spec from a tool result instead of guessing from the scenario
+    # name. "request" alone is too generic (any scheduling problem
+    # mentions requests).
+    must_mention:
+      - ["Insufficient cpu", "insufficient CPU", "not enough cpu", "not enough CPU", "exceeds", "cpu capacity", "CPU capacity"]
+      - [
+          "100 CPU",
+          "100 cpu",
+          "100 cores",
+          "100 vCPU",
+          "cpu: \"100\"",
+          "cpu: '100'",
+          "cpu: 100",
+          "request of 100",
+          "request: 100",
+          "requests: 100",
+          "requests.cpu: 100",
+          "of `100`",
+          "100`",
+          "100\"",
+        ]
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes that heavy-pod cannot be scheduled because its CPU
+      request (100 cores) exceeds the capacity of any node in the
+      cluster. The fix is to reduce the request to a value the
+      cluster can satisfy.
