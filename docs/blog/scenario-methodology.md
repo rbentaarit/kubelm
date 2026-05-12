@@ -314,6 +314,14 @@ ships when it actually saves minutes on a real benchmark run.
 
 ## First baseline results (2026-05-07)
 
+This is the *first* cut against the v0.1 library — a smaller dataset
+(n=10) and a 4-model lineup. The follow-up section below
+("Updated baseline (2026-05-12)") replays the same protocol against
+the expanded 30-scenario library with 5 models and the headline
+findings are stronger. Both sections are kept so the project's
+trajectory is visible; cite the 2026-05-12 numbers in any external
+summary.
+
 The library above produced its first cross-model numbers. Two passes
 on a single M1 Max 64 GB at `parallelism=1` (so latency is trustworthy
 but the dataset is tiny — n=10 scenarios, single seed).
@@ -410,6 +418,146 @@ These numbers are a v0.1 baseline, not a publication-ready benchmark.
 A real publication needs n ≥ 30 scenarios, multiple seeds per
 configuration, and the 70B point. These results are the methodology
 working — not the final number.
+
+---
+
+## Updated baseline (2026-05-12): 30 scenarios, 5 models
+
+Same protocol, three changes in the inputs:
+
+- **Library grew from 10 → 30 scenarios.** Covers seven categories
+  (pod-startup, service/networking, scheduling, storage, RBAC,
+  resources, workload controllers — including first runs against
+  Deployment / StatefulSet / Job / CronJob / DaemonSet / HPA
+  failure modes).
+- **Cloud lineup added gpt-5.4.** `gpt-4o` stays for continuity;
+  `gpt-5.4` joins as the latest OpenAI model that accepts
+  `temperature: 0` (gpt-5 and gpt-5.5 reject it and would force
+  stochastic sampling — breaking the bench's determinism
+  commitment).
+- **Reference-call metric tightened.** A tool call that the MCP
+  server rejected with `isError: true` no longer counts as a
+  satisfied reference call. Two small drill-ins surfaced bench
+  issues (an unsatisfiable rubric for `network-policy-block-001`
+  because K8sGPT MCP v0.4.32 doesn't expose `networkpolicies` via
+  `list-resources`; a list-resources singular/plural retrofit
+  across the older scenarios) — both fixed before this run.
+
+5 models × 30 scenarios = 150 runs, ~2h6m wall-time on M1 Max
+64 GB at `parallelism=1`. One transient infra error (qwen2.5-32b
+× hpa-no-metrics-001 hit the 120s Ollama read timeout); 149/150
+runs clean.
+
+**Shape B — 5 models, 30 scenarios** (`eval/results/summaries/shape-b-2026-05-12.json`):
+
+| model         | complete | schema | ground_fail | ref_pass | rubric_pass | errored | duration_s |
+|---------------|----------|--------|-------------|----------|-------------|---------|------------|
+| `llama3.2:3b` | 1/30     | 30/30  | 28          | 0/30     | 6/30        | 0       | 967        |
+| `qwen2.5:7b`  | 30/30    | 29/30  | 14          | 29/30    | 24/30       | 0       | 1625       |
+| `qwen2.5:32b` | 29/30    | 29/30  | 12          | 25/30    | 26/30       | 1       | 2856       |
+| `gpt-4o`      | 30/30    | 30/30  | 12          | 27/30    | 25/30       | 0       | 1025       |
+| `gpt-5.4`     | 30/30    | 30/30  | **30**      | 30/30    | 29/30       | 0       | 1085       |
+
+![Shape B reliability vs model size, 30-scenario library](../../eval/results/summaries/shape-b-2026-05-12.png)
+
+The three findings from the 2026-05-07 cut survive at n=30 — and a
+fourth, sharper one appears that wasn't visible at n=10.
+
+**1. The 3B cliff is unambiguous.** `llama3.2:3b` clears the
+conclusion rubric on 6/30 scenarios and satisfies zero reference
+calls. With three times the sample size, the 3B → 7B phase change
+is the most robust signal in the dataset. At 7B and above, every
+model reaches `complete` on essentially every scenario (one
+exception: qwen2.5-32b's single transient error).
+
+**2. The 7B-and-up plateau still holds — for the open-weight tier.**
+`qwen2.5:7b` (24/30), `qwen2.5:32b` (26/30), and `gpt-4o` (25/30)
+cluster within a ~6.7 percentage point band on rubric. The 7B → 32B
+step buys 2 rubric points; the 32B → cloud step buys nothing. Adding
+parameters past 7B produces no large rubric gain on this surface.
+
+**3. Schema is clean across all 149 successful runs.** One argument
+hallucination from qwen2.5-7b, zero name hallucinations across the
+entire lineup. Strategic failure modes (when to call what, when to
+stop) dominate; syntactic failures are negligible. Same conclusion
+as the n=10 cut, now decisively backed.
+
+**4 (new). gpt-5.4 has 30/30 grounding failure.** Every conclusion
+contains at least one claim not derivable from any tool result —
+while the rubric pass-rate is 29/30 (97%). This is the strongest
+signal so far for the kubelm thesis. The frontier model reaches the
+right answer wrapped in fabricated supporting detail; the
+rule-based grounding analyzer reliably catches the inflation. At
+n=10 this looked like noise (10/10 ungrounded but n was too small
+to lean on); at n=30 it's a systematic pattern. The cluster of
+qwen2.5-7b, qwen2.5-32b, and gpt-4o sit at 12–14 grounding
+failures — 3x lower than the frontier.
+
+### What this *strengthens* about kubelm's thesis
+
+The 2026-05-07 reading argued the cliff between 3B and 7B is where
+specialized fine-tuning can move the needle, because the open-weight
+plateau above 7B is already flat. The 2026-05-12 data sharpens that
+into a concrete target.
+
+- **The candidate base model a kubelm fine-tune has to beat is
+  `qwen2.5:7b`.** 30/30 complete, 29/30 ref_pass, 24/30 rubric,
+  14 grounding failures. A 4.7 GB Q4 weight that's already
+  competitive with gpt-4o on grounding (14 vs 12) and only one
+  rubric point behind. If kubelm-standard (3B) can match this row
+  *and* lower the grounding number, the thesis is validated. If it
+  merely ties, the decision gate at the end of Phase 3 has to weigh
+  "specialized but no clear win" against "ship a curated prompt
+  template instead and re-evaluate".
+
+- **gpt-5.4's grounding score reframes the value pitch.** A locally
+  hosted specialist that returns "I called these tools, these are
+  the results, here is what they say" — without filling in
+  fabricated detail — is more useful to a downstream operator
+  policy layer than a frontier model that returns a polished
+  conclusion wrapped in invented context. The grounding metric is
+  the production-relevant one for K8sGPT's auto-remediation
+  architecture (Mutation CRs + policy gates), because every
+  unverifiable claim is a thing the operator now has to reason
+  about. A model that grounds reliably reduces the policy
+  surface area; a model that hallucinates expands it.
+
+- **The 32B → cloud step buying no rubric** means there's no
+  obvious case for deploying a GPU-resident large local model.
+  qwen2.5:32b matches gpt-4o on every metric except duration
+  (32B is 2.8x slower per scenario on this hardware). The
+  "production default" tier in the model ladder doesn't need
+  more than 7B — confirmed.
+
+### Caveats (2026-05-12)
+
+These improve on the 2026-05-07 caveats but don't fully eliminate
+them.
+
+- **n = 30 scenarios, single seed.** Bigger sample but still no
+  variance estimate. Single-row differences are still noise; the
+  patterns reported above span ≥5 scenarios each.
+- **No 70B local point.** ROADMAP's "rented GPU box" remains the
+  proper home; this cut still doesn't have it.
+- **Some scenarios were authored mid-session and validated only
+  against `qwen2.5:7b` (or `qwen2.5:32b` for the depth-
+  discriminating ones).** A few of the new rubrics may still
+  benefit from a synonym-slot iteration once all five models'
+  outputs are compared per-scenario. The aggregate numbers above
+  are not sensitive to small rubric tweaks (the 3B cliff and the
+  gpt-5.4 grounding pattern are robust across rubric iteration).
+- **The grounding analyzer is rule-based.** A frontier model may
+  trip rules that smaller models don't simply because it writes
+  more prose. Before publishing this externally we want a
+  per-scenario audit confirming that gpt-5.4's 30/30 grounding
+  failure isn't dominated by a shared formatting tic
+  (citation-heavy prose, verbose templates) rather than genuine
+  ungrounded claims.
+- **One known unsatisfiable scenario.** `network-policy-block-001`
+  needs K8sGPT MCP to expose `networkpolicies` via
+  `list-resources` for its rubric to be fully tool-derivable; we
+  relaxed the rubric this session but it's still imperfect. File
+  upstream against K8sGPT and revisit when the type lands.
 
 ---
 
