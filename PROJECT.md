@@ -363,3 +363,67 @@ Append-only log of significant decisions. Update when major direction changes.
      decision gate after Phase 3 has to weigh "specialized but
      no clear win" against "ship a curated prompt template
      instead".
+- **2026-05-12:** Per-scenario audit of gpt-5.4's 30/30 grounding
+  failure overturns the prior interpretation. The headline reading
+  was "frontier model reaches the right answer wrapped in
+  fabricated supporting detail." Walking the ungrounded-fact list
+  across all 30 scenarios shows that the vast majority of flagged
+  facts are actually present in tool output — but rendered by
+  gpt-5.4 in formats the rule-based grounding analyzer can't
+  match:
+
+  - YAML-path notation: `configMapKeyRef.name: app-settings`
+    (analyzer expects a substring match against raw JSON like
+    `{"configMapKeyRef":{"name":"app-settings"}}` and fails)
+  - Dotted status paths: `state.waiting.reason: CrashLoopBackOff`
+    rendered from a JSON object whose path the model traversed
+  - Quoted-vs-unquoted: `targetPort: "http-port"` vs the
+    `targetPort: http-port` actually in the spec
+  - Reasonable inferences with synthesized strings:
+    `http://<pod>:80/healthz` composed from a probe spec, not
+    literally present in any single tool result
+  - Scenario-context fills for unsupported K8sGPT MCP types
+    (e.g., NetworkPolicy names — see prior decisions log entries)
+
+  Genuine fabrications across 30 scenarios are roughly a handful.
+  The dominant pattern is gpt-5.4 producing a more structured,
+  YAML-shaped, faithful representation of tool output than the
+  raw text it came from, which the analyzer's substring matcher
+  treats as ungrounded.
+
+  Implications for the project:
+
+  1. **The "frontier hallucinates supporting detail" narrative is
+     retracted** in its current form. The audit doesn't show
+     gpt-5.4 inventing facts; it shows a structured paraphrase
+     that the v1 grounding analyzer can't follow. The blog draft
+     and the prior 2026-05-12 decisions-log entry are revised
+     to reflect this.
+  2. **The grounding metric needs a v2** that tolerates structural
+     rephrasing (dotted paths, quote variants, YAML notation,
+     reasonable string composition from primitives). Without
+     this, cross-model grounding comparisons aren't reliable —
+     verbose models will systematically lose, terse models will
+     systematically win, and neither result reflects faithfulness.
+  3. **The kubelm thesis is not disproved, but the evidence for
+     it from this metric is weakened.** The qwen2.5-7b "candidate
+     base model" framing still holds on rubric and ref_pass; the
+     grounding-as-distinguishing-axis argument has to wait for
+     metric v2 before it can carry weight.
+  4. **Methodology principle reinforced:** rule-based metrics
+     need adversarial audit against verbose-but-faithful models
+     before being trusted at face value, especially when the
+     bench reports a striking signal. We caught this before
+     publishing — the 2026-05-12 caveat about per-scenario
+     audit was load-bearing.
+- **2026-05-12:** 70B GPU-box benchmark dropped from Phase 3.
+  Originally planned to confirm the "above 7B is flat" finding at
+  the largest open-weight tier; the 2026-05-12 cut showed
+  qwen2.5:32b (rubric 26/30, ground_fail 12) ≈ gpt-4o (rubric 25/30,
+  ground_fail 12) ≈ qwen2.5:7b (rubric 24/30, ground_fail 14),
+  which is sufficient evidence that the plateau extends from 7B
+  to the frontier. A 70B point would only confirm what's already
+  visible and would consume external compute the project doesn't
+  need at this gate. If a later phase revisits the local-large
+  tier (e.g. for `kubelm-pro`'s 7-8B baseline comparison), the
+  GPU-box infra can be reintroduced then.

@@ -482,16 +482,51 @@ entire lineup. Strategic failure modes (when to call what, when to
 stop) dominate; syntactic failures are negligible. Same conclusion
 as the n=10 cut, now decisively backed.
 
-**4 (new). gpt-5.4 has 30/30 grounding failure.** Every conclusion
-contains at least one claim not derivable from any tool result —
-while the rubric pass-rate is 29/30 (97%). This is the strongest
-signal so far for the kubelm thesis. The frontier model reaches the
-right answer wrapped in fabricated supporting detail; the
-rule-based grounding analyzer reliably catches the inflation. At
-n=10 this looked like noise (10/10 ungrounded but n was too small
-to lean on); at n=30 it's a systematic pattern. The cluster of
-qwen2.5-7b, qwen2.5-32b, and gpt-4o sit at 12–14 grounding
-failures — 3x lower than the frontier.
+**4 (new). gpt-5.4 has 30/30 grounding failure — but the
+per-scenario audit shows this is largely a metric artifact.** Every
+conclusion is flagged as ungrounded by the rule-based analyzer,
+while the rubric pass-rate is 29/30 (97%). The instinctive read
+("frontier model fabricates supporting detail") is *wrong*; the
+audit overturns it. Walking the ungrounded-fact list across all
+30 gpt-5.4 conclusions, the dominant pattern is that the facts
+*are* in tool output — gpt-5.4 just renders them in formats the
+v1 grounding matcher can't reconcile with the raw text:
+
+- YAML-path notation: `configMapKeyRef.name: app-settings`
+  (analyzer expects a substring match against the raw JSON
+  `{"configMapKeyRef":{"name":"app-settings"}}` and fails)
+- Dotted status paths: `state.waiting.reason: CrashLoopBackOff`
+  rendered from a JSON object whose path the model traversed
+- Quoted vs unquoted: `targetPort: "http-port"` vs the
+  `targetPort: http-port` actually in the spec
+- Reasonable string composition from primitives:
+  `http://<pod>:80/healthz` synthesized from a probe spec, not
+  literally a single substring of any single tool result
+
+Genuine fabrications across 30 scenarios are a handful at most.
+The dominant signal is gpt-5.4 producing a *more structured,
+faithful representation* of tool output than the raw text it came
+from, which the v1 analyzer's substring matcher mishandles.
+
+**Two consequences:**
+
+1. **We can't lean on gpt-5.4's grounding score for cross-model
+   comparison until the grounding metric has a v2.** A v2 needs
+   to tolerate structural rephrasing (dotted paths, quote
+   variants, YAML notation, reasonable string composition).
+   Without it, verbose-but-faithful models systematically lose;
+   terse models systematically win; neither reflects truth.
+
+2. **The "small grounded specialist beats frontier" thesis is
+   not disproved, but the strongest single data point for it is
+   retracted.** qwen2.5-7b's 14 grounding failures (vs gpt-4o's
+   12) is still real signal — those are flat-output models the
+   v1 analyzer handles well. The case for kubelm rests on
+   `qwen2.5:7b`-as-the-fine-tune-target (rubric, ref_pass,
+   latency) plus the architectural argument (a model that
+   grounds reliably reduces the operator policy surface, a
+   model that doesn't expands it). The frontier-grounding wedge
+   has to wait for metric v2 to be readable.
 
 ### What this *strengthens* about kubelm's thesis
 
@@ -510,17 +545,20 @@ into a concrete target.
   "specialized but no clear win" against "ship a curated prompt
   template instead and re-evaluate".
 
-- **gpt-5.4's grounding score reframes the value pitch.** A locally
-  hosted specialist that returns "I called these tools, these are
-  the results, here is what they say" — without filling in
-  fabricated detail — is more useful to a downstream operator
-  policy layer than a frontier model that returns a polished
-  conclusion wrapped in invented context. The grounding metric is
-  the production-relevant one for K8sGPT's auto-remediation
-  architecture (Mutation CRs + policy gates), because every
-  unverifiable claim is a thing the operator now has to reason
-  about. A model that grounds reliably reduces the policy
-  surface area; a model that hallucinates expands it.
+- **The architectural argument for grounded specialists holds
+  regardless of the metric.** A locally hosted model that returns
+  "I called these tools, these are the results, here is what they
+  say" — sticking to what the tools actually returned — is more
+  useful to a downstream operator policy layer than one that
+  paraphrases liberally. Every unverifiable claim is a thing the
+  K8sGPT operator has to reason about; every faithful summary is
+  one less. This is a design argument, not a number-driven one.
+  We *cannot* support it with the current 2026-05-12 grounding
+  column (gpt-5.4's 30/30 is largely a metric artifact, see
+  finding 4 above), and we shouldn't pretend otherwise. The
+  grounding-as-distinguishing-axis argument has to wait until
+  the grounding metric has a v2 that handles verbose-but-
+  faithful presentation.
 
 - **The 32B → cloud step buying no rubric** means there's no
   obvious case for deploying a GPU-resident large local model.
@@ -537,8 +575,13 @@ them.
 - **n = 30 scenarios, single seed.** Bigger sample but still no
   variance estimate. Single-row differences are still noise; the
   patterns reported above span ≥5 scenarios each.
-- **No 70B local point.** ROADMAP's "rented GPU box" remains the
-  proper home; this cut still doesn't have it.
+- **No 70B local point — and we're not going to add one for this
+  baseline.** The 2026-05-12 cut shows qwen2.5:32b ≈ gpt-4o on
+  every metric except duration, which is sufficient evidence that
+  the "above 7B is flat" plateau extends to the frontier. A 70B
+  point would only confirm what's already visible. If a later
+  phase revisits the local-large tier (`kubelm-pro` evaluation,
+  for example), the GPU-box infra can be reintroduced then.
 - **Some scenarios were authored mid-session and validated only
   against `qwen2.5:7b` (or `qwen2.5:32b` for the depth-
   discriminating ones).** A few of the new rubrics may still

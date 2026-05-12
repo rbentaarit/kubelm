@@ -155,20 +155,50 @@ hallucination rates scale with model size."
 
 - [x] Benchmark plan documented (Shape A and Shape B model lineups in
       `eval/scenarios/benchmarks/`)
-- [ ] All benchmark runs completed (3 published cuts as of 2026-05-12:
+- [x] All benchmark runs completed (3 published cuts as of 2026-05-12:
       `shape-a-2026-05-07`, `shape-b-2026-05-11` (10 scenarios), and
       `shape-b-2026-05-12` (full 30-scenario library, post-retrofit).
-      Outstanding: GPU-box run to fill in the 70B local point, and a
-      final decision-gate cut after the upstream K8sGPT MCP
-      `networkpolicies` gap is addressed)
+      The 70B local GPU-box run was originally listed but dropped on
+      2026-05-12 as not load-bearing for the decision gate — the
+      qwen2.5:32b ≈ gpt-4o plateau in the 2026-05-12 cut is
+      sufficient evidence that "above 7B is flat" extends to the
+      frontier, so a 70B point would only confirm what's already
+      visible. See PROJECT.md decisions log)
 - [x] Results table with all reliability metrics + performance metrics
       (`eval/results/summaries/README.md`)
 - [x] Hallucination-vs-size visualization
       (`eval/results/summaries/shape-b-2026-05-11.png`, regenerated
       via `eval/results/summaries/plot_shape_b.py`)
 - [x] Blog post draft (`docs/blog/scenario-methodology.md`)
+- [x] Per-scenario audit of the 2026-05-12 outlier (gpt-5.4's
+      30/30 grounding failure). Audit overturned the headline
+      reading: most flagged facts are present in tool output but
+      rendered in YAML-path / quoted / dotted-status format the
+      v1 grounding analyzer can't match. The blog and PROJECT.md
+      decisions log were revised accordingly. Tracked as the
+      grounding-metric-v2 followup item below.
 - [ ] Blog post published
 - [ ] Results announced on relevant channels
+
+### Followups surfaced during Phase 3
+
+- **Grounding-metric v2.** The v1 rule-based analyzer's substring
+  matcher mishandles structured paraphrase (dotted paths, quote
+  variants, YAML notation, string composition from primitives). It
+  systematically penalizes verbose-but-faithful models. A v2 needs
+  to tolerate these rephrasings — either by parsing the model's
+  output for structural facts and matching against tool-result
+  JSON paths, or by using an LLM-judge to verify faithfulness
+  rather than substring presence. Until this lands, cross-model
+  grounding comparisons aren't reliable enough to drive
+  architectural claims. May fit better in Phase 4 / Phase 5
+  prep, but flagging here as a Phase 3 surfaced issue.
+- **K8sGPT MCP `networkpolicies` upstream.** File against
+  k8sgpt-ai/k8sgpt to add networkpolicy support to
+  `list-resources`. Currently the
+  `eval/scenarios/specs/network-policy-block-001.yaml` rubric
+  is relaxed because the type isn't exposed. Re-tighten the
+  rubric when the type lands.
 
 **Decision gate after Phase 3:** does the data support continuing to
 fine-tuning?
