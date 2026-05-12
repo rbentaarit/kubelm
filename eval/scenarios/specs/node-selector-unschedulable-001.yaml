@@ -35,10 +35,13 @@ settle:
       timeout: 30s
 
 expected:
+  # Retrofit 2026-05-11: list-resources(pods) moved to any_of and
+  # singular form added (K8sGPT MCP accepts both `pod` and `pods`).
   reference_calls:
-    must_include:
-      - { name: list-resources, args_match: { resourceType: pods } }
+    must_include: []
     any_of:
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-resources, args_match: { resourceType: pod } }
       - { name: list-events }
       - { name: get-resource, args_match: { resourceType: pod, name: picky-pod } }
     forbidden: []

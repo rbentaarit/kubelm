@@ -39,6 +39,7 @@ expected:
     must_include: []
     any_of:
       - { name: list-resources, args_match: { resourceType: persistentvolumeclaims } }
+      - { name: list-resources, args_match: { resourceType: persistentvolumeclaim } }
       - { name: get-resource,   args_match: { resourceType: persistentvolumeclaim, name: data-pvc } }
       - { name: list-events,    args_match: { involvedObjectName: data-pvc } }
     forbidden: []

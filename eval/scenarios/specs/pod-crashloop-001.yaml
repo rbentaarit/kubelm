@@ -38,10 +38,14 @@ settle:
       timeout: 90s
 
 expected:
+  # Retrofit 2026-05-11: list-resources(pods) moved from must_include
+  # to any_of so the singular form `pod` is also accepted (K8sGPT
+  # MCP takes both).
   reference_calls:
-    must_include:
-      - { name: list-resources, args_match: { resourceType: pods } }
+    must_include: []
     any_of:
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-resources, args_match: { resourceType: pod } }
       - { name: get-logs,     args_match: { podName: crash-pod } }
       - { name: list-events,  args_match: { involvedObjectName: crash-pod } }
     forbidden: []

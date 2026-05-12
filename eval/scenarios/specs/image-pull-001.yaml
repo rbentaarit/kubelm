@@ -32,10 +32,16 @@ settle:
       timeout: 120s
 
 expected:
+  # Retrofit 2026-05-11: list-resources(pods) moved from must_include
+  # to any_of because K8sGPT MCP accepts both `pod` and `pods`
+  # resourceType values; AND-semantics of must_include can't express
+  # "either singular or plural". any_of also covers get-resource and
+  # list-events as equally valid first calls.
   reference_calls:
-    must_include:
-      - { name: list-resources, args_match: { resourceType: pods } }
+    must_include: []
     any_of:
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-resources, args_match: { resourceType: pod } }
       - { name: get-resource, args_match: { resourceType: pod, name: bad-image } }
       - { name: list-events,  args_match: { involvedObjectName: bad-image } }
     forbidden: []

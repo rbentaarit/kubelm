@@ -45,6 +45,7 @@ expected:
       - { name: get-resource, args_match: { resourceType: pod, name: hungry-pod } }
       - { name: list-events,  args_match: { involvedObjectName: hungry-pod } }
       - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-resources, args_match: { resourceType: pod } }
     forbidden: []
   conclusion_rubric:
     must_mention: ["OOMKilled", "hungry-pod"]

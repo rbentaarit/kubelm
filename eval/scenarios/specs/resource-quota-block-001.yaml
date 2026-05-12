@@ -47,6 +47,7 @@ expected:
     any_of:
       - { name: list-events }
       - { name: list-resources, args_match: { resourceType: resourcequotas } }
+      - { name: list-resources, args_match: { resourceType: resourcequota } }
       - { name: get-resource,   args_match: { resourceType: resourcequota, name: zero-pods } }
     forbidden: []
   conclusion_rubric:

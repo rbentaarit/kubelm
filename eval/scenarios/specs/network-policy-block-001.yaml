@@ -58,15 +58,50 @@ settle:
       timeout: 90s
 
 expected:
+  # K8sGPT MCP v0.4.32 does not expose `networkpolicies` via
+  # list-resources (see PROJECT.md decisions log 2026-05-11 and the
+  # drill-in in eval/results/summaries/README.md). The model can call
+  # the right tool, but the server returns
+  # `unsupported resource type` and the policy name
+  # (`default-deny-ingress`) is never surfaced in any tool result.
+  #
+  # Two consequences for the rubric:
+  #   1. The reference call any_of still includes the
+  #      list-resources / get-resource attempts — the model
+  #      should TRY to inspect networkpolicies even though K8sGPT
+  #      will reject. The post-ee8c75c metric correctly does not
+  #      count an errored call as satisfying the reference, so
+  #      this scenario hard-tests the analyzer's empty-handed
+  #      reasoning. We also include `analyze` and `list-events`
+  #      because they DO surface NetworkPolicy-related findings
+  #      from K8sGPT's pod analyzer.
+  #   2. The conclusion_rubric must NOT require the policy name
+  #      `default-deny-ingress` — it is not tool-derivable on
+  #      this K8sGPT version. We require only "NetworkPolicy"
+  #      (which the analyze surface does reference) plus an
+  #      ingress / no-traffic / blocked synonym to prove the
+  #      model identified the right failure mechanism.
+  #
+  # File upstream against K8sGPT and revisit this rubric when
+  # networkpolicies become a supported list-resources type.
   reference_calls:
     must_include: []
     any_of:
+      - { name: analyze, args_match: {} }
+      - { name: list-events, args_match: {} }
       - { name: list-resources, args_match: { resourceType: networkpolicies } }
+      - { name: list-resources, args_match: { resourceType: networkpolicy } }
       - { name: get-resource,   args_match: { resourceType: networkpolicy, name: default-deny-ingress } }
     forbidden: []
   conclusion_rubric:
-    must_mention: ["NetworkPolicy", "default-deny-ingress"]
+    must_mention:
+      - ["NetworkPolicy", "network policy", "networkpolicy"]
+      - ["ingress", "blocked", "no traffic", "denying", "deny", "no allow", "not allowed"]
     must_not_mention: []
     semantic_intent: |
-      Recognizes the default-deny NetworkPolicy as the cause of blocked
-      ingress and notes that no allow rule matches the api-pod traffic.
+      Recognizes that ingress traffic to api-pod is being blocked by
+      a NetworkPolicy in the namespace. The specific policy name
+      (`default-deny-ingress`) is not currently exposed by K8sGPT
+      MCP's list-resources tool, so a correct conclusion does not
+      need to name it — it suffices to identify NetworkPolicy as
+      the mechanism and note that ingress is denied.
