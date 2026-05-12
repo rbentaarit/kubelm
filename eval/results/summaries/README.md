@@ -222,3 +222,87 @@ bug is fixed and the rubric is reconciled with the tool surface.
   process is correct but the start→end timestamps span hours of
   idle, not active compute. The per-run `duration_seconds` column
   is the authoritative latency record.
+
+## 2026-05-12 — Shape B: 5-model curve, 30-scenario library
+
+First Shape B cut against the expanded Phase 2 library (30 scenarios,
+up from the 10 used in the 2026-05-07 and 2026-05-11 cuts). 5 models
+× 30 scenarios = 150 runs, ~2h6m wall-time on M1 Max 64 GB. Also
+the first run that exercises the retrofitted singular/plural
+`any_of` matchers (commit `2feda83`) and the relaxed
+`network-policy-block-001` rubric (no longer requires the policy
+name K8sGPT MCP can't expose).
+
+| model | complete | schema | ground_fail | ref_pass | rubric_pass | errored | duration_s |
+|---|---|---|---|---|---|---|---|
+| llama3.2-3b | 1/30 | 30/30 | 28 | 0/30 | 6/30 | 0 | 967 |
+| qwen2.5-7b | 30/30 | 29/30 | 14 | 29/30 | 24/30 | 0 | 1625 |
+| qwen2.5-32b | 29/30 | 29/30 | 12 | 25/30 | 26/30 | 1 | 2856 |
+| gpt-4o | 30/30 | 30/30 | 12 | 27/30 | 25/30 | 0 | 1025 |
+| gpt-5.4 | 30/30 | 30/30 | 30 | 30/30 | 29/30 | 0 | 1085 |
+
+**File:** `shape-b-2026-05-12.json`
+
+![Shape B: reliability vs model size (2026-05-12)](shape-b-2026-05-12.png)
+
+Regenerate with:
+
+```
+uv run --group viz python eval/results/summaries/plot_shape_b.py \
+    eval/results/summaries/shape-b-2026-05-12.json
+```
+
+### Headline findings
+
+1. **The 3B cliff is even sharper with 30 scenarios.** 1/30 complete,
+   6/30 rubric, 0/30 ref_pass. With 3x more sample, the
+   3B→7B phase change is unambiguous — this is the single most
+   robust signal across all three published cuts.
+2. **gpt-5.4 dominates the rubric: 29/30 (97%) and 30/30 ref_pass
+   (100%).** Up from the 7B–32B–gpt-4o cluster's 24-26/30
+   (80–87%). The cloud-frontier-vs-mid-size gap that was barely
+   visible at n=10 is now clearly real at n=30.
+3. **gpt-5.4's grounding paradox is overwhelming: 30/30 ungrounded.**
+   Every single conclusion contained at least one claim not in
+   tool results — while the rubric was 29/30. The "right answer,
+   fabricated supporting detail" pattern from 2026-05-11 holds
+   across the full library. This is the strongest signal for the
+   kubelm thesis: a small model that can match rubric AND ground
+   reliably wins on the metric that matters for production.
+4. **7B–32B–gpt-4o cluster on rubric: 24, 26, 25 / 30.** The
+   "above 7B is flat" finding survives the wider library; the
+   spread is 6.7 percentage points. Adding parameters past 7B
+   produces no large rubric gain on this surface.
+5. **qwen2.5-7b's grounding (14) is close to gpt-4o's (12).**
+   A 4.7 GB model is competitive with gpt-4o on the
+   most-quality-sensitive metric. Combined with ref_pass 29/30
+   (vs gpt-4o's 27/30), qwen2.5-7b is the clearest "sweet spot"
+   in this run — high task completion, low ungrounded
+   inflation. This is the candidate base model the kubelm
+   project would have to beat with a fine-tune.
+6. **Schema clean across all 149 successful runs.** One arg
+   hallucination from qwen2.5-7b, zero name hallucinations
+   across the entire lineup. Strategic failure modes (when to
+   call what, when to stop) remain dominant; syntactic failures
+   are negligible.
+
+### Caveats
+
+- **One transient infra error.** qwen2.5-32b × hpa-no-metrics-001
+  hit the 120s ollama read timeout — same shape as the prior
+  cut's transient. Re-running the (model × scenario) pair would
+  push its errored count to 0 without changing the others.
+- **No 70B local point.** The GPU-box run still pending per
+  ROADMAP Phase 3.
+- **Rubrics not all v2-stabilized.** The new ~20 scenarios
+  added this session have only been validated against qwen2.5:7b
+  (or qwen2.5:32b for depth-discriminating ones) and the full
+  bench was their first cross-model exposure. A few may need
+  one more synonym-slot iteration once we have all five models'
+  outputs to compare.
+- **The grounding finding is now strong but a per-scenario audit
+  is still wise** before publishing externally — e.g. confirm
+  that gpt-5.4's 30/30 grounding failure isn't dominated by a
+  shared formatting tic (verbose templates, citation-heavy
+  prose, etc.) that the rule-based grounding analyzer
+  systematically flags.

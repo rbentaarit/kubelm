@@ -182,15 +182,20 @@ design.
 
 This repo grows in stages. Each stage is a separately-useful artifact:
 
-- [ ] **Phase 1: Eval harness skeleton** — Python framework that runs a
+- [x] **Phase 1: Eval harness skeleton** — Python framework that runs a
       model as an MCP client against a real K8sGPT MCP server. Records
-      trajectories, measures hallucination metrics.
-- [ ] **Phase 2: Seeded scenario library** — kind-based test scenarios
+      trajectories, measures hallucination metrics. *Shipped.*
+- [x] **Phase 2: Seeded scenario library** — kind-based test scenarios
       paired with expected investigation trajectories. The benchmark
-      ground truth.
+      ground truth. *30 scenarios shipped (lower bound of 30–50 target);
+      covers pod-startup, service/networking, scheduling, storage,
+      RBAC, resources, and workload-controller failure modes.*
 - [ ] **Phase 3: Public baseline benchmark** — frontier cloud models, large
       local models, and small generic local models, all measured against
-      the eval. First blog post.
+      the eval. First blog post. *Two cuts published in
+      `eval/results/summaries/` (2026-05-07, 2026-05-11). Blog post
+      draft exists in `docs/blog/`; final publication pending the
+      GPU-box 70B point and decision-gate run.*
 - [ ] **Phase 4: Trajectory training dataset** — expert-curated multi-step
       examples on Hugging Face, tied to specific K8sGPT MCP versions.
 - [ ] **Phase 5: First fine-tuned model release** — `kubelm-standard` (3B)
@@ -217,13 +222,21 @@ before the next begins.
 
 ## Contributing
 
-The project isn't ready for code contributions yet — the foundation is
-still being laid. The most useful contribution today is **K8sGPT MCP
-tool-use scenarios**: real Kubernetes investigation flows you've encountered,
+The eval harness (Phase 1) is published and the seeded scenario library
+(Phase 2) is at its lower-bound coverage of 30 scenarios. The most
+useful contribution today is **additional K8sGPT MCP tool-use
+scenarios**: real Kubernetes investigation flows you've encountered,
 with the sequence of tool calls a competent SRE would make.
 
-Once Phase 1 (the eval harness) is published, there will be a clear
-contribution process for adding scenarios.
+See `eval/scenarios/specs/` for the format and existing examples. Each
+scenario is a YAML spec with a kind setup, an investigation goal, a
+list of acceptable reference tool calls (`any_of`), and a substring
+conclusion rubric. New scenarios should be validated end-to-end via
+`uv run python -m eval.scenarios run --scenario-id <id> ...` before
+submission. The decision gate at the end of Phase 3 (whether to
+proceed to fine-tuning, see `ROADMAP.md`) will benefit from broader
+scenario coverage, so scenario PRs are the most impactful contribution
+right now.
 
 ---
 

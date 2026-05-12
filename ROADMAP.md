@@ -106,7 +106,9 @@ failure?
 - [x] Scenario format documented
 - [x] First 10 scenarios with kind setup scripts and reference trajectories
 - [x] Scenario runner integrated with eval harness
-- [ ] 30–50 scenarios covering top failure modes
+- [x] 30–50 scenarios covering top failure modes (30 as of 2026-05-11;
+      categories: pod-startup, service/networking, scheduling, storage,
+      RBAC, resources, workload controllers)
 - [x] Scenario library publicly committed
 - [x] Blog post draft on the scenario methodology
 
@@ -151,12 +153,20 @@ hallucination rates scale with model size."
 
 ### Phase 3 checklist
 
-- [ ] Benchmark plan documented (which models, which hardware, which
-      scenario subset)
-- [ ] All benchmark runs completed
-- [ ] Results table with all reliability metrics + performance metrics
-- [ ] Hallucination-vs-size visualization
-- [ ] Blog post draft
+- [x] Benchmark plan documented (Shape A and Shape B model lineups in
+      `eval/scenarios/benchmarks/`)
+- [ ] All benchmark runs completed (3 published cuts as of 2026-05-12:
+      `shape-a-2026-05-07`, `shape-b-2026-05-11` (10 scenarios), and
+      `shape-b-2026-05-12` (full 30-scenario library, post-retrofit).
+      Outstanding: GPU-box run to fill in the 70B local point, and a
+      final decision-gate cut after the upstream K8sGPT MCP
+      `networkpolicies` gap is addressed)
+- [x] Results table with all reliability metrics + performance metrics
+      (`eval/results/summaries/README.md`)
+- [x] Hallucination-vs-size visualization
+      (`eval/results/summaries/shape-b-2026-05-11.png`, regenerated
+      via `eval/results/summaries/plot_shape_b.py`)
+- [x] Blog post draft (`docs/blog/scenario-methodology.md`)
 - [ ] Blog post published
 - [ ] Results announced on relevant channels
 

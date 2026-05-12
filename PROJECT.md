@@ -290,3 +290,76 @@ Append-only log of significant decisions. Update when major direction changes.
   destructive-operation gating.
 - **2026-05-05:** Tier order: ship `kubelm-standard` (3B) first, then edge
   and pro variants. Single-model launch reduces v1 scope.
+- **2026-05-11:** Cloud frontier model for the Phase 3 baseline locked to
+  `gpt-5.4`. Newer OpenAI models (`gpt-5`, `gpt-5.5`) reject
+  `temperature: 0` ("Only the default (1) value is supported") and would
+  force stochastic sampling — breaking methodology commitment #5
+  (reproducible eval). `gpt-5.4` is the latest model that is both
+  current and deterministic. Backend code routes `max_tokens` →
+  `max_completion_tokens` automatically for the gpt-5 family and
+  o1/o3 reasoning models (`eval/runner/openai_backend.py`). Re-check
+  against the live `/v1/models` catalog at each baseline refresh —
+  the OpenAI family moves fast and the temp=0 constraint may shift.
+- **2026-05-11:** K8sGPT MCP `list-resources` tool (v0.4.32) does not
+  expose `networkpolicies` as a supported resourceType. Surfaced from a
+  drill-in on the `network-policy-block-001` scenario: gpt-5.4 correctly
+  called `list-resources(resourceType=networkpolicies)`, K8sGPT
+  responded with `isError: true / unsupported resource type`, and the
+  scenario's rubric (which requires the specific policy name
+  `default-deny-ingress`) became unsatisfiable on the current MCP
+  surface. Documented in `eval/results/summaries/README.md`. Two
+  follow-ups: file upstream against K8sGPT, and either relax the
+  scenario's rubric or skip the scenario until upstream lands.
+- **2026-05-11:** `ref_pass` metric in `eval/metrics/reference_calls.py`
+  fixed to gate `must_include` / `any_of` matches on the corresponding
+  `tool_result.is_error != true`. Previously any call that matched a
+  matcher's name/args counted as a reference call even when the MCP
+  server had rejected it — over-stating the column. `forbidden`
+  matchers still fire on errored calls (the attempt is the violation,
+  not the result). The 2026-05-11 Shape B summary was re-graded
+  against the fix; three cells flipped True→False, all on
+  `network-policy-block-001` (the K8sGPT-MCP unsupported-type case).
+  See commit `ee8c75c` and the regrade helper
+  `eval/results/summaries/regrade_ref_pass.py`.
+- **2026-05-11:** Scenario library cleared the ROADMAP Phase 2 lower
+  bound of 30 (was 10 at start of session). Added scenarios for
+  readiness/liveness probes, init containers, ConfigMap-missing,
+  ServiceAccount-missing, taint-no-toleration, anti-affinity,
+  insufficient-CPU, pod-PVC-not-found, StatefulSet+PVC,
+  Deployment-rollout-stuck, Deployment-paused, CronJob-suspended,
+  Job-backoff-exhausted, DaemonSet-no-fit, HPA-no-metrics,
+  Service-port-mismatch, ResourceQuota-CPU-exceeded,
+  init-image-pull, pod-command-not-found. Authoring patterns
+  captured in `CLAUDE.md`.
+- **2026-05-12:** Third Shape B baseline published
+  (`shape-b-2026-05-12.json`) — 5 models × 30 scenarios. First cut
+  against the expanded library. The findings strengthen the
+  hypothesis that motivates this project:
+
+  1. The 3B → 7B phase change is fully robust at n=30: llama3.2-3b
+     hits 1/30 complete, 6/30 rubric, 0/30 ref_pass. The capability
+     cliff for tool-use is real and sharp.
+  2. The 7B–32B–gpt-4o plateau on rubric is preserved (24-26/30),
+     confirming "more parameters past 7B doesn't buy more rubric on
+     this surface" with 3x the sample.
+  3. **gpt-5.4 has 30/30 grounding failure** — every conclusion
+     contains at least one claim not derivable from any tool
+     result, while rubric is 29/30. The frontier model is reliably
+     producing the right answer wrapped in fabricated supporting
+     detail. This is the strongest direct evidence so far that the
+     "small + grounded > frontier + verbose" thesis has room to
+     win on a metric that matters for production. Worth a
+     per-scenario audit before publishing externally (the
+     grounding analyzer is rule-based and a shared formatting tic
+     could partially explain the score), but the gap from
+     qwen2.5-7b (14/30) and gpt-4o (12/30) is too large to
+     dismiss.
+  4. **qwen2.5-7b is the candidate base model that a kubelm
+     fine-tune would have to beat.** 30/30 complete, 29/30
+     ref_pass, 24/30 rubric, 14 grounding failures. Competitive
+     with gpt-4o on grounding (14 vs 12) at 4.7 GB. If kubelm
+     can match qwen2.5-7b on rubric AND ground better, the
+     thesis is validated; if it merely matches all metrics, the
+     decision gate after Phase 3 has to weigh "specialized but
+     no clear win" against "ship a curated prompt template
+     instead".
