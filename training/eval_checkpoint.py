@@ -42,18 +42,55 @@ import json
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+# llama-cpp-python ships several chat_format handlers. Plain `chatml`
+# emits assistant turns as text — it does NOT translate Qwen 2.5's
+# tool-call output into OpenAI-shape `tool_calls`, so the eval harness
+# would see zero structured calls and every scenario would record
+# schema_pass=False / ref_pass=False. `chatml-function-calling` is the
+# standard llama-cpp-python value for ChatML-family models that need
+# OpenAI-shape function calling on the wire, which is exactly the
+# contract the eval harness expects.
+LLAMA_CPP_CHAT_FORMAT = "chatml-function-calling"
+
+
+def _wait_for_server_ready(port: int, timeout_seconds: float = 30.0) -> None:
+    """Poll GET /v1/models until 200 OK or the timeout expires.
+
+    Sleep-based ready checks race against weight load on a cold disk
+    or a contended GPU box; a real poll is the only correct gate.
+    """
+    deadline = time.monotonic() + timeout_seconds
+    url = f"http://127.0.0.1:{port}/v1/models"
+    last_err: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=2) as resp:
+                if 200 <= resp.status < 300:
+                    return
+        except (urllib.error.URLError, OSError) as e:
+            last_err = e
+        time.sleep(0.5)
+    raise TimeoutError(
+        f"llama_cpp.server did not answer GET {url} within {timeout_seconds}s"
+        f" (last error: {last_err})"
+    )
+
 
 def boot_llama_cpp_server(gguf_path: Path, port: int, model_name: str) -> subprocess.Popen:
-    """Spawn `llama-server` (or python -m llama_cpp.server) on `port`.
+    """Spawn `python -m llama_cpp.server` on `port` and wait until it answers.
 
     Returns the child process. Caller is responsible for terminating.
-    The python-bound server (`llama_cpp.server`) exposes an
-    OpenAI-compatible `/v1/chat/completions` endpoint with tool-use
-    support, which is what the eval harness expects.
+    The python-bound server exposes an OpenAI-compatible
+    `/v1/chat/completions` endpoint; with `chat_format`
+    `chatml-function-calling` it translates the model's tool-call
+    output into the OpenAI-shape `tool_calls` field the eval harness
+    parses.
     """
     cmd = [
         "python",
@@ -66,15 +103,28 @@ def boot_llama_cpp_server(gguf_path: Path, port: int, model_name: str) -> subpro
         "--n_ctx",
         "8192",
         "--chat_format",
-        "chatml",  # Qwen2.5 uses ChatML
+        LLAMA_CPP_CHAT_FORMAT,
         "--alias",
         model_name,
     ]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    # Naive ready check; better would be a /v1/models poll.
-    time.sleep(5)
+    try:
+        _wait_for_server_ready(port)
+    except TimeoutError:
+        if proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+        if proc.poll() is not None:
+            _, err = proc.communicate(timeout=2)
+            raise RuntimeError(
+                f"llama_cpp.server died on startup: {err.decode(errors='replace')[:500]}"
+            ) from None
+        raise
     if proc.poll() is not None:
-        out, err = proc.communicate(timeout=1)
+        _, err = proc.communicate(timeout=2)
         raise RuntimeError(
             f"llama_cpp.server died on startup: {err.decode(errors='replace')[:500]}"
         )

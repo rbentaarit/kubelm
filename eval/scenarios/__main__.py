@@ -25,6 +25,7 @@ Examples:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 import sys
 import uuid
@@ -221,7 +222,15 @@ def cmd_bench(args: argparse.Namespace) -> int:
 
     ollama_models = [m.model for m in models if is_local_ollama(m.backend_url)]
 
-    with manage_ollama(models_to_unload=ollama_models):
+    # Only manage the ollama daemon when at least one model needs it.
+    # Otherwise the bench would unconditionally try to spawn
+    # `ollama serve` even on machines (e.g. rented GPU boxes) where
+    # ollama is not installed, crashing the run with FileNotFoundError
+    # before the first scenario.
+    ollama_ctx: Any = (
+        manage_ollama(models_to_unload=ollama_models) if ollama_models else contextlib.nullcontext()
+    )
+    with ollama_ctx:
         summary = run_bench(
             scenarios=scenarios,
             profiles=profiles,

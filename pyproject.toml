@@ -46,6 +46,19 @@ train = [
     "bitsandbytes==0.49.2",
     "accelerate==1.13.0",
 ]
+# CPU/GPU inference dependency for the kubelm-edge runtime path
+# (training/eval_checkpoint.py --boot-llama-cpp). Kept separate from
+# the `train` group so a rented GPU box can install only what it
+# needs and a local M1 can install only the eval-side bits.
+#
+# llama-cpp-python builds against the host's BLAS / CUDA at install
+# time. On the GPU box, install with:
+#   CMAKE_ARGS="-DGGML_CUDA=on" uv sync --group eval-gpu
+# On macOS M1 (Metal-accelerated):
+#   CMAKE_ARGS="-DGGML_METAL=on" uv sync --group eval-gpu
+eval-gpu = [
+    "llama-cpp-python[server]==0.3.23",
+]
 
 [build-system]
 requires = ["hatchling"]
