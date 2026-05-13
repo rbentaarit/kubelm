@@ -285,7 +285,24 @@ pinning.
       `data/seed/varied/v0/gpt-5.4-2026-05-12-varied.jsonl` (10
       variants × 29 seeds = 290 trajectories, ~7.8 MB, zero
       substitution leakage).
-- [ ] Negative examples included
+- [x] Negative examples included.
+      `data/seed/synthesize_negatives.py` produces 46 negative
+      trajectories at v0 from two injection patterns:
+        - wrong_resource_type (17 trajectories): injects
+          `list-resources(resourceType=<typo>)` before the real
+          call; the K8sGPT-shape `unsupported resource type` error
+          response is reproduced verbatim from the 2026-05-12
+          drill-in observation; the assistant follows with a short
+          recovery message before the original trajectory runs.
+        - hallucinated_tool_name (29 trajectories): injects a
+          `get-pod` call (a plausible non-existent tool); MCP
+          returns `unknown tool: get-pod`; recovery message names
+          the real `get-resource` shape.
+      All marked `provenance.source: "negative_synthetic"` and
+      `review_status: "unreviewed"` — synthetic data needs a human
+      pass before training, especially the recovery prose.
+      Output: `data/seed/varied/v0/negatives-2026-05-12.jsonl`
+      (~1.3 MB).
 - [ ] Hugging Face dataset published (v0.1, pinned to a K8sGPT version)
 - [ ] Dataset card with methodology, license, intended use
 - [ ] Blog post on dataset construction
