@@ -250,14 +250,36 @@ pinning.
 
 ### Phase 4 checklist
 
-- [ ] Trajectory format documented
-- [ ] Seed-trajectory generation pipeline working
+- [x] Trajectory format documented (`data/seed/FORMAT.md`,
+      schema_version 1, OpenAI tool-use messages shape)
+- [x] Seed-trajectory generation pipeline working
+      (`data/seed/convert.py` takes an eval bench summary and
+      emits trajectory JSONL; `data/seed/snapshot_tools.py`
+      captures the K8sGPT MCP tools/list once per version).
+      First seed file: `data/seed/v0/gpt-5.4-2026-05-12.jsonl`
+      (29 trajectories — gpt-5.4's clean rubric runs from the
+      2026-05-12 Shape B cut). Tools cache still empty until
+      the snapshot script is run.
+- [ ] Per-trajectory review of the 29 seed trajectories — see
+      `data/seed/REVIEW.md` for the checklist. Review pass-rate
+      becomes the v0.1 dataset's accepted population.
 - [ ] First 100 hand-reviewed trajectories
 - [ ] Generalization variation pipeline (surface-detail randomization)
 - [ ] Negative examples included
 - [ ] Hugging Face dataset published (v0.1, pinned to a K8sGPT version)
 - [ ] Dataset card with methodology, license, intended use
 - [ ] Blog post on dataset construction
+
+### Followups surfaced during Phase 4 prep
+
+- **TrajectoryRecorder should persist the tools/list it saw.** The
+  eval harness currently calls `client.list_tools()` at run time
+  but doesn't save the result alongside the trajectory. Adding a
+  `tools` field to the meta event would let Phase 4's converter
+  ingest the exact tool schemas the model saw during the run, and
+  would remove the need for an out-of-band `data/seed/tools/*.json`
+  cache. Small change; defer to a quiet moment between bench runs
+  so it doesn't perturb in-flight results.
 
 ---
 

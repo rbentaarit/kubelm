@@ -416,6 +416,28 @@ Append-only log of significant decisions. Update when major direction changes.
      bench reports a striking signal. We caught this before
      publishing — the 2026-05-12 caveat about per-scenario
      audit was load-bearing.
+- **2026-05-12:** Phase 4 prep scaffolding committed. The trajectory
+  training-data format (`data/seed/FORMAT.md`, schema_version 1) is
+  pinned around an OpenAI-shaped `messages` array so existing SFT
+  toolchains (HF TRL, Axolotl, Unsloth) can ingest natively. The
+  format separates `messages` (training payload) from `provenance`
+  and `quality` (metadata + eval-harness read-outs) so downstream
+  loops can `if "messages" in record:` without dragging metadata
+  into the model input. A `data/seed/convert.py` script
+  back-converts existing eval results into this format; the first
+  seed file (`data/seed/v0/gpt-5.4-2026-05-12.jsonl`) is the 29
+  rubric-passing gpt-5.4 trajectories from the 2026-05-12 Shape B
+  cut. The `tools` field is currently `null` in this seed because
+  the eval harness doesn't persist the K8sGPT MCP `tools/list`
+  payload alongside trajectories; a `data/seed/snapshot_tools.py`
+  helper exists to capture them per K8sGPT version (run on demand),
+  and a `TrajectoryRecorder` change to persist tools at run time is
+  on the ROADMAP followup list. Phase 4 step 1 ("generate seed
+  trajectories using a strong model + manual review") is reframed
+  as a *reuse* of the gpt-5.4 bench output rather than a separate
+  generation pass — the strong model already ran 30 scenarios with
+  29/30 rubric-pass, so converting + reviewing those seeds is
+  Phase 4's actual cheapest path to v0.1.
 - **2026-05-12:** 70B GPU-box benchmark dropped from Phase 3.
   Originally planned to confirm the "above 7B is flat" finding at
   the largest open-weight tier; the 2026-05-12 cut showed
