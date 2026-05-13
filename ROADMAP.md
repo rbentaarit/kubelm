@@ -303,8 +303,15 @@ pinning.
       pass before training, especially the recovery prose.
       Output: `data/seed/varied/v0/negatives-2026-05-12.jsonl`
       (~1.3 MB).
-- [ ] Hugging Face dataset published (v0.1, pinned to a K8sGPT version)
-- [ ] Dataset card with methodology, license, intended use
+- [ ] Hugging Face dataset published (v0.1, pinned to a K8sGPT version).
+      Upload recipe documented in `data/seed/README.md`; deliberately
+      not scripted — first publication is a one-shot maintainer
+      action. The corpus on disk (data/seed/v0/ + data/seed/varied/v0/)
+      is ready to ship.
+- [x] Dataset card with methodology, license, intended use
+      (`data/seed/DATASET_CARD.md`, HF-compatible front matter,
+      links to FORMAT.md / REVIEW.md / repo. Will become the HF
+      dataset's README.md at upload time).
 - [ ] Blog post on dataset construction
 
 ### Followups surfaced during Phase 4 prep
