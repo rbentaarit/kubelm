@@ -312,7 +312,14 @@ pinning.
       (`data/seed/DATASET_CARD.md`, HF-compatible front matter,
       links to FORMAT.md / REVIEW.md / repo. Will become the HF
       dataset's README.md at upload time).
-- [ ] Blog post on dataset construction
+- [x] Blog post on dataset construction
+      (`docs/blog/trajectory-dataset-construction.md`). Covers
+      the format/shape choices, reusing eval-bench output as
+      seeds, the review heuristic + grounding-artifact audit,
+      the variation pipeline, negative-example synthesis, and
+      honest limitations. ~400 lines, same tempo as the scenario-
+      methodology blog. Includes a "How to use it" section with
+      HF `datasets` snippets.
 
 ### Followups surfaced during Phase 4 prep
 
