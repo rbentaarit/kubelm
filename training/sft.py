@@ -106,6 +106,68 @@ def _to_sft_example(record: dict[str, Any]) -> dict[str, Any]:
     return {"messages": record["messages"]}
 
 
+def _smoke_test_masking(trainer: Any, tokenizer: Any) -> None:
+    """Pull one batch, verify non-assistant tokens are masked (label == -100).
+
+    For trajectory SFT, only assistant turns should contribute to the loss.
+    If `assistant_only_loss=True` was silently ignored by the trainer wrapper,
+    every token gets a real label and training wastes gradient on memorizing
+    user goals + tool-result JSON. This check catches that before the rental
+    clock starts.
+    """
+    print("=== smoke-test: assistant-only loss masking ===", file=sys.stderr)
+    loader = trainer.get_train_dataloader()
+    batch = next(iter(loader))
+    if "labels" not in batch:
+        print("ERROR: batch has no 'labels' key; cannot verify masking.", file=sys.stderr)
+        raise SystemExit(2)
+
+    labels = batch["labels"][0]
+    input_ids = batch["input_ids"][0]
+    total = int(labels.numel())
+    masked = int((labels == -100).sum().item())
+    unmasked = total - masked
+    pct = 100.0 * masked / total if total else 0.0
+    print(f"  total tokens in sample[0]: {total}", file=sys.stderr)
+    print(f"  masked (-100):             {masked} ({pct:.1f}%)", file=sys.stderr)
+    print(f"  unmasked (loss-bearing):   {unmasked}", file=sys.stderr)
+
+    # Heuristic threshold: on our trajectories the assistant turns are
+    # ~10-30% of total tokens (one short tool-calling turn + final
+    # conclusion, vs verbose tool-result JSON). If <30% is masked the
+    # mask is clearly not working; if >95% is masked the trainer is
+    # masking the conclusion too (also a bug). Both warrant aborting
+    # before a real run.
+    if pct < 30.0:
+        print(
+            "FAIL: <30% of tokens masked — assistant_only_loss is NOT taking "
+            "effect. Investigate the trainer wrapper or fall back to a manual "
+            "DataCollatorForCompletionOnlyLM before any paid run.",
+            file=sys.stderr,
+        )
+        raise SystemExit(3)
+    if pct > 95.0:
+        print(
+            "FAIL: >95% of tokens masked — the mask is eating assistant turns "
+            "too. Check the chat template's assistant boundary tokens against "
+            "the tokenizer's chat_template.",
+            file=sys.stderr,
+        )
+        raise SystemExit(3)
+
+    # Show a sample of unmasked text so a human can eyeball that the
+    # loss-bearing region is actually the assistant content.
+    keep = [
+        int(tok)
+        for tok, lbl in zip(input_ids.tolist(), labels.tolist(), strict=True)
+        if lbl != -100
+    ]
+    if keep:
+        decoded = tokenizer.decode(keep[:200], skip_special_tokens=False)
+        print(f"  first ~200 unmasked tokens decode to: {decoded!r}", file=sys.stderr)
+    print("PASS: masking ratio is in the expected band.", file=sys.stderr)
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--config", type=Path, required=True)
@@ -114,6 +176,18 @@ def main() -> int:
         "--dry-run",
         action="store_true",
         help="Load the config and dataset, print stats, but don't import torch or train.",
+    )
+    p.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help=(
+            "Load everything (model, tokenizer, dataset, trainer), pull one "
+            "batch through the dataloader, verify assistant_only_loss masking "
+            "actually masks non-assistant tokens, then exit before training. "
+            "Use this on the GPU box BEFORE a paid run to confirm the labels "
+            "look right — silent mis-masking is the single biggest money-burn "
+            "risk for QLoRA SFT on trajectory data."
+        ),
     )
     args = p.parse_args()
 
@@ -183,16 +257,21 @@ def main() -> int:
         save_strategy=train_cfg["save_strategy"],
         save_total_limit=train_cfg["save_total_limit"],
         seed=train_cfg["seed"],
+        assistant_only_loss=train_cfg["assistant_only_loss"],
         report_to=cfg.get("report_to") or [],
         max_seq_length=cfg["max_seq_length"],
     )
 
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         train_dataset=train_dataset,
         args=sft_config,
     )
+
+    if args.smoke_test:
+        _smoke_test_masking(trainer, tokenizer)
+        return 0
 
     trainer.train()
 

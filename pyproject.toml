@@ -21,6 +21,31 @@ dev = [
 viz = [
     "matplotlib>=3.10.9",
 ]
+# Training stack for the GPU-box SFT flow (training/sft.py).
+# DO NOT install on macOS Apple Silicon — unsloth + bitsandbytes don't
+# build cleanly. Use `uv sync --group train` only on a CUDA host.
+#
+# Versions exact-pinned for methodology commitment #5 (reproducible
+# training). Constraints anchored by unsloth 2026.5.2 which caps
+# trl <= 0.24.0 and transformers <= 5.5.0 (a ~5-month lag behind
+# upstream as of 2026-05-13). Path A from the Phase 5 preflight:
+# pin to unsloth's allowed range to keep its QLoRA speedup and
+# memory wins; vanilla trl + bitsandbytes is documented as the
+# fallback in training/sft.py if unsloth becomes a blocker.
+#
+# torch is left as a constrained range because the CUDA wheel
+# variant (e.g. cu124, cu126) is environment-specific and installed
+# separately on the GPU box. Upper bound matches unsloth's metadata.
+train = [
+    "torch>=2.4,<2.11",
+    "transformers==5.5.0",
+    "trl==0.24.0",
+    "unsloth==2026.5.2",
+    "datasets==4.3.0",
+    "peft==0.19.1",
+    "bitsandbytes==0.49.2",
+    "accelerate==1.13.0",
+]
 
 [build-system]
 requires = ["hatchling"]

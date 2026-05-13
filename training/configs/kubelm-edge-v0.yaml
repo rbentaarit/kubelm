@@ -21,9 +21,12 @@ base_model_revision: main   # bump to a commit SHA before publication
 # Tokenizer / chat template
 chat_template: qwen        # Qwen2.5's bundled chat template handles tool_calls
                            # in the OpenAI shape our trajectories use
-max_seq_length: 8192       # tool results regularly exceed 4096 tokens;
-                           # Qwen 2.5 1.5B supports up to 32K so 8K is well
-                           # within bounds
+max_seq_length: 16384      # Trajectory char-length p99 over the v0 corpus
+                           # is ~60 KB (~15K tokens at chars/4); 8K would
+                           # silently right-truncate the conclusion (the
+                           # training signal) on the long tail. 16K covers
+                           # the tail with headroom and remains well within
+                           # Qwen 2.5 1.5B's 32K native context.
 
 # Dataset
 dataset:
@@ -82,6 +85,11 @@ training:
   save_strategy: epoch
   save_total_limit: 3
   seed: 42
+  # Train only on assistant tokens. Without this, SFTTrainer's default
+  # is to apply loss to every token, including the 1067 verbose tool-result
+  # JSON blocks in the corpus — gradient spent memorizing tool output is
+  # wasted at best and grounding-harmful at worst. Requires trl >= 0.13.
+  assistant_only_loss: true
 
 # Output (relative to --out passed on the CLI)
 output:
