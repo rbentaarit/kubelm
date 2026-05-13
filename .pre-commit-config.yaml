@@ -24,4 +24,10 @@ repos:
       - id: check-toml
       - id: check-merge-conflict
       - id: check-added-large-files
-        args: [--maxkb=1024]
+        # 8 MB cap. Curated seed corpora under data/seed/ legitimately
+        # carry full tool_result content per trajectory and grow with
+        # variation pipelines. The K8sGPT MCP `analyze` and
+        # `get-resource` responses are several KB each. A 5× variation
+        # of the 29-seed v0 file already sits at ~4 MB. Larger corpora
+        # belong on Hugging Face per the Phase 4 deliverable.
+        args: [--maxkb=8192]
