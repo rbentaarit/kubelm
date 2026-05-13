@@ -271,20 +271,20 @@ pinning.
       K8sGPT MCP networkpolicies gap (`default-deny`,
       `ingress-blocking`). No genuine fabrications found.
 - [~] First 100 hand-reviewed trajectories. 29 reviewed seeds plus
-      145 variants (5 per seed) = 174 trajectories on disk. The
+      290 variants (10 per seed) = 319 trajectories on disk. The
       variants share their source's review_status because they are
       mechanical surface-detail substitutions, but a tightening review
       can re-stamp them. Hand-written trajectories (Phase 4 construction
-      step 2) are still the gap to 100+.
+      step 2) are still the gap to 100+ NEW seeds.
 - [x] Generalization variation pipeline (surface-detail randomization).
       `data/seed/vary.py` substitutes namespace + primary resource
       names from curated pools, deterministically per
       (scenario_id, variant_idx), consistent across system prompt /
       goal / tool_call args / tool_result content / final
       conclusion. Output:
-      `data/seed/varied/v0/gpt-5.4-2026-05-12-varied.jsonl` (5
-      variants × 29 seeds = 145 trajectories, zero substitution
-      leakage after the short-key prefix-avoidance fix).
+      `data/seed/varied/v0/gpt-5.4-2026-05-12-varied.jsonl` (10
+      variants × 29 seeds = 290 trajectories, ~7.8 MB, zero
+      substitution leakage).
 - [ ] Negative examples included
 - [ ] Hugging Face dataset published (v0.1, pinned to a K8sGPT version)
 - [ ] Dataset card with methodology, license, intended use
