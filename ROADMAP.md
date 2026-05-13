@@ -260,9 +260,16 @@ pinning.
       (29 trajectories — gpt-5.4's clean rubric runs from the
       2026-05-12 Shape B cut). Tools cache still empty until
       the snapshot script is run.
-- [ ] Per-trajectory review of the 29 seed trajectories — see
-      `data/seed/REVIEW.md` for the checklist. Review pass-rate
-      becomes the v0.1 dataset's accepted population.
+- [x] Per-trajectory review of the 29 seed trajectories. Auto-review
+      via `data/seed/review.py` applied REVIEW.md's hard rules
+      (schema/termination/rubric) and a token-level grounding-artifact
+      heuristic. Result: 29/29 `accepted`, all with
+      `grounding_failed_v1_artifact: true`. Residual unmatched facts
+      across all trajectories are derived states (`NotReady`,
+      `non-zero`), reasonable string compositions (`http://<pod>:80/healthz`),
+      tool-name self-references (`list-resources`), or the known
+      K8sGPT MCP networkpolicies gap (`default-deny`,
+      `ingress-blocking`). No genuine fabrications found.
 - [ ] First 100 hand-reviewed trajectories
 - [ ] Generalization variation pipeline (surface-detail randomization)
 - [ ] Negative examples included
