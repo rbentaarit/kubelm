@@ -1,4 +1,4 @@
-# kubelm-standard v0 — initial SFT config
+# kubelm-edge v0 — initial SFT config
 #
 # Loaded by training/sft.py. Schema is intentionally flat: a future
 # v2 with multi-stage training (SFT → DPO etc.) will introduce a
@@ -6,8 +6,14 @@
 #
 # Pin every reproducibility-relevant knob. PROJECT.md commitment #5
 # says training is reproducible; that obligation lives here.
+#
+# Deployment target footprint (kubelm-edge tier, per ROADMAP Phase 6):
+#   - Q4_K_M GGUF on disk: ~1.0 GB
+#   - Working set at 8K context: ~1.5–1.7 GB (weights + KV cache + compute)
+#   - K8s Pod resources: requests 1 cpu / 1.5Gi memory, limits 2 cpu / 2Gi
+#   - Fits as a sidecar on the same node as the K8sGPT analyzer
 
-base_model: Qwen/Qwen2.5-3B-Instruct
+base_model: Qwen/Qwen2.5-1.5B-Instruct
 base_model_revision: main   # bump to a commit SHA before publication
                             # (commit pin is the actual reproducibility lever;
                             #  "main" here is a development placeholder)
@@ -15,7 +21,9 @@ base_model_revision: main   # bump to a commit SHA before publication
 # Tokenizer / chat template
 chat_template: qwen        # Qwen2.5's bundled chat template handles tool_calls
                            # in the OpenAI shape our trajectories use
-max_seq_length: 8192       # tool results regularly exceed 4096 tokens
+max_seq_length: 8192       # tool results regularly exceed 4096 tokens;
+                           # Qwen 2.5 1.5B supports up to 32K so 8K is well
+                           # within bounds
 
 # Dataset
 dataset:
@@ -40,7 +48,10 @@ dataset:
 # LoRA / QLoRA
 lora:
   r: 32                      # higher rank for tool-use SFT helps;
-                             # we can sweep this in Phase 5 step 2
+                             # we can sweep this in Phase 5 step 2.
+                             # For a 1.5B base, r=32 → ~30 MB adapter,
+                             # ~2-3% of model params — well within the
+                             # "specialize, don't replace" range.
   alpha: 64                  # 2× r is the unsloth default
   dropout: 0.0
   target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
@@ -56,8 +67,9 @@ quantization:
 # Training loop
 training:
   num_train_epochs: 3
-  per_device_train_batch_size: 4
-  gradient_accumulation_steps: 4    # effective batch size = 16
+  per_device_train_batch_size: 8         # 1.5B fits more samples per step;
+                                         # bumped from 4 (the 3B-era setting)
+  gradient_accumulation_steps: 2          # effective batch size = 16
   learning_rate: 2.0e-4
   lr_scheduler_type: cosine
   warmup_ratio: 0.03

@@ -1,4 +1,4 @@
-"""QLoRA SFT entry point for kubelm-standard.
+"""QLoRA SFT entry point for kubelm-edge.
 
 Runs on a rented GPU box (A100 / H100 / large consumer GPU). NOT
 tested on the maintainer's local macOS M1 — `unsloth` doesn't
@@ -6,8 +6,8 @@ build cleanly on Apple Silicon.
 
 Usage:
     uv run python training/sft.py \
-        --config training/configs/kubelm-standard-v0.yaml \
-        --out runs/kubelm-standard-v0-attempt-1/
+        --config training/configs/kubelm-edge-v0.yaml \
+        --out runs/kubelm-edge-v0-attempt-1/
 
 The script is deliberately thin: it loads a YAML config, loads the
 trajectory JSONL files listed in the config, applies the filter,

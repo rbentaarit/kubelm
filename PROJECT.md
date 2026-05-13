@@ -438,42 +438,99 @@ Append-only log of significant decisions. Update when major direction changes.
   generation pass — the strong model already ran 30 scenarios with
   29/30 rubric-pass, so converting + reviewing those seeds is
   Phase 4's actual cheapest path to v0.1.
-- **2026-05-13:** Phase 5 prep — base model and framework locked.
-  Base: `Qwen/Qwen2.5-3B-Instruct`. Rationale: the 2026-05-12
-  Shape B baseline showed `qwen2.5:7b` at 24/30 rubric and 14
-  grounding failures (competitive with `gpt-4o` on grounding at
-  4.7 GB), making it the empirical target a kubelm-standard
-  fine-tune must beat. The 3B model of the same family
-  (`Qwen2.5-3B-Instruct`) is the natural starting point: same
-  instruction-tuning regime, same tokenizer, same chat template,
-  removes a confounding variable so the training signal is "did
-  specialization recover the capability lost by going 7B→3B?"
-  rather than "what's different about this entirely separate
-  family?". Llama 3.2 3B was the alternative but its 2026-05-12
-  result was catastrophic (1/30 complete, 6/30 rubric, 0/30
-  ref_pass) — the capability gap to close is larger than 365
-  trajectories of SFT can plausibly bridge. Phi-3.5 mini is
-  untested on this surface and can revisit for v0.2.
+- **2026-05-13 (revised same day):** Phase 5 v0 target retargeted
+  from `kubelm-standard` (3B) to `kubelm-edge` (1.5B). The original
+  decision earlier this day landed on `Qwen/Qwen2.5-3B-Instruct` as
+  the kubelm-standard base. On reflection that was the wrong tier
+  to ship first: the project's deployment story is "K8sGPT
+  alongside a small model in a standalone or dev cluster", which
+  argues for the edge tier (1-1.5B per the ROADMAP model ladder)
+  as v0.
 
-  Training framework: Unsloth (QLoRA 4-bit, single-A100 budget).
-  Cited reason: ~2× faster than vanilla TRL SFT on this regime,
-  native GGUF quantization output, no exotic deps. Fallback:
-  `trl.SFTTrainer` + `bitsandbytes`; the SFT script structure
-  is portable.
+  Retargeted base: `Qwen/Qwen2.5-1.5B-Instruct`. Inputs to the
+  decision:
 
-  Training data: positives only for v0 (29 seeds + 290
-  variants = 319 trajectories). Synthetic negatives excluded
-  because all 46 carry review_status: unreviewed and the
-  recovery prose is templated — including them would teach the
-  model to memorize the exact phrasing. Re-add for v0.1 once
-  the recovery turns are hand-varied.
+  1. **Same-day baseline measurement.** Ran `qwen2.5:1.5b` against
+     the 30-scenario library (1 model × 30 scenarios, ~17 min
+     wall-time, results in
+     `eval/results/summaries/shape-b-2026-05-13-qwen-1.5b.json`):
 
-  Scaffolding committed: `training/configs/kubelm-standard-v0.yaml`,
+       - complete:         8/30
+       - schema_passed:    27/30
+       - name_halluc:      0
+       - arg_halluc:       2
+       - grounding_failed: 16/30
+       - ref_pass:         3/30
+       - rubric_pass:      10/30
+       - errored:          1 (settle-race on pod-anti-affinity)
+
+     The model is not catastrophically broken (unlike `llama3.2:3b`
+     at 1/30 complete, 6/30 rubric, 0/30 ref_pass). 8/30 complete +
+     10/30 rubric out of the box is a real foothold for SFT.
+
+  2. **HF survey for K8s-specialized small models came up empty
+     for this surface.** Queried `kubernetes / kubectl / k8s /
+     devops / sre` filtered to text-generation. At <2B params,
+     the candidates were:
+
+       - chowmean/k8s_Qwen2.5-0.5B-Instruct (Qwen 2.5 0.5B base, 4
+         downloads, trained on `kubernetes_commands` — command Q&A,
+         not multi-step trajectory)
+       - lakhera2023/devops-slm (Qwen 2 0.5B base, 29 downloads,
+         broad devops/docker/cicd, older Qwen 2 not 2.5)
+       - brito-parzivall/tinyllama-kubectl-v3 (TinyLlama 1.1B, 3
+         downloads, stale since 2024-03)
+
+     All have smaller bases than 1.5B and are trained for different
+     surfaces (command Q&A, kubectl help, generic devops chat).
+     Our 365-trajectory K8sGPT-MCP-specific corpus is more
+     on-target than what any of those models were trained on, and
+     starting from a larger / better-tuned base (Qwen 2.5 1.5B
+     Instruct) means the SFT lift is more achievable. The
+     family-control argument (same family as the 7B empirical
+     target) wins.
+
+  3. **Deployment footprint matches the dev-cluster framing.**
+     Q4_K_M GGUF: ~1.0 GB on disk. Working set at 8K context:
+     ~1.5–1.7 GB (weights + KV cache + compute). K8s Pod
+     resources: requests 1 cpu / 1.5Gi memory, limits 2 cpu / 2Gi
+     — consistent with the ROADMAP `kubelm-edge` tier definition
+     ("2-core CPU, 2GB RAM"). Per-step latency on 2-4 cores:
+     ~15-50 tokens/sec → typical 2-5 turn investigation runs in
+     30s-3min.
+
+  Training data: positives only for v0 (29 seeds + 290 variants =
+  319 trajectories). Synthetic negatives excluded because all 46
+  carry review_status: unreviewed and the recovery prose is
+  templated.
+
+  Framework: Unsloth (QLoRA 4-bit). Cost envelope per training
+  run is now ~$1.50-$6 on a rented A100 (smaller model, faster
+  per-step), down from the $10 envelope of the 3B target. 2-4
+  hours of A100 time per run.
+
+  Scaffolding committed: `training/configs/kubelm-edge-v0.yaml`
+  (renamed from kubelm-standard-v0.yaml; LoRA r=32 unchanged but
+  batch sizing tweaked for the smaller model: per_device 8 vs 4,
+  grad_accum 2 vs 4 → same effective batch 16),
   `training/sft.py`, `training/eval_checkpoint.py`,
-  `training/README.md`. None of the code runs on the maintainer's
-  local M1 (Unsloth doesn't build on Apple Silicon); execution
-  is a rented-GPU action. Per-run cost estimate: under $10 on a
-  RunPod A100 at $0.79/hr × 4-6 hours.
+  `training/README.md`. The 1.5B baseline summary
+  (`eval/results/summaries/shape-b-2026-05-13-qwen-1.5b.json`)
+  joins the published cuts.
+
+  Quality bar for release (revised against the new baseline):
+
+    - Minimum: rubric ≥ 12, complete ≥ 12, ref_pass ≥ 6, 0 name
+      hallucinations, ≤ 2 arg hallucinations
+    - Stretch: rubric ≥ 17, complete ≥ 20, ref_pass ≥ 12
+    - Optimistic: match qwen2.5:7b (rubric 24, complete 30,
+      ref_pass 29) — "specialization fully recovered the
+      capability lost going 7B→1.5B in the same family"
+
+  After kubelm-edge ships, Phase 7's ladder expansion produces
+  kubelm-standard (3B) and kubelm-pro (7B) on the same dataset
+  and recipe. Edge first matches the deployment story; the
+  larger tiers follow for clusters with more memory.
 - **2026-05-12:** 70B GPU-box benchmark dropped from Phase 3.
   Originally planned to confirm the "above 7B is flat" finding at
   the largest open-weight tier; the 2026-05-12 cut showed

@@ -365,26 +365,33 @@ metrics, don't release. Iterate the data.
 
 ### Phase 5 checklist
 
-- [x] Base model selected based on Phase 3 data:
-      `Qwen/Qwen2.5-3B-Instruct`. Same family as `qwen2.5:7b`
-      which the 2026-05-12 cut identified as the empirical
-      target a kubelm-standard fine-tune must beat. Rationale
-      and rejected alternatives (Llama 3.2 3B, Phi-3.5 mini)
-      are in PROJECT.md decisions log 2026-05-13.
+- [x] Base model selected based on Phase 3 data + a same-day
+      2026-05-13 baseline measurement of the candidate:
+      `Qwen/Qwen2.5-1.5B-Instruct` for `kubelm-edge` v0. The
+      original 2026-05-13 choice of `Qwen/Qwen2.5-3B-Instruct`
+      (kubelm-standard v0) was revised later the same day — the
+      deployment story is "standalone / dev cluster" which argues
+      for the 1.5B edge tier as v0. 2026-05-13 baseline
+      (`eval/results/summaries/shape-b-2026-05-13-qwen-1.5b.json`):
+      8/30 complete, 10/30 rubric, 3/30 ref_pass, 0 name
+      hallucinations, 2 arg hallucinations — a real SFT
+      foothold. HF survey for K8s-specialized small models came
+      up empty for this surface (sub-2B candidates are
+      smaller-base / wrong-surface / low-adoption). Full
+      rationale in PROJECT.md decisions log 2026-05-13.
 - [x] Training scaffolding committed (NOT a training run):
-      `training/configs/kubelm-standard-v0.yaml` (Unsloth
-      QLoRA config — base model, dataset filter, LoRA rank 32,
-      3 epochs, lr 2e-4, paged AdamW 8-bit),
+      `training/configs/kubelm-edge-v0.yaml` (Unsloth QLoRA —
+      base model Qwen 2.5 1.5B, dataset filter, LoRA rank 32,
+      3 epochs, lr 2e-4, per_device_batch 8, paged AdamW 8-bit),
       `training/sft.py` (entry point; deferred heavy imports
       so `--dry-run` works without CUDA),
       `training/eval_checkpoint.py` (bench adapter — boots a
       llama_cpp server OR points at an existing OpenAI-compat
       backend, then runs the standard 30-scenario Shape B
       against it for direct comparison to the baseline rows),
-      `training/README.md` (orientation + cost model + how-to).
-      Dry-run loads 319 records (29 seeds + 290 variants;
-      negatives excluded for v0 because their recovery prose
-      is templated and unreviewed).
+      `training/README.md` (orientation + deployment footprint +
+      cost model + how-to). Dry-run loads 319 records (29 seeds
+      + 290 variants; negatives excluded for v0).
 - [ ] First training run completed end-to-end (rented A100;
       cost est. <$10)
 - [ ] Hyperparameter sweep (5–10 runs)
@@ -436,10 +443,12 @@ sensible end-to-end behavior on the eval scenarios.
 
 ## Phase 7: Model Ladder Expansion
 
-**Goal:** release `kubelm-edge` (1–1.5B) and `kubelm-pro` (7–8B) variants.
+**Goal:** release `kubelm-standard` (3B) and `kubelm-pro` (7–8B)
+variants, completing the ladder after `kubelm-edge` (1.5B) shipped
+in Phase 5.
 
 **Deliverable:** Two additional Hugging Face model releases, evaluation
-results across the full ladder.
+results across the full three-tier ladder.
 
 **Strategy notes:**
 
@@ -447,12 +456,17 @@ results across the full ladder.
   customize per tier — homogeneity keeps maintenance manageable.
 - Re-run full eval against all three tiers. Publish comparison.
 - Update Helm chart to support tier selection via `values.yaml`.
+- Edge-first ordering (decided 2026-05-13): the deployment story
+  is "K8sGPT alongside a small model in a standalone / dev
+  cluster" → kubelm-edge ships first as v0 (Phase 5). kubelm-
+  standard and kubelm-pro are the "more capability, more memory"
+  variants that follow.
 
 ### Phase 7 checklist
 
-- [ ] `kubelm-edge` trained and released
-- [ ] `kubelm-pro` trained and released
-- [ ] Full ladder benchmark published
+- [ ] `kubelm-standard` (3B) trained and released
+- [ ] `kubelm-pro` (7B) trained and released
+- [ ] Full ladder benchmark published (edge + standard + pro)
 - [ ] Helm chart updated for tier selection
 - [ ] Blog post on the ladder and tradeoffs
 

@@ -306,3 +306,64 @@ uv run --group viz python eval/results/summaries/plot_shape_b.py \
   shared formatting tic (verbose templates, citation-heavy
   prose, etc.) that the rule-based grounding analyzer
   systematically flags.
+
+## 2026-05-13 — Shape B addendum: qwen2.5-1.5b baseline
+
+Standalone single-model bench cut, run to evaluate the candidate
+base for `kubelm-edge` v0 (the eventual 1.5B fine-tuned release).
+Same 30-scenario library, same protocol, same K8sGPT pin
+(0.4.32). 1 model × 30 scenarios = 30 runs, ~17 min wall-time on
+M1 Max 64 GB at parallelism=1. One transient infra error
+(`pod-anti-affinity-001` settle race — documented behavior of
+that scenario's settle condition).
+
+| model | complete | schema | ground_fail | ref_pass | rubric_pass | errored | duration_s |
+|---|---|---|---|---|---|---|---|
+| qwen2.5-1.5b | 8/30 | 27/30 | 16 | 3/30 | 10/30 | 1 | 998 |
+
+For comparison vs the 2026-05-12 5-model cut (rows reproduced
+here for the size curve):
+
+| model | complete | rubric | ref_pass | ground_fail | size |
+|---|---|---|---|---|---|
+| llama3.2-3b | 1/30 | 6/30 | 0/30 | 28 | 3B |
+| **qwen2.5-1.5b** | **8/30** | **10/30** | **3/30** | **16** | **1.5B** |
+| qwen2.5-7b | 30/30 | 24/30 | 29/30 | 14 | 7B |
+| qwen2.5-32b | 29/30 | 26/30 | 25/30 | 12 | 32B |
+| gpt-4o | 30/30 | 25/30 | 27/30 | 12 | cloud |
+| gpt-5.4 | 30/30 | 29/30 | 30/30 | 30 | cloud |
+
+**File:** `shape-b-2026-05-13-qwen-1.5b.json`
+
+### Findings
+
+1. **qwen2.5-1.5b beats llama3.2-3b across every column despite
+   being half the size.** Qwen 2.5's tool-use training shows
+   through even at 1.5B. 0 name hallucinations, 2 arg
+   hallucinations (vs llama3.2-3b's 0/0 but 1/30 complete) —
+   schema is essentially clean.
+2. **A real foothold for SFT.** 8/30 complete and 10/30 rubric
+   out of the box is qualitatively different from llama3.2-3b's
+   1/30 complete. The model can drive a multi-step investigation
+   sometimes; SFT can build on that rather than fight it.
+3. **Substantial distance to qwen2.5:7b.** Rubric 10 vs 24
+   (+14 pp), complete 8 vs 30 (+22 pp), ref_pass 3 vs 29
+   (+26 pp). That's the SFT lift kubelm-edge needs to close.
+4. **Latency is reasonable for the edge tier.** Total wall-time
+   ~17 min for 30 scenarios → ~33s mean per scenario. Larger
+   models on this hardware (qwen2.5-32b at 95s/scenario, qwen2.5-7b
+   at 54s/scenario) are slower despite being more capable.
+
+### Why this row matters for Phase 5
+
+This is the "before" number that kubelm-edge v0's training run
+must clearly beat. ROADMAP Phase 5 quality bar against this
+baseline (PROJECT.md decisions log 2026-05-13):
+
+- Minimum bar (release): rubric ≥ 12, complete ≥ 12,
+  ref_pass ≥ 6, 0 name hallucinations, ≤ 2 arg hallucinations
+- Stretch: rubric ≥ 17, complete ≥ 20, ref_pass ≥ 12
+- Optimistic: match qwen2.5:7b on every reliability column
+
+If kubelm-edge v0 doesn't clear the minimum, the data iteration
+matters more than the training iteration — re-author the corpus.

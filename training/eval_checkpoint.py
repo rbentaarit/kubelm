@@ -13,21 +13,21 @@ the eval at it:
 
     uv run python training/eval_checkpoint.py \
         --backend-url http://localhost:8000/v1 \
-        --model-name kubelm-standard-v0 \
+        --model-name kubelm-edge-v0 \
         --scenarios-dir eval/scenarios/specs \
-        --out eval/results/checkpoints/kubelm-standard-v0/
+        --out eval/results/checkpoints/kubelm-edge-v0/
 
 Mode B — boot a llama.cpp server (CPU-only inference, matches the
 deployed kubelm runtime) and then run the eval. This requires the
 `llama_cpp` Python package and a quantized GGUF on disk:
 
     uv run python training/eval_checkpoint.py \
-        --gguf runs/kubelm-standard-v0/kubelm-standard.Q4_K_M.gguf \
+        --gguf runs/kubelm-edge-v0/kubelm-edge.Q4_K_M.gguf \
         --boot-llama-cpp \
         --port 8000 \
-        --model-name kubelm-standard-v0 \
+        --model-name kubelm-edge-v0 \
         --scenarios-dir eval/scenarios/specs \
-        --out eval/results/checkpoints/kubelm-standard-v0/
+        --out eval/results/checkpoints/kubelm-edge-v0/
 
 Either way the script writes a one-line summary JSON to
 `<out>/summary.json` that matches the shape used by other Shape B
