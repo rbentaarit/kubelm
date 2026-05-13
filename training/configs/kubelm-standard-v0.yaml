@@ -1,0 +1,82 @@
+# kubelm-standard v0 — initial SFT config
+#
+# Loaded by training/sft.py. Schema is intentionally flat: a future
+# v2 with multi-stage training (SFT → DPO etc.) will introduce a
+# nested form, but v0 is single-stage QLoRA SFT.
+#
+# Pin every reproducibility-relevant knob. PROJECT.md commitment #5
+# says training is reproducible; that obligation lives here.
+
+base_model: Qwen/Qwen2.5-3B-Instruct
+base_model_revision: main   # bump to a commit SHA before publication
+                            # (commit pin is the actual reproducibility lever;
+                            #  "main" here is a development placeholder)
+
+# Tokenizer / chat template
+chat_template: qwen        # Qwen2.5's bundled chat template handles tool_calls
+                           # in the OpenAI shape our trajectories use
+max_seq_length: 8192       # tool results regularly exceed 4096 tokens
+
+# Dataset
+dataset:
+  format: jsonl
+  sources:
+    - data/seed/v0/gpt-5.4-2026-05-12.jsonl
+    - data/seed/varied/v0/gpt-5.4-2026-05-12-varied.jsonl
+    # negatives are deliberately excluded from v0 training because
+    # 46/46 carry review_status: unreviewed and have templated
+    # recovery prose. Re-add once they're hand-varied; see
+    # data/seed/DATASET_CARD.md limitations.
+    # - data/seed/varied/v0/negatives-2026-05-12.jsonl
+  filter:
+    # Train only on records the review process accepted. The mechanical
+    # variants inherit the source's status so this also keeps the 290
+    # variant records.
+    provenance.review_status: [accepted, accepted_with_edits]
+    quality.conclusion_rubric_passed: true
+    quality.schema_passed: true
+  shuffle_seed: 0xb1ab
+
+# LoRA / QLoRA
+lora:
+  r: 32                      # higher rank for tool-use SFT helps;
+                             # we can sweep this in Phase 5 step 2
+  alpha: 64                  # 2× r is the unsloth default
+  dropout: 0.0
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  bias: none
+  task_type: CAUSAL_LM
+
+quantization:
+  load_in_4bit: true         # QLoRA — base model in 4-bit during training
+  bnb_4bit_compute_dtype: bfloat16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+
+# Training loop
+training:
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 4    # effective batch size = 16
+  learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  optim: paged_adamw_8bit
+  bf16: true
+  fp16: false
+  max_grad_norm: 1.0
+  logging_steps: 5
+  save_strategy: epoch
+  save_total_limit: 3
+  seed: 42
+
+# Output (relative to --out passed on the CLI)
+output:
+  adapter_dir: adapter
+  merged_dir: merged
+  log_path: training_log.jsonl
+
+# Reporting
+report_to: []                # set to ["wandb"] when running for real;
+                             # local dry-runs leave this off

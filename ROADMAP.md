@@ -365,8 +365,28 @@ metrics, don't release. Iterate the data.
 
 ### Phase 5 checklist
 
-- [ ] Base model selected based on Phase 3 data
-- [ ] First training run completed end-to-end
+- [x] Base model selected based on Phase 3 data:
+      `Qwen/Qwen2.5-3B-Instruct`. Same family as `qwen2.5:7b`
+      which the 2026-05-12 cut identified as the empirical
+      target a kubelm-standard fine-tune must beat. Rationale
+      and rejected alternatives (Llama 3.2 3B, Phi-3.5 mini)
+      are in PROJECT.md decisions log 2026-05-13.
+- [x] Training scaffolding committed (NOT a training run):
+      `training/configs/kubelm-standard-v0.yaml` (Unsloth
+      QLoRA config — base model, dataset filter, LoRA rank 32,
+      3 epochs, lr 2e-4, paged AdamW 8-bit),
+      `training/sft.py` (entry point; deferred heavy imports
+      so `--dry-run` works without CUDA),
+      `training/eval_checkpoint.py` (bench adapter — boots a
+      llama_cpp server OR points at an existing OpenAI-compat
+      backend, then runs the standard 30-scenario Shape B
+      against it for direct comparison to the baseline rows),
+      `training/README.md` (orientation + cost model + how-to).
+      Dry-run loads 319 records (29 seeds + 290 variants;
+      negatives excluded for v0 because their recovery prose
+      is templated and unreviewed).
+- [ ] First training run completed end-to-end (rented A100;
+      cost est. <$10)
 - [ ] Hyperparameter sweep (5–10 runs)
 - [ ] Best checkpoint selected via eval
 - [ ] Quantized to GGUF

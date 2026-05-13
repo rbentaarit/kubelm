@@ -438,6 +438,42 @@ Append-only log of significant decisions. Update when major direction changes.
   generation pass — the strong model already ran 30 scenarios with
   29/30 rubric-pass, so converting + reviewing those seeds is
   Phase 4's actual cheapest path to v0.1.
+- **2026-05-13:** Phase 5 prep — base model and framework locked.
+  Base: `Qwen/Qwen2.5-3B-Instruct`. Rationale: the 2026-05-12
+  Shape B baseline showed `qwen2.5:7b` at 24/30 rubric and 14
+  grounding failures (competitive with `gpt-4o` on grounding at
+  4.7 GB), making it the empirical target a kubelm-standard
+  fine-tune must beat. The 3B model of the same family
+  (`Qwen2.5-3B-Instruct`) is the natural starting point: same
+  instruction-tuning regime, same tokenizer, same chat template,
+  removes a confounding variable so the training signal is "did
+  specialization recover the capability lost by going 7B→3B?"
+  rather than "what's different about this entirely separate
+  family?". Llama 3.2 3B was the alternative but its 2026-05-12
+  result was catastrophic (1/30 complete, 6/30 rubric, 0/30
+  ref_pass) — the capability gap to close is larger than 365
+  trajectories of SFT can plausibly bridge. Phi-3.5 mini is
+  untested on this surface and can revisit for v0.2.
+
+  Training framework: Unsloth (QLoRA 4-bit, single-A100 budget).
+  Cited reason: ~2× faster than vanilla TRL SFT on this regime,
+  native GGUF quantization output, no exotic deps. Fallback:
+  `trl.SFTTrainer` + `bitsandbytes`; the SFT script structure
+  is portable.
+
+  Training data: positives only for v0 (29 seeds + 290
+  variants = 319 trajectories). Synthetic negatives excluded
+  because all 46 carry review_status: unreviewed and the
+  recovery prose is templated — including them would teach the
+  model to memorize the exact phrasing. Re-add for v0.1 once
+  the recovery turns are hand-varied.
+
+  Scaffolding committed: `training/configs/kubelm-standard-v0.yaml`,
+  `training/sft.py`, `training/eval_checkpoint.py`,
+  `training/README.md`. None of the code runs on the maintainer's
+  local M1 (Unsloth doesn't build on Apple Silicon); execution
+  is a rented-GPU action. Per-run cost estimate: under $10 on a
+  RunPod A100 at $0.79/hr × 4-6 hours.
 - **2026-05-12:** 70B GPU-box benchmark dropped from Phase 3.
   Originally planned to confirm the "above 7B is flat" finding at
   the largest open-weight tier; the 2026-05-12 cut showed
