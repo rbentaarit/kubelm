@@ -247,9 +247,41 @@ grep -E '^\s+"torch==' pyproject.toml >/dev/null || {
 echo
 echo "=== creating venv and syncing train deps (~3-10 min) ==="
 
+# Skip every nvidia-cu12-* package from the venv install. Reason:
+# uv resolves torch==2.8.0 from PyPI to the cu128 wheel by default,
+# which pins all its nvidia-cu12 transitive deps to 12.8.x. If the
+# system torch is 2.8.0+cu129 (different ABI), the venv's older
+# cu12 libs get loaded first (--system-site-packages reads venv
+# *before* system) and torch fails at import with:
+#   ImportError: undefined symbol: __nvJitLinkGetErrorLogSize_12_9
+# Telling uv to skip these forces it to use whatever the system
+# already has under /usr/local/lib/.../nvidia/, which by definition
+# matches the system torch.
+NVIDIA_SKIPS=(
+    --no-install-package torch
+    --no-install-package torchvision
+    --no-install-package torchaudio
+    --no-install-package nvidia-cublas-cu12
+    --no-install-package nvidia-cuda-cupti-cu12
+    --no-install-package nvidia-cuda-nvrtc-cu12
+    --no-install-package nvidia-cuda-runtime-cu12
+    --no-install-package nvidia-cudnn-cu12
+    --no-install-package nvidia-cufft-cu12
+    --no-install-package nvidia-cufile-cu12
+    --no-install-package nvidia-curand-cu12
+    --no-install-package nvidia-cusolver-cu12
+    --no-install-package nvidia-cusparse-cu12
+    --no-install-package nvidia-cusparselt-cu12
+    --no-install-package nvidia-nccl-cu12
+    --no-install-package nvidia-nvjitlink-cu12
+    --no-install-package nvidia-nvtx-cu12
+    --no-install-package nvidia-nvshmem-cu12
+    --no-install-package triton
+)
+
 uv venv --system-site-packages
 UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 uv lock --quiet
-UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 uv sync --group train --no-install-package torch
+UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 uv sync --group train "${NVIDIA_SKIPS[@]}"
 
 echo
 echo "=== verifying venv torch ==="
