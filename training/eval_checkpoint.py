@@ -104,7 +104,17 @@ def boot_llama_cpp_server(gguf_path: Path, port: int, model_name: str) -> subpro
         "8192",
         "--chat_format",
         LLAMA_CPP_CHAT_FORMAT,
-        "--alias",
+        # Offload every layer to GPU. The Metal/CUDA-compiled wheel doesn't
+        # auto-detect this — without --n_gpu_layers the server runs on CPU
+        # even with a GPU-capable binary, which slows eval by ~10x.
+        # -1 means "all layers" for both Metal and CUDA backends.
+        "--n_gpu_layers",
+        "-1",
+        # `--model_alias` is the canonical flag name in llama-cpp-python's
+        # CLI (the old `--alias` shorthand was removed by 0.3.x). The alias
+        # is what shows up in the OpenAI-compat `/v1/models` response and
+        # in the bench's per-run summary.
+        "--model_alias",
         model_name,
     ]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

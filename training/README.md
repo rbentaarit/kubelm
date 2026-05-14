@@ -10,11 +10,12 @@ to run on the maintainer's local M1.
 ```
 training/
 ├── README.md                       this file
-├── runpod_setup.sh                 one-shot GPU-box bootstrap (uv, pins, deps)
+├── runpod_setup.sh                 one-shot GPU-box bootstrap: clone, install, HF login, smoke-test
+├── runpod_finalize.sh              post-train quantize + MFS-aware F16 -> Q4_K_M
 ├── configs/
 │   └── kubelm-edge-v0.yaml         SFT config: base model, dataset paths, hyperparams
 ├── sft.py                          QLoRA SFT entry point (Unsloth)
-└── eval_checkpoint.py              run the kubelm bench against a local checkpoint
+└── eval_checkpoint.py              run the kubelm bench against a local checkpoint (llama-cpp path)
 ```
 
 ## What we're training
@@ -146,23 +147,25 @@ has a smaller activation footprint.
 
 ## How to run a cycle
 
-### 1. Prep dataset on the GPU box
+### 1. Bootstrap the GPU box (one command, two token prompts)
+
+From a fresh RunPod PyTorch box's web terminal:
 
 ```bash
-git clone https://github.com/rbentaarit/kubelm.git
-cd kubelm
-bash training/runpod_setup.sh
+curl -sL https://raw.githubusercontent.com/rbentaarit/kubelm/main/training/runpod_setup.sh | bash
 ```
 
-The setup script handles every gotcha we hit on the first real
-launch — detects the template's torch + CUDA version, pins
-`pyproject.toml` to match the system torch so we reuse the
-template's pre-installed CUDA stack (saves ~3 GB of duplicate
-downloads), raises `UV_HTTP_TIMEOUT` and lowers
-`UV_CONCURRENT_DOWNLOADS` to survive RunPod's flaky shared network,
-and layers the right Unsloth CUDA extra (`cu128-torch280` etc.) on
-top. The script verifies every step and bails on first error rather
-than producing a half-installed venv.
+The script prompts (silently) for a GitHub PAT and a Hugging Face
+read token, then runs end-to-end with no further input: clones the
+repo, installs uv, pins torch to the template's exact version
+(skips ~3 GB of duplicate nvidia-cu12* downloads), creates the venv
+inheriting the template's CUDA stack, layers the matching Unsloth
+CUDA extra, logs into HF, pre-caches `Qwen/Qwen2.5-1.5B-Instruct`,
+and runs the assistant-only-loss smoke-test. Total wall-time on a
+warm RunPod community-cloud A100: 5-10 minutes.
+
+The script ends with the exact training command to copy-paste,
+including a timestamped output dir.
 
 (The `train` dep group adds `unsloth`, `transformers`, `trl`,
 `datasets`, `torch`. None of these install on macOS Apple Silicon

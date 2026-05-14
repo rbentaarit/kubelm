@@ -1,33 +1,101 @@
 #!/usr/bin/env bash
-# Bootstrap the kubelm training stack on a rented RunPod PyTorch box.
+# One-shot bootstrap of the kubelm training stack on a rented RunPod box.
 #
-# Distilled from the first real launch on 2026-05-13/14. Every block
-# in here is here because it bit us, or its absence cost a paid run.
+# Designed for iteration speed: paste two tokens, walk away while it
+# installs, come back to a smoke-tested venv with the base model cached
+# and the next training command printed and ready to copy-paste.
+#
+# Captures every gotcha from the first real launch (2026-05-13/14):
+# torch pin matches system to skip ~3GB of nvidia-cu12* downloads,
+# UV_HTTP_TIMEOUT+CONCURRENT_DOWNLOADS tuned for RunPod's shared
+# network, Unsloth CUDA extra mapped from (torch, CUDA) dynamically,
+# smoke-test verifies assistant-only loss masking before paid training.
 #
 # Expected starting state on the pod:
-#   - PyTorch template booted (torch 2.4-2.10 + CUDA pre-installed)
-#   - Repo cloned, current working directory is the repo root
-#     (i.e. `pyproject.toml` is next to this script's parent dir)
-#   - Reachable PyPI (curl -I https://files.pythonhosted.org returns 200)
+#   - PyTorch template booted (torch 2.4-2.10 + CUDA pre-installed,
+#     verifiable with `nvidia-smi` and `python3 -c "import torch"`)
+#   - Reachable PyPI + GitHub (default for RunPod community cloud)
 #
-# Run as:  bash training/runpod_setup.sh
+# Run either form works:
 #
-# What this does NOT do (assumed pre-script):
-#   - Renting the pod, picking a template, exposing SSH
-#   - Cloning the repo (we expect it already there)
-#   - HF login (we print the next command at the end)
-#   - Running the smoke test / training (also printed at the end)
+#   # From a fresh pod's web terminal (no clone needed yet):
+#   curl -sL https://raw.githubusercontent.com/rbentaarit/kubelm/main/training/runpod_setup.sh | bash
+#
+#   # From inside an already-cloned repo:
+#   bash training/runpod_setup.sh
+#
+# What this does NOT do (intentional, you decide and copy-paste):
+#   - Launch the actual training run (paid, your decision)
+#   - Quantize / publish artifacts (post-train; see runpod_finalize.sh)
 
 set -euo pipefail
 
+REPO_URL="https://github.com/rbentaarit/kubelm.git"
+REPO_DIR_DEFAULT="/workspace/kubelm"
+BASE_MODEL="Qwen/Qwen2.5-1.5B-Instruct"
+UNSLOTH_PIN="2026.5.2"
+
 # ---------------------------------------------------------------------------
-# 1. Verify we're somewhere sensible
+# 0. Token prompts (silent — never echo, never end up in shell history)
+# ---------------------------------------------------------------------------
+
+cat <<'BANNER'
+=== kubelm-edge bootstrap ===
+
+You'll be asked for two tokens. Both are read silently (no echo).
+
+  1. GitHub PAT — fine-grained, Contents:Read on rbentaarit/kubelm.
+     Only used to clone if the repo isn't already on disk; can be a
+     throwaway token, revoke after the run.
+  2. Hugging Face read token — used to pull Qwen2.5-1.5B-Instruct.
+
+BANNER
+
+read -s -p "GitHub PAT (Contents:Read, will not echo): " GH_TOKEN; echo
+read -s -p "Hugging Face read token: " HF_TOKEN; echo
+echo
+
+if [[ -z "$GH_TOKEN" || -z "$HF_TOKEN" ]]; then
+    echo "FAIL: both tokens are required. Aborting before any side effects." >&2
+    exit 1
+fi
+export GH_TOKEN HF_TOKEN
+
+# ---------------------------------------------------------------------------
+# 1. Clone repo if not already in one
 # ---------------------------------------------------------------------------
 
 if [[ ! -f pyproject.toml ]]; then
-    echo "FAIL: must be run from the kubelm repo root (pyproject.toml not found)." >&2
+    target_dir="${REPO_DIR_DEFAULT}"
+    mkdir -p "$(dirname "$target_dir")"
+    if [[ -d "$target_dir" ]]; then
+        echo "=== updating existing clone at $target_dir ==="
+        cd "$target_dir"
+        # Refresh the credential in the remote URL in case the previous
+        # PAT was rotated. Strip any embedded token before re-adding.
+        existing_url=$(git remote get-url origin)
+        clean_url=$(printf '%s' "$existing_url" | sed -E 's|https://[^@]*@|https://|')
+        git remote set-url origin "${clean_url/https:\/\//https:\/\/${GH_TOKEN}@}"
+        git fetch --quiet origin
+        git checkout --quiet main
+        git reset --hard --quiet origin/main
+    else
+        echo "=== cloning $REPO_URL -> $target_dir ==="
+        git clone --quiet "https://${GH_TOKEN}@${REPO_URL#https://}" "$target_dir"
+        cd "$target_dir"
+    fi
+    echo "  $(git log --oneline -1)"
+fi
+
+# Sanity: we should now be in a kubelm repo root.
+if [[ ! -f pyproject.toml ]]; then
+    echo "FAIL: pyproject.toml still missing after clone. Aborting." >&2
     exit 1
 fi
+
+# ---------------------------------------------------------------------------
+# 2. Sanity: Python + GPU
+# ---------------------------------------------------------------------------
 
 if ! command -v python3 >/dev/null; then
     echo "FAIL: python3 not on PATH — is this really a PyTorch template?" >&2
@@ -35,12 +103,10 @@ if ! command -v python3 >/dev/null; then
 fi
 
 # ---------------------------------------------------------------------------
-# 2. Detect template's torch version + CUDA build
+# 3. Detect template's torch version + CUDA build
 # ---------------------------------------------------------------------------
-# We pin uv against this exact torch version so the resolver doesn't pick
-# a different version's CUDA dep stack (~3GB of nvidia-cu12* wheels that
-# we'd then have to download and that wouldn't match the system anyway).
 
+echo
 echo "=== detecting template torch ==="
 
 torch_info=$(python3 - <<'PY' 2>&1
@@ -67,38 +133,32 @@ if [[ -z "$torch_version" || -z "$torch_cuda" ]]; then
 fi
 
 if [[ "$torch_cuda_ok" != "True" ]]; then
-    echo "FAIL: torch.cuda.is_available() is False." >&2
-    echo "  Driver may be too old for this template's torch build." >&2
-    echo "  Try a different RunPod community-cloud host, or pick a" >&2
-    echo "  template whose cuXXX matches an older driver." >&2
+    echo "FAIL: torch.cuda.is_available() is False — driver too old for this template." >&2
+    echo "  Try a different RunPod host (re-deploy hits a fresh community-cloud node)." >&2
     exit 1
 fi
 
-# Strip "+cuXXX" suffix from torch (e.g. 2.8.0+cu128 -> 2.8.0)
 torch_base="${torch_version%%+*}"
-torch_short="${torch_base//./}"           # 2.8.0 -> 280
-cuda_short="${torch_cuda//./}"             # 12.8  -> 128
+torch_short="${torch_base//./}"
+cuda_short="${torch_cuda//./}"
 
 echo "  torch:    ${torch_base} (${torch_version})"
 echo "  CUDA:     ${torch_cuda} (cu${cuda_short})"
 echo "  GPU:      $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)"
 
-# Unsloth 2026.5.2's wheel matrix covers torch 2.4-2.10 only.
 case "$torch_base" in
     2.4.*|2.5.*|2.6.*|2.7.*|2.8.*|2.9.*|2.10.*) : ;;
     *)
-        echo "FAIL: torch ${torch_base} is outside Unsloth 2026.5.2's wheel band (2.4-2.10)." >&2
-        echo "  Pick a different RunPod template, or bump the unsloth pin in pyproject.toml." >&2
+        echo "FAIL: torch ${torch_base} is outside Unsloth ${UNSLOTH_PIN}'s wheel band (2.4-2.10)." >&2
         exit 1
         ;;
 esac
 
-# Map (torch, cuda) -> Unsloth CUDA extra name (e.g. cu128-torch280).
 unsloth_extra="cu${cuda_short}-torch${torch_short}"
 echo "  unsloth:  [${unsloth_extra}]"
 
 # ---------------------------------------------------------------------------
-# 3. Install uv if missing
+# 4. Install uv if missing
 # ---------------------------------------------------------------------------
 
 echo
@@ -112,40 +172,27 @@ fi
 echo "  $(uv --version)"
 
 # ---------------------------------------------------------------------------
-# 4. Pin pyproject.toml's torch range to the system's exact version
+# 5. Pin pyproject.toml's torch range to the system's exact version
 # ---------------------------------------------------------------------------
-# uv's resolver picks the *highest* version that satisfies our range
-# (e.g. torch>=2.4,<2.11 resolves to 2.10.0 today). It then resolves
-# transitive deps (~14 nvidia-cu12* packages) against that version's
-# manifest. With --system-site-packages, the venv already has the
-# system's torch+CUDA stack — but only if we resolve against the SAME
-# torch version. Pin to the system's version and the venv reuses
-# everything; skip this step and we pay ~3GB of wasted downloads that
-# also time out on RunPod's shared network.
+# Without this, uv resolves torch>=2.4,<2.11 to 2.10.0 (latest in band)
+# and downloads ~3GB of mismatched nvidia-cu12* deps that time out on
+# RunPod's shared network. With the pin, --system-site-packages lets the
+# venv reuse the template's existing torch+CUDA stack. The .bak file
+# isn't kept — we don't want pyproject committed back with the local pin.
 
 echo
-echo "=== pinning torch==${torch_base} in pyproject.toml ==="
+echo "=== pinning torch==${torch_base} in pyproject.toml (working-tree only) ==="
 
-# Match any version-spec form: torch>=X, torch==X, torch<X, etc.
 sed -i.bak -E "s|\"torch[><=][^\"]*\"|\"torch==${torch_base}\"|" pyproject.toml
 rm -f pyproject.toml.bak
 grep -E '^\s+"torch==' pyproject.toml >/dev/null || {
     echo "FAIL: pyproject.toml has no torch==X.Y.Z line after sed." >&2
-    echo "  Check the file format — pin may use a different syntax." >&2
     exit 1
 }
 
 # ---------------------------------------------------------------------------
-# 5. Create venv + sync train group
+# 6. Create venv + sync train group
 # ---------------------------------------------------------------------------
-# --system-site-packages : let venv reuse template's torch + CUDA libs
-# --no-install-package torch : don't redownload — we just pinned to system
-# UV_HTTP_TIMEOUT=300 : default 30s is too tight for slow downloads
-#                      (bitsandbytes is ~1.5GB; nvidia-cudnn is 670MB)
-# UV_CONCURRENT_DOWNLOADS=4 : fewer parallel streams = each gets more
-#                            bandwidth share on RunPod's shared network.
-#                            Default (50) saturates the connection and
-#                            individual transfers time out before finishing.
 
 echo
 echo "=== creating venv and syncing train deps (~3-10 min) ==="
@@ -154,7 +201,6 @@ uv venv --system-site-packages
 UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 uv lock --quiet
 UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 uv sync --group train --no-install-package torch
 
-# Spot-check: venv should report the system torch + CUDA, not a fresh download.
 echo
 echo "=== verifying venv torch ==="
 uv run python - <<'PY'
@@ -167,23 +213,18 @@ print(f"  device 0:      {torch.cuda.get_device_name(0)}")
 PY
 
 # ---------------------------------------------------------------------------
-# 6. Install Unsloth's CUDA extra (xformers + matching bitsandbytes)
+# 7. Install Unsloth's CUDA extra (xformers + matching bitsandbytes)
 # ---------------------------------------------------------------------------
-# The base unsloth wheel imports without xformers (falls back to PyTorch
-# native attention — runs, but slower), but Unsloth's 2x QLoRA speedup
-# comes from the xformers kernels matched to (torch, CUDA).
 
 echo
 echo "=== installing Unsloth CUDA extra: ${unsloth_extra} ==="
 
 UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 \
-    uv pip install "unsloth[${unsloth_extra}]==2026.5.2"
+    uv pip install "unsloth[${unsloth_extra}]==${UNSLOTH_PIN}"
 
 # ---------------------------------------------------------------------------
-# 7. Final smoke check
+# 8. Smoke-check imports
 # ---------------------------------------------------------------------------
-# Import every package we depend on for training. If any of these errors,
-# we'd rather find out here than 4 hours into a paid training run.
 
 echo
 echo "=== smoke-checking installed stack ==="
@@ -202,35 +243,64 @@ print("  ALL_IMPORTS_OK")
 PY
 
 # ---------------------------------------------------------------------------
-# 8. Next steps
+# 9. HF login + pre-cache base model
+# ---------------------------------------------------------------------------
+# Doing both here means the smoke-test below doesn't pause on the
+# Qwen download, and the eventual training launch doesn't either.
+# huggingface_hub >=0.31 renamed `huggingface-cli` to `hf`; we use `hf`.
+
+echo
+echo "=== HF login ==="
+uv run hf auth login --token "$HF_TOKEN" >/dev/null 2>&1
+echo "  authenticated"
+
+echo
+echo "=== pre-caching ${BASE_MODEL} ==="
+uv run python - <<PY
+from huggingface_hub import snapshot_download
+path = snapshot_download("${BASE_MODEL}")
+print(f"  cached at: {path}")
+PY
+
+# ---------------------------------------------------------------------------
+# 10. Smoke-test the trainer (verifies assistant-only loss masking)
+# ---------------------------------------------------------------------------
+# This loads the model, builds the dataset, instantiates the trainer,
+# pulls one batch, asserts 30-99% mask ratio, and prints the decoded
+# unmasked region. If anything is wrong with the SFT plumbing, we'd
+# rather find out here (~3 min) than 15 min into the paid training run.
+
+echo
+echo "=== smoke-testing trainer (verifies assistant-only loss masking) ==="
+
+if uv run python training/sft.py \
+        --config training/configs/kubelm-edge-v0.yaml \
+        --out runs/kubelm-edge-v0-smoke/ \
+        --smoke-test; then
+    smoke_status="PASS"
+else
+    smoke_status="FAIL — review output above before any paid training run"
+fi
+
+# ---------------------------------------------------------------------------
+# 11. Final summary
 # ---------------------------------------------------------------------------
 
-cat <<'NEXT'
+cat <<EOF
 
-=== install complete ===
+=== bootstrap complete ===
+  smoke-test:    ${smoke_status}
+  torch:         ${torch_base}+cu${cuda_short}
+  unsloth wheel: cu${cuda_short}-torch${torch_short}
 
-Next steps (in order):
+Launch the training run when you're ready (paid step, ~15 min on A100):
 
-  1. HF login (read-only token is enough for inference):
-       read -s HF_TOKEN
-       uv run hf auth login --token "$HF_TOKEN"
-     (huggingface_hub >=0.31 renamed `huggingface-cli` to `hf`;
-      the old binary still installs but prints a deprecation error.)
+  uv run python training/sft.py \\
+      --config training/configs/kubelm-edge-v0.yaml \\
+      --out runs/kubelm-edge-v0-\$(date +%Y%m%d-%H%M)/
 
-  2. Smoke-test the trainer — verifies assistant-only loss masking
-     actually works BEFORE you spend GPU hours:
-       uv run python training/sft.py \
-           --config training/configs/kubelm-edge-v0.yaml \
-           --out runs/kubelm-edge-v0-smoke/ \
-           --smoke-test
+After training, quantize + move to /workspace via:
 
-     Expect: PASS, 30-95% of tokens masked. If FAIL or the decoded
-     unmasked region contains tool-result JSON, abort and triage
-     before the real run.
+  bash training/runpod_finalize.sh runs/kubelm-edge-v0-<TIMESTAMP>/
 
-  3. Real training run (3 epochs, ~2-4 hrs on A100):
-       uv run python training/sft.py \
-           --config training/configs/kubelm-edge-v0.yaml \
-           --out runs/kubelm-edge-v0-attempt-1/
-
-NEXT
+EOF
