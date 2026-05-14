@@ -85,11 +85,12 @@ training:
   save_strategy: epoch
   save_total_limit: 3
   seed: 42
-  # Train only on assistant tokens. Without this, SFTTrainer's default
-  # is to apply loss to every token, including the 1067 verbose tool-result
-  # JSON blocks in the corpus — gradient spent memorizing tool output is
-  # wasted at best and grounding-harmful at worst. Requires trl >= 0.13.
-  assistant_only_loss: true
+  # Assistant-only loss is wired up in training/sft.py via Unsloth's
+  # `train_on_responses_only`, not via trl's SFTConfig kwarg. Unsloth's
+  # compiled SFTTrainer wrapper ignores `assistant_only_loss` even when
+  # set, so we leave it off here and rely on the post-trainer wrap.
+  # The smoke-test (--smoke-test) verifies the mask ratio before any
+  # paid run.
 
 # Output (relative to --out passed on the CLI)
 output:

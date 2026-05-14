@@ -242,13 +242,34 @@ def main() -> int:
         bias=cfg["lora"]["bias"],
     )
 
-    tokenizer.chat_template = (
-        tokenizer.chat_template  # rely on the model's bundled template (Qwen ships one)
+    # Pre-format records into a `text` column using the model's bundled
+    # chat template. Unsloth's compiled SFTTrainer wrapper does not
+    # auto-handle conversational (`messages`) datasets the way vanilla
+    # trl 0.24 does — it raises `Unsloth: You must specify a
+    # formatting_func`. Materializing the chat-templated text up front
+    # is the documented Unsloth path and keeps the dataset reproducible
+    # (the rendered string is captured in the run output, not deferred
+    # to a closure).
+    def _render(example: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "text": tokenizer.apply_chat_template(
+                example["messages"],
+                tokenize=False,
+                add_generation_prompt=False,
+            )
+        }
+
+    train_dataset = Dataset.from_list([_to_sft_example(r) for r in records]).map(
+        _render, remove_columns=["messages"]
     )
 
-    train_dataset = Dataset.from_list([_to_sft_example(r) for r in records])
-
     train_cfg = cfg["training"]
+    # Note: we DO NOT set `assistant_only_loss` on SFTConfig. Unsloth's
+    # compiled trainer ignores that field and has its own masking utility
+    # (`train_on_responses_only`), which we apply after construction
+    # below. Setting the kwarg here would be a silent no-op at best and
+    # a TypeError at worst depending on the version drift between
+    # Unsloth's wrapper and trl 0.24's SFTConfig.
     sft_config = SFTConfig(
         output_dir=str(args.out),
         num_train_epochs=train_cfg["num_train_epochs"],
@@ -266,9 +287,9 @@ def main() -> int:
         save_strategy=train_cfg["save_strategy"],
         save_total_limit=train_cfg["save_total_limit"],
         seed=train_cfg["seed"],
-        assistant_only_loss=train_cfg["assistant_only_loss"],
         report_to=cfg.get("report_to") or [],
         max_seq_length=cfg["max_seq_length"],
+        dataset_text_field="text",
     )
 
     trainer = SFTTrainer(
@@ -276,6 +297,22 @@ def main() -> int:
         processing_class=tokenizer,
         train_dataset=train_dataset,
         args=sft_config,
+    )
+
+    # Replace the trainer's data collator with one that masks every
+    # token outside an assistant turn. This is Unsloth's equivalent of
+    # trl's `assistant_only_loss=True`. The instruction/response
+    # delimiters are Qwen 2.5's ChatML boundary tokens — any tool/user
+    # turn starts with `<|im_start|>user\n`, every assistant turn with
+    # `<|im_start|>assistant\n`. Tool responses are rendered inside
+    # user-tagged blocks by Qwen's template, so they're correctly
+    # masked alongside actual user turns.
+    from unsloth.chat_templates import train_on_responses_only
+
+    trainer = train_on_responses_only(
+        trainer,
+        instruction_part="<|im_start|>user\n",
+        response_part="<|im_start|>assistant\n",
     )
 
     if args.smoke_test:
