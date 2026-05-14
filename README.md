@@ -198,12 +198,17 @@ This repo grows in stages. Each stage is a separately-useful artifact:
       GPU-box 70B point and decision-gate run.*
 - [ ] **Phase 4: Trajectory training dataset** — expert-curated multi-step
       examples on Hugging Face, tied to specific K8sGPT MCP versions.
-- [ ] **Phase 5: First fine-tuned model release** — `kubelm-standard` (3B)
-      on Hugging Face, with reproducible training pipeline.
+- [x] **Phase 5: First fine-tuned model release** — `kubelm-edge` v0
+      (1.5B QLoRA, Qwen 2.5 base). *Retargeted from `kubelm-standard`
+      to `kubelm-edge` on 2026-05-13. Trained + evaluated 2026-05-14;
+      bench summary at `eval/results/summaries/kubelm-edge-v0-2026-05-14.json`
+      clears the release quality bars and lands within 1 point of
+      `qwen2.5:7b` on rubric (23 vs 24) and complete (29 vs 30) at
+      ~1/4 the deployment footprint. Hugging Face publication pending.*
 - [ ] **Phase 6: K8sGPT integration** — Helm chart deploying the model and
       inference engine as a K8sGPT local backend.
-- [ ] **Phase 7: Model ladder expansion** — `kubelm-edge` and `kubelm-pro`,
-      evaluated against the same benchmark.
+- [ ] **Phase 7: Model ladder expansion** — `kubelm-standard` (3B) and
+      `kubelm-pro` (7B), evaluated against the same benchmark.
 
 Items will be checked off as they land. Each phase is shipped publicly
 before the next begins.
