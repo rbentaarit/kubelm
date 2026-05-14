@@ -42,17 +42,26 @@ UNSLOTH_PIN="2026.5.2"
 cat <<'BANNER'
 === kubelm-edge bootstrap ===
 
-You'll be asked for two tokens. Both are read silently (no echo).
-
+Two tokens are required:
   1. GitHub PAT — fine-grained, Contents:Read on rbentaarit/kubelm.
      Only used to clone if the repo isn't already on disk; can be a
      throwaway token, revoke after the run.
   2. Hugging Face read token — used to pull Qwen2.5-1.5B-Instruct.
 
+Both can be provided two ways:
+  - Set GH_TOKEN and HF_TOKEN env vars before running (useful for
+    SSH-driven automation, CI, etc.); the script skips the prompts.
+  - Leave them unset; the script prompts silently (no echo, no
+    shell history) for each.
+
 BANNER
 
-read -s -p "GitHub PAT (Contents:Read, will not echo): " GH_TOKEN; echo
-read -s -p "Hugging Face read token: " HF_TOKEN; echo
+if [[ -z "${GH_TOKEN:-}" ]]; then
+    read -s -p "GitHub PAT (Contents:Read, will not echo): " GH_TOKEN; echo
+fi
+if [[ -z "${HF_TOKEN:-}" ]]; then
+    read -s -p "Hugging Face read token: " HF_TOKEN; echo
+fi
 echo
 
 if [[ -z "$GH_TOKEN" || -z "$HF_TOKEN" ]]; then
