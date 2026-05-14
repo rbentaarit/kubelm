@@ -213,7 +213,9 @@ Next steps (in order):
 
   1. HF login (read-only token is enough for inference):
        read -s HF_TOKEN
-       uv run huggingface-cli login --token "$HF_TOKEN"
+       uv run hf auth login --token "$HF_TOKEN"
+     (huggingface_hub >=0.31 renamed `huggingface-cli` to `hf`;
+      the old binary still installs but prints a deprecation error.)
 
   2. Smoke-test the trainer — verifies assistant-only loss masking
      actually works BEFORE you spend GPU hours:

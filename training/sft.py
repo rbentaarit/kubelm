@@ -211,9 +211,13 @@ def main() -> int:
         return 0
 
     # Heavy imports deferred so --dry-run works without a CUDA install.
+    # Unsloth must be imported BEFORE trl / transformers / peft so its
+    # monkey-patching of those libraries' internals takes effect — see
+    # the "Unsloth should be imported before [trl, transformers, peft]"
+    # warning that fires otherwise.
+    from unsloth import FastLanguageModel  # noqa: I001 — order is load-bearing
     from datasets import Dataset
     from trl import SFTConfig, SFTTrainer
-    from unsloth import FastLanguageModel
 
     print(f"loading base model {cfg['base_model']}...", file=sys.stderr)
     model, tokenizer = FastLanguageModel.from_pretrained(
@@ -223,6 +227,12 @@ def main() -> int:
         dtype=None,  # auto
     )
 
+    # Unsloth's get_peft_model sets task_type="CAUSAL_LM" internally
+    # (FastLanguageModel only supports causal LMs). Passing task_type
+    # from outside collides with the internal kwarg and raises
+    # `TypeError: dict() got multiple values for keyword argument 'task_type'`.
+    # The YAML still carries task_type for documentation; we just don't
+    # forward it to the wrapper.
     model = FastLanguageModel.get_peft_model(
         model,
         r=cfg["lora"]["r"],
@@ -230,7 +240,6 @@ def main() -> int:
         lora_dropout=cfg["lora"]["dropout"],
         target_modules=cfg["lora"]["target_modules"],
         bias=cfg["lora"]["bias"],
-        task_type=cfg["lora"]["task_type"],
     )
 
     tokenizer.chat_template = (
