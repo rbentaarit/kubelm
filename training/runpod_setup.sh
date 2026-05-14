@@ -94,13 +94,32 @@ if [[ ! -f pyproject.toml ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 2. Sanity: Python + GPU
+# 2. Find a Python interpreter that has torch
 # ---------------------------------------------------------------------------
+# RunPod's PyTorch images don't consistently set `python3` to the
+# interpreter that has torch installed. The cu1290-torch280-ubuntu2204
+# image, for example, ships torch in /usr/local/bin/python (Python 3.12)
+# but leaves `python3` pointing at /usr/bin/python3.10 which has no
+# torch. The image's intent is "use `python`" but the script can't
+# assume that, so probe candidates in order until one imports torch.
 
-if ! command -v python3 >/dev/null; then
-    echo "FAIL: python3 not on PATH — is this really a PyTorch template?" >&2
+PY=""
+for cand in python /usr/local/bin/python python3.12 python3.11 python3.10 python3; do
+    if command -v "$cand" >/dev/null 2>&1 \
+        && "$cand" -c 'import torch' >/dev/null 2>&1; then
+        PY="$cand"
+        break
+    fi
+done
+
+if [[ -z "$PY" ]]; then
+    echo "FAIL: no Python interpreter with torch installed found." >&2
+    echo "  Checked: python, /usr/local/bin/python, python3.{12,11,10}, python3" >&2
+    echo "  Is this really a PyTorch template?" >&2
     exit 1
 fi
+
+echo "  using Python: $($PY --version) @ $(command -v $PY)"
 
 # ---------------------------------------------------------------------------
 # 3. Detect template's torch version + CUDA build
@@ -109,7 +128,7 @@ fi
 echo
 echo "=== detecting template torch ==="
 
-torch_info=$(python3 - <<'PY' 2>&1
+torch_info=$("$PY" - <<'PY' 2>&1
 import sys
 try:
     import torch
@@ -154,8 +173,30 @@ case "$torch_base" in
         ;;
 esac
 
-unsloth_extra="cu${cuda_short}-torch${torch_short}"
-echo "  unsloth:  [${unsloth_extra}]"
+# Map host CUDA to the closest Unsloth wheel extra. Unsloth ships
+# extras for specific (CUDA, torch) pairs only. The published cuda
+# levels for torch 2.8 are 118, 126, 128, 130 — no 129. CUDA is
+# backward-compatible by design (newer driver runs older binaries),
+# so we round DOWN to the closest available extra. If torch's CUDA
+# build doesn't match any of these (e.g. exotic cu127), we drop the
+# extra entirely and let Unsloth fall back to PyTorch native
+# attention (~2× slower training but functional).
+declare -A unsloth_cuda_map=(
+    [118]=118 [120]=118 [121]=118 [123]=118
+    [124]=124 [125]=124
+    [126]=126 [127]=126
+    [128]=128 [129]=128
+    [130]=130 [131]=130
+)
+mapped_cuda="${unsloth_cuda_map[$cuda_short]:-}"
+if [[ -n "$mapped_cuda" ]]; then
+    unsloth_extra="cu${mapped_cuda}-torch${torch_short}"
+    echo "  unsloth:  [${unsloth_extra}] (host cu${cuda_short} -> wheel cu${mapped_cuda})"
+else
+    unsloth_extra=""
+    echo "  unsloth:  no CUDA extra for cu${cuda_short} — will install plain unsloth"
+    echo "            (slower training; xformers won't be enabled)"
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Install uv if missing
@@ -216,11 +257,17 @@ PY
 # 7. Install Unsloth's CUDA extra (xformers + matching bitsandbytes)
 # ---------------------------------------------------------------------------
 
-echo
-echo "=== installing Unsloth CUDA extra: ${unsloth_extra} ==="
-
-UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 \
-    uv pip install "unsloth[${unsloth_extra}]==${UNSLOTH_PIN}"
+if [[ -n "$unsloth_extra" ]]; then
+    echo
+    echo "=== installing Unsloth CUDA extra: ${unsloth_extra} ==="
+    UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 \
+        uv pip install "unsloth[${unsloth_extra}]==${UNSLOTH_PIN}"
+else
+    echo
+    echo "=== skipping Unsloth CUDA extra (no wheel for cu${cuda_short}) ==="
+    echo "  unsloth base wheel is already installed via the train group;"
+    echo "  it'll fall back to PyTorch native attention (works, just slower)."
+fi
 
 # ---------------------------------------------------------------------------
 # 8. Smoke-check imports
