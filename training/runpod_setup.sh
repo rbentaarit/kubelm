@@ -247,6 +247,15 @@ grep -E '^\s+"torch==' pyproject.toml >/dev/null || {
 echo
 echo "=== creating venv and syncing train deps (~3-10 min) ==="
 
+# Put the venv on the container's local NVMe (/root), not on
+# /workspace (which is MooseFS-mounted on RunPod and crawls when
+# uv copies ~10000 small files into site-packages). Symlink the
+# canonical project-relative path back to it so `uv run` resolves
+# to this venv from anywhere under the repo.
+VENV_PATH="/root/kubelm-venv"
+export UV_PROJECT_ENVIRONMENT="$VENV_PATH"
+ln -sfn "$VENV_PATH" .venv
+
 # Skip every nvidia-cu12-* package from the venv install. Reason:
 # uv resolves torch==2.8.0 from PyPI to the cu128 wheel by default,
 # which pins all its nvidia-cu12 transitive deps to 12.8.x. If the
@@ -279,9 +288,11 @@ NVIDIA_SKIPS=(
     --no-install-package triton
 )
 
-uv venv --system-site-packages
+uv venv --system-site-packages "$VENV_PATH"
 UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 uv lock --quiet
-UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 uv sync --group train "${NVIDIA_SKIPS[@]}"
+UV_HTTP_TIMEOUT=300 UV_CONCURRENT_DOWNLOADS=4 \
+    UV_LINK_MODE=copy \
+    uv sync --group train "${NVIDIA_SKIPS[@]}"
 
 echo
 echo "=== verifying venv torch ==="
