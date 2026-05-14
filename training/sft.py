@@ -110,10 +110,17 @@ def _smoke_test_masking(trainer: Any, tokenizer: Any) -> None:
     """Pull one batch, verify non-assistant tokens are masked (label == -100).
 
     For trajectory SFT, only assistant turns should contribute to the loss.
-    If `assistant_only_loss=True` was silently ignored by the trainer wrapper,
-    every token gets a real label and training wastes gradient on memorizing
-    user goals + tool-result JSON. This check catches that before the rental
-    clock starts.
+    If `train_on_responses_only` was silently ignored or applied to the
+    wrong region, every token gets a real label (training wastes gradient
+    on memorizing tool-result JSON) or no tokens do (training collapses).
+    This check catches both before the rental clock starts.
+
+    Our trajectory shape: tool-result JSON dominates each sample
+    (K8sGPT MCP dumps are 1-5K tokens × 4-8 messages = bulk of tokens),
+    so the expected healthy mask ratio is ~90-99% — the small remainder
+    is the assistant's tool_call block + final conclusion. The decoded
+    sample of unmasked tokens is the real signal of correctness; the
+    percentage alone can mislead.
     """
     print("=== smoke-test: assistant-only loss masking ===", file=sys.stderr)
     loader = trainer.get_train_dataloader()
@@ -132,40 +139,59 @@ def _smoke_test_masking(trainer: Any, tokenizer: Any) -> None:
     print(f"  masked (-100):             {masked} ({pct:.1f}%)", file=sys.stderr)
     print(f"  unmasked (loss-bearing):   {unmasked}", file=sys.stderr)
 
-    # Heuristic threshold: on our trajectories the assistant turns are
-    # ~10-30% of total tokens (one short tool-calling turn + final
-    # conclusion, vs verbose tool-result JSON). If <30% is masked the
-    # mask is clearly not working; if >95% is masked the trainer is
-    # masking the conclusion too (also a bug). Both warrant aborting
-    # before a real run.
-    if pct < 30.0:
-        print(
-            "FAIL: <30% of tokens masked — assistant_only_loss is NOT taking "
-            "effect. Investigate the trainer wrapper or fall back to a manual "
-            "DataCollatorForCompletionOnlyLM before any paid run.",
-            file=sys.stderr,
-        )
-        raise SystemExit(3)
-    if pct > 95.0:
-        print(
-            "FAIL: >95% of tokens masked — the mask is eating assistant turns "
-            "too. Check the chat template's assistant boundary tokens against "
-            "the tokenizer's chat_template.",
-            file=sys.stderr,
-        )
-        raise SystemExit(3)
-
-    # Show a sample of unmasked text so a human can eyeball that the
-    # loss-bearing region is actually the assistant content.
+    # ALWAYS print the decoded unmasked region BEFORE evaluating
+    # pass/fail. The percentage is a coarse signal; the decoded text is
+    # what tells us whether the right region is loss-bearing.
     keep = [
         int(tok)
         for tok, lbl in zip(input_ids.tolist(), labels.tolist(), strict=True)
         if lbl != -100
     ]
     if keep:
-        decoded = tokenizer.decode(keep[:200], skip_special_tokens=False)
-        print(f"  first ~200 unmasked tokens decode to: {decoded!r}", file=sys.stderr)
-    print("PASS: masking ratio is in the expected band.", file=sys.stderr)
+        decoded = tokenizer.decode(keep[:400], skip_special_tokens=False)
+        print(
+            f"  first ~400 unmasked tokens decode to:\n    {decoded!r}",
+            file=sys.stderr,
+        )
+    else:
+        print("  no unmasked tokens — mask is eating the entire sequence", file=sys.stderr)
+
+    # Thresholds:
+    # - pct < 50%: mask isn't taking effect. Whatever the decoded region
+    #   says, training would still leak gradient onto user/tool tokens.
+    # - unmasked == 0: mask ate everything. Training would have nothing
+    #   to learn from.
+    # - 50% <= pct < 100%: PASS. Read the decoded sample to confirm.
+    #   For our corpus, 90-99% is normal. Anything below ~70% suggests
+    #   user/tool tokens are leaking into loss.
+    if pct < 50.0:
+        print(
+            "FAIL: <50% of tokens masked — train_on_responses_only is NOT "
+            "taking effect, or it's masking the wrong region. The decoded "
+            "sample above shows what IS being trained on. Investigate "
+            "before any paid run.",
+            file=sys.stderr,
+        )
+        raise SystemExit(3)
+    if unmasked == 0:
+        print(
+            "FAIL: every token masked — train_on_responses_only matched "
+            "no assistant boundary at all. Check that the chat template "
+            "renders Qwen 2.5's `<|im_start|>assistant\\n` exactly.",
+            file=sys.stderr,
+        )
+        raise SystemExit(3)
+
+    print(
+        f"PASS: {pct:.1f}% masked, {unmasked} loss-bearing tokens.",
+        file=sys.stderr,
+    )
+    print(
+        "  Eyeball the decoded sample above — it should be the assistant's "
+        "tool_call JSON and/or the final conclusion, NOT tool-result text "
+        "or user goals. If the decoded region is the wrong content, abort.",
+        file=sys.stderr,
+    )
 
 
 def main() -> int:
