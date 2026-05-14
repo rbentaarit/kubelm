@@ -31,10 +31,30 @@ if [[ ! -d "${RUN_DIR}/merged" ]]; then
     exit 1
 fi
 
-LLAMA_CPP_DIR="${LLAMA_CPP_DIR:-/workspace/llama.cpp}"
+LLAMA_CPP_DIR="${LLAMA_CPP_DIR:-/root/llama.cpp}"
 LOCAL_F16="/root/kubelm-edge.f16.gguf"
 LOCAL_Q4="/root/kubelm-edge.Q4_K_M.gguf"
 FINAL_Q4="${RUN_DIR}/kubelm-edge.Q4_K_M.gguf"
+
+# Find a Python interpreter that has torch. RunPod's PyTorch images
+# don't consistently set `python3` to the interpreter with torch
+# installed (some have it under /usr/local/bin/python; `python3`
+# can resolve to a no-torch system 3.10). The convert script needs
+# torch to read safetensors, so probe a candidate list.
+PY=""
+for cand in python /usr/local/bin/python python3.12 python3.11 python3.10 python3; do
+    if command -v "$cand" >/dev/null 2>&1 \
+        && "$cand" -c 'import torch' >/dev/null 2>&1; then
+        PY="$cand"
+        break
+    fi
+done
+if [[ -z "$PY" ]]; then
+    echo "FAIL: no Python with torch found for convert step." >&2
+    echo "  Checked: python, /usr/local/bin/python, python3.{12,11,10}, python3" >&2
+    exit 1
+fi
+echo "using Python for convert: $($PY --version) @ $(command -v $PY)"
 
 # ---------------------------------------------------------------------------
 # 1. Build llama.cpp tooling if absent
@@ -60,7 +80,7 @@ fi
 
 echo
 echo "=== converting ${RUN_DIR}/merged -> /root/.f16.gguf ==="
-python3 "${LLAMA_CPP_DIR}/convert_hf_to_gguf.py" \
+"$PY" "${LLAMA_CPP_DIR}/convert_hf_to_gguf.py" \
     "${RUN_DIR}/merged/" \
     --outfile "${LOCAL_F16}" \
     --outtype f16
