@@ -10,6 +10,7 @@ to run on the maintainer's local M1.
 ```
 training/
 ├── README.md                       this file
+├── runpod_setup.sh                 one-shot GPU-box bootstrap (uv, pins, deps)
 ├── configs/
 │   └── kubelm-edge-v0.yaml         SFT config: base model, dataset paths, hyperparams
 ├── sft.py                          QLoRA SFT entry point (Unsloth)
@@ -150,8 +151,18 @@ has a smaller activation footprint.
 ```bash
 git clone https://github.com/rbentaarit/kubelm.git
 cd kubelm
-uv sync --group train
+bash training/runpod_setup.sh
 ```
+
+The setup script handles every gotcha we hit on the first real
+launch — detects the template's torch + CUDA version, pins
+`pyproject.toml` to match the system torch so we reuse the
+template's pre-installed CUDA stack (saves ~3 GB of duplicate
+downloads), raises `UV_HTTP_TIMEOUT` and lowers
+`UV_CONCURRENT_DOWNLOADS` to survive RunPod's flaky shared network,
+and layers the right Unsloth CUDA extra (`cu128-torch280` etc.) on
+top. The script verifies every step and bails on first error rather
+than producing a half-installed venv.
 
 (The `train` dep group adds `unsloth`, `transformers`, `trl`,
 `datasets`, `torch`. None of these install on macOS Apple Silicon
