@@ -80,6 +80,13 @@ def test_emit_results_writes_well_formed_summary(tmp_path: Path) -> None:
     assert data["grounding_report"]["has_grounding_failure"] is False
     assert data["termination_report"]["label"] == "complete"
 
+    # No narrative claims in the conclusion → trivially consistent.
+    tc = data["trajectory_consistency_report"]
+    assert tc["total_claims"] == 0
+    assert tc["consistent_claims"] == 0
+    assert tc["passed"] is True
+    assert tc["inconsistent_claims"] == []
+
 
 def test_emit_results_captures_failure_modes(tmp_path: Path) -> None:
     traj = tmp_path / "trajectory.jsonl"
@@ -145,6 +152,45 @@ def test_emit_results_omits_scenario_reports_when_none(tmp_path: Path) -> None:
     data = json.loads(output.read_text())
     assert "reference_calls_report" not in data
     assert "conclusion_rubric_report" not in data
+
+
+def test_emit_results_flags_narrative_inconsistency(tmp_path: Path) -> None:
+    """Conclusion claims to have run the analyzer, but the trajectory has no analyze call."""
+    traj = tmp_path / "trajectory.jsonl"
+    with TrajectoryRecorder(path=traj, goal="diagnose pod") as rec:
+        rec.assistant(
+            text="",
+            tool_calls=[ToolCall("c1", "list-namespaces", {})],
+            latency_ms=10.0,
+        )
+        rec.tool_result(
+            ToolResult("c1", "list-namespaces", {"items": ["default"]}),
+            latency_ms=2.0,
+        )
+        rec.assistant(
+            text="The analyzer reported a CrashLoopBackOff on pod web-1.",
+            latency_ms=5.0,
+        )
+        rec.end("complete")
+
+    output = tmp_path / "results.json"
+    emit_results(
+        trajectory_path=traj,
+        tools=[_tool("list-namespaces")],
+        output_path=output,
+        started_at="2026-05-06T12:00:00.000+00:00",
+    )
+
+    data = json.loads(output.read_text())
+    tc = data["trajectory_consistency_report"]
+    assert tc["total_claims"] == 1
+    assert tc["consistent_claims"] == 0
+    assert tc["passed"] is False
+    assert len(tc["inconsistent_claims"]) == 1
+    claim = tc["inconsistent_claims"][0]
+    assert claim["pattern_name"] == "analyzer_reported"
+    assert "analyze" in claim["accepted_tools"]
+    assert claim["actual_calls_seen"] == []
 
 
 def test_emit_results_with_scenario_includes_both_reports(tmp_path: Path) -> None:

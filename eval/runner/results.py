@@ -21,8 +21,10 @@ from eval.metrics import (
     GroundingReport,
     ReferenceCallsReport,
     TerminationReport,
+    TrajectoryConsistencyReport,
     TrajectorySchemaReport,
     analyze_grounding,
+    analyze_trajectory_consistency,
     classify_termination,
     evaluate_conclusion_rubric,
     evaluate_reference_calls,
@@ -31,7 +33,7 @@ from eval.metrics import (
 from eval.scenarios.spec import Scenario
 from eval.trajectory import load_trajectory
 
-RESULTS_SCHEMA_VERSION = 1
+RESULTS_SCHEMA_VERSION = 2
 
 
 def _totals(events: list[dict[str, Any]]) -> dict[str, Any]:
@@ -110,6 +112,23 @@ def _reference_calls_dict(report: ReferenceCallsReport) -> dict[str, Any]:
     }
 
 
+def _trajectory_consistency_dict(report: TrajectoryConsistencyReport) -> dict[str, Any]:
+    return {
+        "total_claims": report.total_claims,
+        "consistent_claims": report.consistent_claims,
+        "passed": report.passed,
+        "inconsistent_claims": [
+            {
+                "pattern_name": c.pattern_name,
+                "matched_text": c.matched_text,
+                "accepted_tools": sorted(c.accepted_tools),
+                "actual_calls_seen": list(c.actual_calls_seen),
+            }
+            for c in report.inconsistent_claims
+        ],
+    }
+
+
 def _conclusion_rubric_dict(report: ConclusionRubricReport) -> dict[str, Any]:
     return {
         "passed": report.passed,
@@ -136,6 +155,7 @@ def emit_results(
     schema_report = validate_trajectory(events, schemas)
     grounding_report = analyze_grounding(events)
     termination_report = classify_termination(events)
+    trajectory_consistency_report = analyze_trajectory_consistency(events)
 
     results: dict[str, Any] = {
         "schema_version": RESULTS_SCHEMA_VERSION,
@@ -154,6 +174,9 @@ def emit_results(
         "schema_report": _schema_dict(schema_report),
         "grounding_report": _grounding_dict(grounding_report),
         "termination_report": _termination_dict(termination_report),
+        "trajectory_consistency_report": _trajectory_consistency_dict(
+            trajectory_consistency_report
+        ),
     }
 
     if scenario is not None:

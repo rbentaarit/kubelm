@@ -118,6 +118,12 @@ def _passing_results() -> dict:
         "termination_report": {"label": "complete"},
         "reference_calls_report": {"passed": True},
         "conclusion_rubric_report": {"passed": True},
+        "trajectory_consistency_report": {
+            "total_claims": 1,
+            "consistent_claims": 1,
+            "passed": True,
+            "inconsistent_claims": [],
+        },
         "totals": {"model_latency_ms": 250.0},
     }
 
@@ -134,6 +140,25 @@ def _failing_results() -> dict:
         "termination_report": {"label": "premature"},
         "reference_calls_report": {"passed": False},
         "conclusion_rubric_report": {"passed": False},
+        "trajectory_consistency_report": {
+            "total_claims": 2,
+            "consistent_claims": 0,
+            "passed": False,
+            "inconsistent_claims": [
+                {
+                    "pattern_name": "analyzer_reported",
+                    "matched_text": "the analyzer reported",
+                    "accepted_tools": ["analyze"],
+                    "actual_calls_seen": [],
+                },
+                {
+                    "pattern_name": "events_show",
+                    "matched_text": "events show",
+                    "accepted_tools": ["analyze", "list-events"],
+                    "actual_calls_seen": [],
+                },
+            ],
+        },
         "totals": {"model_latency_ms": 100.0},
     }
 
@@ -147,6 +172,8 @@ def test_record_from_results_extracts_passing(tmp_path: Path) -> None:
     assert rec.grounding_failed is False
     assert rec.reference_calls_passed is True
     assert rec.conclusion_rubric_passed is True
+    assert rec.trajectory_consistency_passed is True
+    assert rec.narrative_inconsistencies == 0
     assert rec.model_latency_ms == 250.0
     assert rec.duration_seconds == 12.5
 
@@ -159,6 +186,18 @@ def test_record_from_results_extracts_failures(tmp_path: Path) -> None:
     assert rec.schema_name_halluc == 1
     assert rec.schema_arg_halluc == 1
     assert rec.grounding_failed is True
+    assert rec.trajectory_consistency_passed is False
+    assert rec.narrative_inconsistencies == 2
+
+
+def test_record_from_results_handles_missing_trajectory_consistency(tmp_path: Path) -> None:
+    """Backward-compat: a v1 results.json (no trajectory_consistency_report) still records."""
+    cfg = ModelConfig(name="m", backend_url="u", model="m1")
+    results = _passing_results()
+    del results["trajectory_consistency_report"]
+    rec = _record_from_results(cfg, _scenario(), "run-3", results, tmp_path, 1.0)
+    assert rec.trajectory_consistency_passed is None
+    assert rec.narrative_inconsistencies is None
 
 
 def test_model_summaries_aggregates_per_model() -> None:
@@ -178,6 +217,8 @@ def test_model_summaries_aggregates_per_model() -> None:
             grounding_failed=False,
             reference_calls_passed=True,
             conclusion_rubric_passed=True,
+            trajectory_consistency_passed=True,
+            narrative_inconsistencies=0,
             model_latency_ms=100.0,
             duration_seconds=5.0,
         ),
@@ -192,6 +233,8 @@ def test_model_summaries_aggregates_per_model() -> None:
             grounding_failed=True,
             reference_calls_passed=False,
             conclusion_rubric_passed=False,
+            trajectory_consistency_passed=False,
+            narrative_inconsistencies=3,
             model_latency_ms=50.0,
             duration_seconds=3.0,
         ),
@@ -211,15 +254,47 @@ def test_model_summaries_aggregates_per_model() -> None:
     assert s["a"]["argument_hallucinations_total"] == 1
     assert s["a"]["grounding_failures"] == 1
     assert s["a"]["reference_calls_passed"] == 1
+    assert s["a"]["trajectory_consistency_passed"] == 1
+    assert s["a"]["narrative_inconsistencies_total"] == 3
     assert s["a"]["scenarios_errored"] == 0
     assert s["a"]["total_model_latency_ms"] == 150.0
 
     assert s["b"]["scenarios_attempted"] == 1
     assert s["b"]["scenarios_errored"] == 1
     assert s["b"]["termination_complete"] == 0
+    assert s["b"]["trajectory_consistency_passed"] == 0
+    assert s["b"]["narrative_inconsistencies_total"] == 0
 
 
 def test_format_summary_table_renders() -> None:
+    summary = {
+        "model_summaries": {
+            "alpha": {
+                "scenarios_attempted": 3,
+                "termination_complete": 2,
+                "schema_passed": 3,
+                "name_hallucinations_total": 0,
+                "argument_hallucinations_total": 1,
+                "grounding_failures": 0,
+                "reference_calls_passed": 3,
+                "conclusion_rubric_passed": 2,
+                "trajectory_consistency_passed": 3,
+                "narrative_inconsistencies_total": 0,
+                "scenarios_errored": 0,
+                "total_duration_seconds": 42.0,
+            }
+        }
+    }
+    out = format_summary_table(summary)
+    assert "alpha" in out
+    assert "2/3" in out
+    assert "model" in out
+    assert "complete" in out
+    assert "narr_pass" in out
+
+
+def test_format_summary_table_handles_v1_summary_without_consistency() -> None:
+    """Older summaries (BENCH_SCHEMA_VERSION=1) lack trajectory_consistency_passed."""
     summary = {
         "model_summaries": {
             "alpha": {
@@ -238,9 +313,7 @@ def test_format_summary_table_renders() -> None:
     }
     out = format_summary_table(summary)
     assert "alpha" in out
-    assert "2/3" in out
-    assert "model" in out
-    assert "complete" in out
+    assert "0/3" in out
 
 
 def test_shape_a_models_file_loads() -> None:
@@ -282,7 +355,7 @@ def test_shape_b_models_file_loads() -> None:
 
 
 def test_bench_schema_version_constant() -> None:
-    assert BENCH_SCHEMA_VERSION == 1
+    assert BENCH_SCHEMA_VERSION == 2
 
 
 def test_runrecord_serializes_to_json() -> None:

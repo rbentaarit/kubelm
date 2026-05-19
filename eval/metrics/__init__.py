@@ -21,8 +21,14 @@ from eval.metrics.termination import (
     TerminationReport,
     classify_termination,
 )
+from eval.metrics.trajectory_consistency import (
+    ClaimMatch,
+    TrajectoryConsistencyReport,
+    analyze_trajectory_consistency,
+)
 
 __all__ = [
+    "ClaimMatch",
     "ConclusionRubricReport",
     "FactCheck",
     "GroundingReport",
@@ -30,8 +36,10 @@ __all__ = [
     "ReferenceCallsReport",
     "TerminationReport",
     "ToolCallValidation",
+    "TrajectoryConsistencyReport",
     "TrajectorySchemaReport",
     "analyze_grounding",
+    "analyze_trajectory_consistency",
     "classify_termination",
     "evaluate_conclusion_rubric",
     "evaluate_reference_calls",

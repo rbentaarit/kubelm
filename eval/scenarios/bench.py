@@ -44,7 +44,7 @@ from eval.trajectory import TrajectoryRecorder
 
 log = logging.getLogger(__name__)
 
-BENCH_SCHEMA_VERSION = 1
+BENCH_SCHEMA_VERSION = 2
 
 
 class BenchParseError(ValueError):
@@ -88,6 +88,8 @@ class RunRecord:
     grounding_failed: bool | None = None
     reference_calls_passed: bool | None = None
     conclusion_rubric_passed: bool | None = None
+    trajectory_consistency_passed: bool | None = None
+    narrative_inconsistencies: int | None = None
     model_latency_ms: float | None = None
     duration_seconds: float = 0.0
     error: str | None = None
@@ -213,6 +215,8 @@ def _record_from_results(
     termination = results["termination_report"]
     ref_calls = results.get("reference_calls_report") or {}
     rubric = results.get("conclusion_rubric_report") or {}
+    tc = results.get("trajectory_consistency_report") or {}
+    inconsistent = tc.get("inconsistent_claims")
     results_path = output_root / run_id / scenario.id / "results.json"
     return RunRecord(
         model=model_cfg.name,
@@ -226,6 +230,8 @@ def _record_from_results(
         grounding_failed=grounding["has_grounding_failure"],
         reference_calls_passed=ref_calls.get("passed"),
         conclusion_rubric_passed=rubric.get("passed"),
+        trajectory_consistency_passed=tc.get("passed"),
+        narrative_inconsistencies=len(inconsistent) if inconsistent is not None else None,
         model_latency_ms=results["totals"]["model_latency_ms"],
         duration_seconds=duration,
     )
@@ -245,6 +251,10 @@ def _model_summaries(runs: list[RunRecord], models: list[ModelConfig]) -> dict[s
             "grounding_failures": sum(1 for r in mr if r.grounding_failed),
             "reference_calls_passed": sum(1 for r in mr if r.reference_calls_passed is True),
             "conclusion_rubric_passed": sum(1 for r in mr if r.conclusion_rubric_passed is True),
+            "trajectory_consistency_passed": sum(
+                1 for r in mr if r.trajectory_consistency_passed is True
+            ),
+            "narrative_inconsistencies_total": sum(r.narrative_inconsistencies or 0 for r in mr),
             "total_model_latency_ms": round(sum(r.model_latency_ms or 0.0 for r in mr), 1),
             "total_duration_seconds": round(sum(r.duration_seconds for r in mr), 1),
         }
@@ -333,6 +343,7 @@ def format_summary_table(summary: Mapping[str, Any]) -> str:
         "name_halluc",
         "arg_halluc",
         "ground_fail",
+        "narr_pass",
         "ref_pass",
         "rubric_pass",
         "errored",
@@ -349,6 +360,7 @@ def format_summary_table(summary: Mapping[str, Any]) -> str:
                 str(s["name_hallucinations_total"]),
                 str(s["argument_hallucinations_total"]),
                 str(s["grounding_failures"]),
+                f"{s.get('trajectory_consistency_passed', 0)}/{attempted}",
                 f"{s['reference_calls_passed']}/{attempted}",
                 f"{s['conclusion_rubric_passed']}/{attempted}",
                 str(s["scenarios_errored"]),
