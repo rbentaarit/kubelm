@@ -367,3 +367,88 @@ baseline (PROJECT.md decisions log 2026-05-13):
 
 If kubelm-edge v0 doesn't clear the minimum, the data iteration
 matters more than the training iteration — re-author the corpus.
+
+## 2026-05-14 — kubelm-edge v0: the after row
+
+Two Phase 5 training attempts against the v0 corpus (319
+trajectories = 29 seeds + 290 mechanical variants, positives only).
+Both attempts used the same QLoRA recipe (r=32, alpha=64, lr=2e-4,
+paged AdamW 8-bit, Unsloth 2026.5.2 + trl 0.24.0) and the same
+30-scenario library run via Ollama. Only `num_train_epochs`
+differed; attempt-2's 2 epochs is what shipped as v0.
+
+### attempt-1 (3 epochs, train_loss 0.27, plateau bottom 0.01)
+
+| model | complete | schema | ground_fail | ref_pass | rubric_pass | errored | duration_s |
+|---|---|---|---|---|---|---|---|
+| kubelm-edge-v0-attempt-1 | 21/30 | 28/30 | 21 | 19/30 | 17/30 | 1 | 1022 |
+
+**File:** `kubelm-edge-v0-attempt-1-2026-05-14.json`
+
+Loss bottomed at ~0.01 by mid-epoch 2 — over-trained for 319
+examples × 36.9M LoRA params. Cleared all minimum + stretch bars
+but underperformed attempt-2 across every quality metric except
+grounding (where the metric is documented brittle).
+
+### attempt-2 (2 epochs, train_loss 0.42, plateau bottom 0.07) — released as v0
+
+| model | complete | schema | ground_fail | ref_pass | rubric_pass | errored | duration_s |
+|---|---|---|---|---|---|---|---|
+| **kubelm-edge-v0** | **29/30** | **29/30** | **27** | **21/30** | **23/30** | **1** | **1077** |
+
+**File:** `kubelm-edge-v0-2026-05-14.json`
+
+**HF releases:**
+- [`rbentaarit/kubelm-edge-v0-lora`](https://huggingface.co/rbentaarit/kubelm-edge-v0-lora) — LoRA adapter (~152 MB)
+- [`rbentaarit/kubelm-edge-v0-GGUF`](https://huggingface.co/rbentaarit/kubelm-edge-v0-GGUF) — Q4_K_M (~940 MB)
+
+### Headline findings
+
+1. **The 2-epoch run is strictly better than the 3-epoch one on
+   the quality metrics.** +8 complete, +6 rubric, +2 ref_pass,
+   -2 arg_halluc. The 3-epoch attempt's loss-bottoming at 0.01
+   was overfit, not high-quality training.
+2. **kubelm-edge v0 matches qwen2.5:7b on the two headline
+   metrics at ~1/4 the deployment footprint.** Rubric 23 vs 24
+   (off by 1), complete 29 vs 30 (off by 1; both lose the same
+   `pod-anti-affinity-001` settle-race). ref_pass still has a
+   gap (21 vs 29) but it's the smallest a 1.5B specialist has
+   shown on this surface.
+3. **Grounding regressed in both attempts vs base (16 → 21 →
+   27).** The metric is documented brittle (rule-based,
+   structural-rephrasing-intolerant per the 2026-05-12 gpt-5.4
+   audit), and fine-tuning is precisely the operation that
+   shifts output style. Both fine-tunes worse than base 1.5B
+   makes the metric the prime suspect, not the model.
+   Per-scenario audit of attempt-2's 27 flagged facts is the
+   right next step before publishing the grounding number
+   externally — listed as a v0.1 followup, not a release blocker.
+4. **Quality bars** (locked in PROJECT.md 2026-05-13) — **all cleared:**
+
+   | Bar | rubric | complete | ref_pass | name_h | arg_h | v0 |
+   |---|---|---|---|---|---|---|
+   | Minimum | ≥ 12 | ≥ 12 | ≥ 6 | 0 | ≤ 2 | ✓ all cleared |
+   | Stretch | ≥ 17 | ≥ 20 | ≥ 12 | — | — | ✓ all cleared |
+   | Optimistic (= 7B) | ≥ 24 | ≥ 30 | ≥ 29 | — | — | rubric off-by-1, complete off-by-1, ref_pass off-by-8 |
+
+### Caveats
+
+- **The 1 errored scenario** is the same `pod-anti-affinity-001`
+  kind-cluster settle-race that errored on the 2026-05-13 base
+  baseline and the 2026-05-12 5-model bench. Not a model issue;
+  not unique to either attempt; tracked as a Phase 2 harness
+  issue.
+- **Grounding number is intentionally not adjusted.** Reporting
+  the raw 27/30 ungrounded count is honest and matches the
+  2026-05-12 gpt-5.4 disclosure pattern. An audit may revise the
+  interpretation, but the metric value stays as observed.
+- **Cost envelope across both attempts: ~$2** of A100 time on
+  RunPod secure cloud at $1.49/hr (community cloud at $0.79/hr
+  was out of stock during the launch window).
+- **End-to-end deployment validated** outside the bench: K8sGPT
+  operator in a kind cluster with `kubelm-edge-v0` as the
+  `localai` backend (via host Ollama) produced a correct
+  `CreateContainerConfigError` diagnosis on a deliberately
+  broken pod. Validates the Phase 6 deployment story —
+  K8sGPT-server-as-Deployment + kubelm-as-LLM-backend works as
+  a closed loop without code changes.

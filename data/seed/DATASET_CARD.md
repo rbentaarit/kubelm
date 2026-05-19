@@ -190,6 +190,18 @@ Each record carries the eval harness's read-outs:
   Phase 5 (first fine-tuned model) and Phase 7 (model ladder
   expansion).
 
+### Models trained on this dataset
+
+- **`kubelm-edge-v0`** (1.5B, Qwen 2.5 base) — released
+  2026-05-14. Trained on the 319 positives (29 seeds + 290
+  variants); negatives excluded for v0 because all 46 carry
+  `review_status: unreviewed`.
+  - LoRA adapter: [`rbentaarit/kubelm-edge-v0-lora`](https://huggingface.co/rbentaarit/kubelm-edge-v0-lora)
+  - Q4_K_M GGUF: [`rbentaarit/kubelm-edge-v0-GGUF`](https://huggingface.co/rbentaarit/kubelm-edge-v0-GGUF)
+  - Eval result vs base 1.5B: `complete` 8→29/30, `rubric_pass`
+    10→23/30, `ref_pass` 3→21/30. Full row in
+    [`eval/results/summaries/kubelm-edge-v0-2026-05-14.json`](https://github.com/rbentaarit/kubelm/blob/main/eval/results/summaries/kubelm-edge-v0-2026-05-14.json).
+
 ## Out-of-scope
 
 - Training general K8s-domain models that aren't specifically

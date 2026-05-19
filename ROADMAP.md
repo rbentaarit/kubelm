@@ -131,17 +131,18 @@ post.
   actually run today)
 - Qwen 2.5 32B via Ollama (alternative large local)
 - Llama 3.2 3B via Ollama (small local — what `kubelm-standard` will
-  compete against)
+  compete against when that tier ships in Phase 7)
 - Qwen 2.5 3B (alternative small local)
 - Phi-3.5 mini (alternative small local)
-- Qwen 2.5 1.5B (smallest local baseline)
+- Qwen 2.5 1.5B (smallest local baseline — the base for the shipped
+  `kubelm-edge` v0)
 
 **Hardware setup:**
 
 - Cloud models: API access
 - Large local models: rented GPU box (A100 or similar) for benchmarking
-- Small local models: dedicated CPU box matching `kubelm-standard` target
-  hardware (4-core, 4GB allocated)
+- Small local models: dedicated CPU box matching `kubelm-edge` target
+  hardware (2-core, 2GB allocated)
 
 **Headline result:** how do hallucination metrics scale with model size on
 this surface? The expectation is a sharp falloff in tool-use reliability
@@ -336,25 +337,46 @@ pinning.
 
 ## Phase 5: First Fine-Tuned Model
 
-**Goal:** release `kubelm-standard` (3B) on Hugging Face, with reproducible
+**Goal:** release `kubelm-edge` (1.5B) on Hugging Face, with reproducible
 training pipeline.
+
+> **Status: shipped 2026-05-14.** Originally framed as `kubelm-standard`
+> (3B); retargeted to `kubelm-edge` (1.5B) on 2026-05-13 because the
+> deployment story is "K8sGPT alongside a small model in a standalone
+> or dev cluster", which argues for the edge tier as v0. Full rationale
+> in PROJECT.md decisions log entries 2026-05-13 + 2026-05-14.
+>
+> **HF releases:**
+> - [`rbentaarit/kubelm-edge-v0-lora`](https://huggingface.co/rbentaarit/kubelm-edge-v0-lora) — LoRA adapter (~152 MB)
+> - [`rbentaarit/kubelm-edge-v0-GGUF`](https://huggingface.co/rbentaarit/kubelm-edge-v0-GGUF) — Q4_K_M (~940 MB)
+>
+> **Headline numbers** (full row at
+> `eval/results/summaries/kubelm-edge-v0-2026-05-14.json`):
+> 29/30 complete, 23/30 rubric, 21/30 ref_pass, 0 name + 0 arg
+> hallucinations. Cleared the release minimum and stretch bars;
+> landed within 1 point of `qwen2.5:7b` on rubric (23 vs 24) and
+> complete (29 vs 30) at ~1/4 the deployment footprint.
 
 **Deliverable:** Hugging Face model with weights, model card, and training
 code in this repo.
 
-**Approach:**
+**Approach (as executed):**
 
 1. Pick base model based on Phase 3 results. Tool-use behavior in the
-   base model matters as much as raw capability — strong starting points
-   include Qwen 2.5 3B, Llama 3.2 3B, Phi-3.5 mini.
+   base model matters as much as raw capability. **Chose
+   `Qwen/Qwen2.5-1.5B-Instruct`** after a same-day 2026-05-13 baseline
+   measurement against the 30-scenario library showed a real SFT
+   foothold (8/30 complete, 10/30 rubric).
 2. Supervised fine-tuning (SFT) on trajectories using QLoRA. Single A100
-   per training run on RunPod or Modal. Per-run cost: under $10.
+   per training run on RunPod or Modal. **Actual per-run cost: ~$0.20
+   on community A100, ~$0.25 on secure A100 at $1.49/hr.**
 3. Evaluate after each run against the Phase 1 eval harness on the
    Phase 2 scenarios. Track in a results log.
 4. Quantize to GGUF (Q4_K_M baseline) using llama.cpp toolchain.
 5. Release: LoRA adapter and merged GGUF formats both on Hugging Face.
 
-**Quality bar for release:**
+**Quality bar for release** (locked in PROJECT.md 2026-05-13 against
+the qwen2.5:1.5b baseline):
 
 - Tool-name hallucination rate: lower than the base model on the eval.
 - Argument hallucination rate: lower than the base model.
@@ -392,13 +414,29 @@ metrics, don't release. Iterate the data.
       `training/README.md` (orientation + deployment footprint +
       cost model + how-to). Dry-run loads 319 records (29 seeds
       + 290 variants; negatives excluded for v0).
-- [ ] First training run completed end-to-end (rented A100;
-      cost est. <$10)
-- [ ] Hyperparameter sweep (5–10 runs)
-- [ ] Best checkpoint selected via eval
-- [ ] Quantized to GGUF
-- [ ] Hugging Face release (v0.1, pinned to a K8sGPT version)
-- [ ] Model card with eval results, intended use, limitations
+- [x] First training run completed end-to-end (rented A100; ~$0.25
+      per run on secure cloud at $1.49/hr — community cloud at
+      $0.79/hr was out of stock during the launch session).
+      Two attempts at 3 epochs and 2 epochs respectively; attempt-2
+      ships as v0 after the 3-epoch attempt over-trained
+      (train_loss 0.01 vs 0.07).
+- [x] Best checkpoint selected via eval (the 2-epoch attempt; full
+      side-by-side at `eval/results/summaries/kubelm-edge-v0-attempt-1-2026-05-14.json`
+      vs `eval/results/summaries/kubelm-edge-v0-2026-05-14.json`).
+- [x] Quantized to GGUF — `kubelm-edge.Q4_K_M.gguf` (~940 MB).
+- [x] Hugging Face release (v0, pinned to K8sGPT `0.4.32`):
+      [`rbentaarit/kubelm-edge-v0-lora`](https://huggingface.co/rbentaarit/kubelm-edge-v0-lora) +
+      [`rbentaarit/kubelm-edge-v0-GGUF`](https://huggingface.co/rbentaarit/kubelm-edge-v0-GGUF).
+- [x] Model card with eval results, intended use, limitations
+      (each HF repo has its own; the grounding-metric caveat is
+      documented openly per the 2026-05-12 audit precedent).
+- [x] **End-to-end integration validated**: K8sGPT operator in a
+      kind cluster, with `kubelm-edge-v0` as the `localai` backend
+      via host Ollama, produced a correct diagnosis of a
+      `CreateContainerConfigError` pod (`Result` CR captured in
+      session 2026-05-14). Validates the Phase 6 deployment story.
+- [ ] Hyperparameter sweep (5–10 runs) — deferred to v0.1 or
+      kubelm-standard
 - [ ] Blog post on the fine-tuning process and results
 
 ---

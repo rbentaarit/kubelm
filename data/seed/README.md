@@ -145,8 +145,16 @@ api.upload_file(path_or_fileobj="data/seed/DATASET_CARD.md",
 
 The upload is intentionally not scripted (no `upload_to_hf.py`)
 because it's a one-shot publishing action; the maintainer should
-review what's going up rather than run a script. When kubelm-pro
-or kubelm-edge starts publishing, a packaged script is fair game.
+review what's going up rather than run a script. Model-publishing
+got the same treatment for v0 (see `kubelm-edge-v0` on Hugging
+Face — manual `hf upload` for each repo, no `publish_model.py`).
+
+> **kubelm-edge v0** (2026-05-14) was trained on the positives in
+> this corpus (29 seeds + 290 variants; the 46 negatives were
+> excluded — all carry `review_status: unreviewed`). See
+> [`rbentaarit/kubelm-edge-v0-lora`](https://huggingface.co/rbentaarit/kubelm-edge-v0-lora)
+> and the headline numbers in
+> [`eval/results/summaries/kubelm-edge-v0-2026-05-14.json`](https://github.com/rbentaarit/kubelm/blob/main/eval/results/summaries/kubelm-edge-v0-2026-05-14.json).
 
 ## Current corpus stats
 
