@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "bench_id": "7bd41410-8e6c-4583-b497-4da3d2657e93",
   "started_at": "2026-05-07T16:54:01.013+00:00",
   "ended_at": "2026-05-07T17:26:10.695+00:00",
@@ -63,14 +63,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 7399.898,
       "duration_seconds": 53.1778765830677,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "llama3.2-3b",
@@ -88,7 +89,8 @@
       "duration_seconds": 19.4095375839388,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 3
     },
     {
       "model": "llama3.2-3b",
@@ -106,7 +108,8 @@
       "duration_seconds": 21.37988729204517,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 2
     },
     {
       "model": "llama3.2-3b",
@@ -124,7 +127,8 @@
       "duration_seconds": 37.688854875043035,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 2
     },
     {
       "model": "llama3.2-3b",
@@ -142,7 +146,8 @@
       "duration_seconds": 36.36441787506919,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 1
     },
     {
       "model": "llama3.2-3b",
@@ -153,14 +158,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2644.76,
       "duration_seconds": 15.441613457980566,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "llama3.2-3b",
@@ -178,7 +184,8 @@
       "duration_seconds": 38.91906250000466,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "llama3.2-3b",
@@ -189,14 +196,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2990.134,
       "duration_seconds": 16.431992916972376,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "llama3.2-3b",
@@ -207,14 +215,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2756.278,
       "duration_seconds": 36.54835874994751,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "llama3.2-3b",
@@ -232,7 +241,8 @@
       "duration_seconds": 20.054423792054877,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 5
     },
     {
       "model": "qwen2.5-7b",
@@ -250,7 +260,8 @@
       "duration_seconds": 68.89434845896903,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -261,14 +272,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 30898.771,
       "duration_seconds": 51.0582803330617,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -279,14 +291,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": true,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 8313.341,
       "duration_seconds": 26.42628379096277,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -304,7 +317,8 @@
       "duration_seconds": 45.871010333066806,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -315,14 +329,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 26415.425,
       "duration_seconds": 64.88564195798244,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -340,7 +355,8 @@
       "duration_seconds": 32.720738208969124,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -351,14 +367,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": true,
       "conclusion_rubric_passed": true,
       "model_latency_ms": 18636.404,
       "duration_seconds": 55.286474416963756,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -376,7 +393,8 @@
       "duration_seconds": 28.49887133401353,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 4
     },
     {
       "model": "qwen2.5-7b",
@@ -394,7 +412,8 @@
       "duration_seconds": 43.1998209169833,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -405,14 +424,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": true,
       "model_latency_ms": 19005.074,
       "duration_seconds": 36.808296417002566,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -430,7 +450,8 @@
       "duration_seconds": 121.56663383299019,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -441,14 +462,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": true,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 121756.427,
       "duration_seconds": 141.81263800000306,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -459,14 +481,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 46171.952,
       "duration_seconds": 66.22673895896878,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -477,14 +500,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": true,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 58404.309,
       "duration_seconds": 92.18709816597402,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -495,14 +519,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": true,
       "model_latency_ms": 55113.968,
       "duration_seconds": 88.71451454202179,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -520,7 +545,8 @@
       "duration_seconds": 35.03358829196077,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -538,7 +564,8 @@
       "duration_seconds": 100.19652908400167,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -556,7 +583,8 @@
       "duration_seconds": 74.01124974992126,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -574,7 +602,8 @@
       "duration_seconds": 78.61817379202694,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -585,14 +614,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": true,
       "model_latency_ms": 60093.799,
       "duration_seconds": 79.56193512503523,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "gpt-4o",
@@ -610,7 +640,8 @@
       "duration_seconds": 54.5815050000092,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "gpt-4o",
@@ -628,7 +659,8 @@
       "duration_seconds": 21.504350749892183,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "gpt-4o",
@@ -639,14 +671,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": true,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2739.934,
       "duration_seconds": 19.329924291931093,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "gpt-4o",
@@ -657,14 +690,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": true,
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4295.552,
       "duration_seconds": 39.49210591695737,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "gpt-4o",
@@ -682,7 +716,8 @@
       "duration_seconds": 38.123421915923245,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 1
     },
     {
       "model": "gpt-4o",
@@ -700,7 +735,8 @@
       "duration_seconds": 15.246519332984462,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "gpt-4o",
@@ -718,7 +754,8 @@
       "duration_seconds": 41.689208249910735,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "gpt-4o",
@@ -729,14 +766,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": true,
       "conclusion_rubric_passed": false,
       "model_latency_ms": 6682.167,
       "duration_seconds": 19.423446625005454,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "gpt-4o",
@@ -747,14 +785,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3385.969,
       "duration_seconds": 34.49683312501293,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "gpt-4o",
@@ -765,14 +804,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2887.064,
       "duration_seconds": 18.827731207944453,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     }
   ],
   "model_summaries": {
@@ -783,13 +823,14 @@
       "schema_passed": 10,
       "name_hallucinations_total": 0,
       "argument_hallucinations_total": 0,
-      "grounding_failures": 9,
+      "grounding_failures": 5,
       "reference_calls_passed": 0,
       "conclusion_rubric_passed": 1,
       "total_model_latency_ms": 35401.5,
       "total_duration_seconds": 295.4,
       "trajectory_consistency_passed": 10,
-      "narrative_inconsistencies_total": 0
+      "narrative_inconsistencies_total": 0,
+      "fabrications_total": 13
     },
     "qwen2.5-7b": {
       "scenarios_attempted": 10,
@@ -798,13 +839,14 @@
       "schema_passed": 10,
       "name_hallucinations_total": 0,
       "argument_hallucinations_total": 0,
-      "grounding_failures": 6,
+      "grounding_failures": 1,
       "reference_calls_passed": 5,
       "conclusion_rubric_passed": 5,
       "total_model_latency_ms": 183575.4,
       "total_duration_seconds": 453.6,
       "trajectory_consistency_passed": 10,
-      "narrative_inconsistencies_total": 0
+      "narrative_inconsistencies_total": 0,
+      "fabrications_total": 4
     },
     "qwen2.5-32b": {
       "scenarios_attempted": 10,
@@ -813,13 +855,14 @@
       "schema_passed": 10,
       "name_hallucinations_total": 0,
       "argument_hallucinations_total": 0,
-      "grounding_failures": 5,
+      "grounding_failures": 0,
       "reference_calls_passed": 4,
       "conclusion_rubric_passed": 5,
       "total_model_latency_ms": 611421.5,
       "total_duration_seconds": 877.9,
       "trajectory_consistency_passed": 10,
-      "narrative_inconsistencies_total": 0
+      "narrative_inconsistencies_total": 0,
+      "fabrications_total": 0
     },
     "gpt-4o": {
       "scenarios_attempted": 10,
@@ -828,13 +871,14 @@
       "schema_passed": 10,
       "name_hallucinations_total": 0,
       "argument_hallucinations_total": 0,
-      "grounding_failures": 6,
+      "grounding_failures": 1,
       "reference_calls_passed": 6,
       "conclusion_rubric_passed": 6,
       "total_model_latency_ms": 43195.4,
       "total_duration_seconds": 302.7,
       "trajectory_consistency_passed": 10,
-      "narrative_inconsistencies_total": 0
+      "narrative_inconsistencies_total": 0,
+      "fabrications_total": 1
     }
   }
 }

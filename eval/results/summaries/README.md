@@ -453,6 +453,123 @@ grounding (where the metric is documented brittle).
   K8sGPT-server-as-Deployment + kubelm-as-LLM-backend works as
   a closed loop without code changes.
 
+## 2026-05-19 — Retroactive grounding v2 re-grade (v0.1 Stage 3)
+
+All committed summaries above (and their per-run `results.json`) have
+been re-scored with the new grounding analyzer v2
+(`eval/metrics/grounding_v2.py`, calibrated against the n=114 Stage 2
+audit labels — see `eval/audits/grounding/calibrate.py`). v2 replaces
+the v1 brittle rule-based boolean with a 5-label classifier
+(`fabrication` / `structural_rephrase` / `composed_inference` /
+`scenario_fill` / `unsupported_tool`); only `fabrication` counts toward
+the bench's headline. **`grounding_failed` is redefined in schema 3+ to
+mean "fabrication present"** — v1's broader "any ungrounded fact"
+definition is preserved under `grounding_v1_report` for backward
+comparison.
+
+Calibration on the Stage 2 audit:
+
+  fab precision   91.7%   (target >=90%)
+  fab recall      85.7%   (target >=80%)
+  rephrase prec   100%    (target >=95%)
+
+All committed summaries' schema_version bumps 2 → 3. Regenerate any
+cell with:
+
+```
+uv run python eval/results/summaries/regrade_grounding_v2.py \
+    eval/results/summaries/<file>.json
+```
+
+### Per-cut `fabrications_total` under v2
+
+| cut | model | v1 ground_fail | v2 fab_runs | v2 fabs_total |
+|---|---|---:|---:|---:|
+| 2026-05-07 Shape A | llama3.2-3b | 9/10 | 5/10 | 13 |
+| 2026-05-07 Shape A | gpt-4o-mini | 5/10 | 1/10 | 1 |
+| 2026-05-07 Shape B | llama3.2-3b | 9/10 | 5/10 | 13 |
+| 2026-05-07 Shape B | qwen2.5-7b | 6/10 | 1/10 | 4 |
+| 2026-05-07 Shape B | qwen2.5-32b | 5/10 | 0/10 | 0 |
+| 2026-05-07 Shape B | gpt-4o | 6/10 | 1/10 | 1 |
+| 2026-05-11 Shape B | llama3.2-3b | 9/10 | 5/10 | 13 |
+| 2026-05-11 Shape B | qwen2.5-7b | 5/10 | 0/10 | 0 |
+| 2026-05-11 Shape B | qwen2.5-32b | 3/9 | 0/9 | 0 |
+| 2026-05-11 Shape B | gpt-4o | 7/9 | 1/9 | 1 |
+| 2026-05-11 Shape B | gpt-5.4 | **10/10** | **0/10** | **0** |
+| 2026-05-12 Shape B | llama3.2-3b | 28/30 | 19/30 | 58 |
+| 2026-05-12 Shape B | qwen2.5-7b | 14/30 | 4/30 | 5 |
+| 2026-05-12 Shape B | qwen2.5-32b | 12/29 | 2/29 | 2 |
+| 2026-05-12 Shape B | gpt-4o | 12/30 | 2/30 | 2 |
+| 2026-05-12 Shape B | gpt-5.4 | **30/30** | **3/30** | **3** |
+| 2026-05-13 qwen-1.5b | qwen2.5-1.5b | 16/29 | 14/29 | 43 |
+| 2026-05-14 attempt-1 | kubelm-edge-v0-attempt-1 | 21/29 | 6/29 | 9 |
+| 2026-05-14 v0 (attempt-2) | **kubelm-edge-v0** | **27/29** | **9/29** | **13** |
+
+### Headline findings — the v0 grounding regression story changes completely
+
+**The fine-tunes have FEWER fabrications than the base 1.5B model, not more.**
+
+  base qwen2.5-1.5b  fab_runs 14/29  fabs_total 43
+  attempt-1          fab_runs  6/29  fabs_total  9
+  v0 (attempt-2)     fab_runs  9/29  fabs_total 13
+
+The v1-era reading was that fine-tuning *regressed* grounding
+(16 → 21 → 27 across base / attempt-1 / attempt-2). Under v2, that
+story inverts: fine-tuning **dropped the fabrication count** by a
+factor of 3-5x relative to the base. The v1 increase was almost
+entirely style-drift tripping the brittle rule-based analyzer — the
+fine-tunes adopted a more JSON-faithful output style that v1's
+normalization couldn't follow, but v2's normalization can.
+
+**v0 vs qwen2.5:7b on the metric that matters:** under v1 the
+comparison was off-record because "27 vs 14 ungrounded" looked bad;
+under v2 it's a clean read — **v0 fabs 13 vs qwen2.5:7b fabs 5**.
+v0 has a real but small grounding gap to the 7B reference, not the
+qualitative regression v1 implied. The "v0 matches qwen2.5:7b" claim
+from the ship memo remains accurate on the four shipped metrics; on
+this fifth metric (now meaningfully defined), v0 is off by 8 fabs.
+
+**The frontier-model "grounding paradox" from the 2026-05-12 cut is
+retracted.** gpt-5.4 went from 30/30 v1-ungrounded ("every conclusion
+hallucinates supporting detail") to **3/30 fab_runs / 3 fabs** under
+v2. The 2026-05-12 caveat ("audit per-scenario before drawing") was
+correct — the audit, when run end-to-end via this metric, says the
+frontier model is fine. The 2026-05-11 cut tells the same story
+(10/10 → 0/10).
+
+**The 3B cliff sharpens.** llama3.2-3b is consistent across all four
+cuts at 5/10 → 19/30 fab_runs, 13 → 58 total fabs. Whatever model
+size 7B has, the 3B doesn't.
+
+### What this changes externally
+
+- **PROJECT.md decisions log** needs a Stage 3 entry retracting v1's
+  reading of v0's grounding number.
+- **HF model card** for `kubelm-edge-v0` can soften (not remove) the
+  grounding caveat: the v2-measured number is 13 fabs across 29
+  scenarios, ~3x cleaner than the base 1.5B.
+- **The 2026-05-12 gpt-5.4 caveat** is no longer load-bearing — v2
+  closes that gap. Either the caveat narrative gets simplified or it
+  becomes a methodology footnote referencing Stage 3.
+
+### Caveats
+
+- **n=14 fabrication labels.** The calibration test set is small. v2's
+  91.7% precision could be 85% in expectation; recall could be 75%.
+  k-fold-by-scenario sits at P=88.9% R=85.2%, consistent with the full
+  set. Stage 4's adversarial scenarios will widen the label set and
+  re-test.
+- **v2 still has known FNs and FPs.** Three of the 14 v0 fabrications
+  are missed by v2 (`v1.2.4`, `NoGo`-with-prefix, the wrong-namespace
+  pairing — the last is a co-occurrence-checking problem the rule-set
+  can't solve). One composed-inference label gets predicted as fab.
+  All four miscalls are documented in the v2 module docstring; rules
+  weren't tuned to fit them to avoid n=14 overfitting.
+- **Schema 3 != schema 2.** Any downstream tooling reading these
+  summaries that depended on v1's `grounding_failed` semantics will
+  now see fabrication-only numbers. Read the schema_version field
+  before comparing across cuts.
+
 ## 2026-05-19 — Retroactive narrative-consistency re-grade (v0.1 Stage 1.6)
 
 All committed summaries above (and their per-run `results.json`)

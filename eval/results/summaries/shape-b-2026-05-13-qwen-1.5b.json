@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "bench_id": "b0ac9b6a-cfa1-4f70-9c74-738f0fe6dc8c",
   "started_at": "2026-05-13T20:14:01.112+00:00",
   "ended_at": "2026-05-13T20:30:39.162+00:00",
@@ -66,7 +66,8 @@
       "duration_seconds": 39.89077904199803,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 1
     },
     {
       "model": "qwen2.5-1.5b",
@@ -84,7 +85,8 @@
       "duration_seconds": 17.185990625002887,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -102,7 +104,8 @@
       "duration_seconds": 15.68949779200193,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 4
     },
     {
       "model": "qwen2.5-1.5b",
@@ -113,14 +116,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": true,
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5202.045,
       "duration_seconds": 18.022482500004116,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -138,7 +142,8 @@
       "duration_seconds": 20.435243874999287,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 1
     },
     {
       "model": "qwen2.5-1.5b",
@@ -156,7 +161,8 @@
       "duration_seconds": 38.35725745799573,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -174,7 +180,8 @@
       "duration_seconds": 43.24990787499701,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 2
     },
     {
       "model": "qwen2.5-1.5b",
@@ -192,7 +199,8 @@
       "duration_seconds": 36.62877983300132,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -210,7 +218,8 @@
       "duration_seconds": 46.1102702499993,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -228,7 +237,8 @@
       "duration_seconds": 103.92090099999768,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 1
     },
     {
       "model": "qwen2.5-1.5b",
@@ -246,7 +256,8 @@
       "duration_seconds": 47.93718670799717,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 1
     },
     {
       "model": "qwen2.5-1.5b",
@@ -264,7 +275,8 @@
       "duration_seconds": 37.820683833997464,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 1
     },
     {
       "model": "qwen2.5-1.5b",
@@ -282,7 +294,8 @@
       "duration_seconds": 20.412236916999973,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 5
     },
     {
       "model": "qwen2.5-1.5b",
@@ -300,7 +313,8 @@
       "duration_seconds": 34.740060500000254,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -334,7 +348,8 @@
       "duration_seconds": 37.03629933299817,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -352,7 +367,8 @@
       "duration_seconds": 35.66713770800561,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -370,7 +386,8 @@
       "duration_seconds": 20.30694724999921,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 6
     },
     {
       "model": "qwen2.5-1.5b",
@@ -388,7 +405,8 @@
       "duration_seconds": 18.936971499999345,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -406,7 +424,8 @@
       "duration_seconds": 13.95054083300056,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -424,7 +443,8 @@
       "duration_seconds": 22.8052065410011,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 3
     },
     {
       "model": "qwen2.5-1.5b",
@@ -442,7 +462,8 @@
       "duration_seconds": 37.796810291998554,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -460,7 +481,8 @@
       "duration_seconds": 36.282542916997045,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 3
     },
     {
       "model": "qwen2.5-1.5b",
@@ -478,7 +500,8 @@
       "duration_seconds": 27.96238991699647,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -496,7 +519,8 @@
       "duration_seconds": 36.80863787499402,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 2
     },
     {
       "model": "qwen2.5-1.5b",
@@ -514,7 +538,8 @@
       "duration_seconds": 19.425386790993798,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -532,7 +557,8 @@
       "duration_seconds": 36.5922401659991,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -550,7 +576,8 @@
       "duration_seconds": 20.882928791994345,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 7
     },
     {
       "model": "qwen2.5-1.5b",
@@ -568,7 +595,8 @@
       "duration_seconds": 22.010025457995653,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 6
     },
     {
       "model": "qwen2.5-1.5b",
@@ -579,14 +607,15 @@
       "schema_passed": true,
       "schema_name_halluc": 0,
       "schema_arg_halluc": 0,
-      "grounding_failed": true,
+      "grounding_failed": false,
       "reference_calls_passed": false,
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2979.391,
       "duration_seconds": 18.940198666998185,
       "error": null,
       "trajectory_consistency_passed": true,
-      "narrative_inconsistencies": 0
+      "narrative_inconsistencies": 0,
+      "fabrications": 0
     }
   ],
   "model_summaries": {
@@ -597,13 +626,14 @@
       "schema_passed": 27,
       "name_hallucinations_total": 0,
       "argument_hallucinations_total": 2,
-      "grounding_failures": 16,
+      "grounding_failures": 14,
       "reference_calls_passed": 3,
       "conclusion_rubric_passed": 10,
       "total_model_latency_ms": 84258.1,
       "total_duration_seconds": 998.0,
       "trajectory_consistency_passed": 29,
-      "narrative_inconsistencies_total": 0
+      "narrative_inconsistencies_total": 0,
+      "fabrications_total": 43
     }
   }
 }
