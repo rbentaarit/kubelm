@@ -83,7 +83,14 @@ expected:
           "not-ready",
           "node.kubernetes.io/not-ready",
         ]
-    must_not_mention: []
+    # 2026-05-19 v0.1 Stage 4a: forbid invented taint effect name
+    # surfaced by Stage 2's grounding audit. Valid K8s taint effects
+    # are NoSchedule / PreferNoSchedule / NoExecute. v0 invented
+    # `NoGo` and used it as a taint effect ("marked as NotReady with:
+    # node.kubernetes.io/not-ready: NoGo"). The string isn't in any
+    # tool output and isn't a K8s API value.
+    must_not_mention:
+      - NoGo
     semantic_intent: |
       Recognizes that the Pod cannot be scheduled because the only
       candidate node (the control-plane) carries the

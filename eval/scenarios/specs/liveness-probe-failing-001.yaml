@@ -77,7 +77,15 @@ expected:
     must_mention:
       - ["liveness probe", "livenessProbe", "liveness"]
       - ["404", "/healthz", "unhealthy", "probe failed", "non-2xx", "statuscode"]
-    must_not_mention: []
+    # 2026-05-19 v0.1 Stage 4a: forbid invented K8s API field names
+    # surfaced by Stage 2's grounding audit. `expectedResponse` and
+    # `successPath` don't exist in the Kubernetes probe spec — v0
+    # invented them ("Because there is no `successPath` or
+    # `expectedResponse`..."). These never appear in any tool result;
+    # a model that emits them is fabricating Kubernetes API knowledge.
+    must_not_mention:
+      - expectedResponse
+      - successPath
     semantic_intent: |
       Recognizes that kubelet is restarting the container because
       the liveness probe (HTTP GET /healthz) returns 404 — nginx's

@@ -51,7 +51,16 @@ expected:
     forbidden: []
   conclusion_rubric:
     must_mention: ["CrashLoopBackOff", "crash-pod"]
-    must_not_mention: []
+    # 2026-05-19 v0.1 Stage 4a: forbid K8s vocabulary used
+    # counterfactually from priors. Stage 2's audit surfaced v0
+    # writing "it was not a benign failure like `FailedPreemption`,
+    # `ResourceExhausted`" — these terms aren't in any tool result
+    # and aren't load-bearing for the diagnosis (the actual cause is
+    # the startup-error exit code in logs). A grounded conclusion
+    # names the real cause, not things-it-isn't from training priors.
+    must_not_mention:
+      - FailedPreemption
+      - ResourceExhausted
     semantic_intent: |
       Identifies the pod, names the failure mode (CrashLoopBackOff),
       and references the startup-error log line as the cause.
