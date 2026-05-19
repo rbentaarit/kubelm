@@ -624,3 +624,57 @@ Append-only log of significant decisions. Update when major direction changes.
   skip list, .venv on local NVMe instead of MFS, llama.cpp build
   on local NVMe, Python interpreter probed for torch (not blind
   `python3`).
+
+- **2026-05-19:** v0.1 plan agreed. Six-stage arc to close the
+  hallucination measurement gap before v0.1 model training:
+  Stage 1 (narrative-consistency metric), Stage 2 (grounding audit),
+  Stage 3 (grounding metric v2 + retroactive re-grade),
+  Stage 4 (rubric tightening + adversarial scenarios),
+  Stage 5 (re-run baselines under the new metrics),
+  Stage 6 (v0.1 model train). Stages 1-3 shipped same-day at commits
+  `bab8733`, `a9218be`, `776b085`, `788912c`, `5ff0c2b`, `3184dee`.
+
+- **2026-05-19:** Stage 3 grounding metric v2 retracts the strict
+  reading of v0's `ground_fail: 27/30` from the 2026-05-14 ship memo.
+  The v1 analyzer was rule-based and intolerant of structural
+  rephrasing (JSON ↔ dotted notation, CamelCase ↔ hyphenated,
+  quoted ↔ unquoted). Stage 2's manual audit of all 114 v0 ungrounded
+  facts labeled them under a 5-category taxonomy and found
+  **12.3% (14 of 114) are real fabrications**; 87.7% are metric
+  blind-spots (62.3% structural_rephrase, 25.4% composed_inference,
+  0% scenario_fill, 0% unsupported_tool). Stage 3 built `grounding_v2`
+  calibrated against those labels (fab P=91.7% / R=85.7%, rephrase
+  P=100% on the full set; P=88.9% / R=85.2% / 100% under
+  leave-one-scenario-out cross-validation). The retroactive re-grade
+  (commit `3184dee`) inverts the v0-vs-base story:
+
+      base qwen2.5-1.5b   v1 ground_fail 16/29  →  v2 fab_runs 14/29  fabs 43
+      attempt-1           v1 ground_fail 21/29  →  v2 fab_runs  6/29  fabs  9
+      v0 (attempt-2)      v1 ground_fail 27/29  →  v2 fab_runs  9/29  fabs 13
+
+  The fine-tunes have **3-5× fewer fabrications than the base 1.5B
+  model**, not more. The v1 increase (16 → 21 → 27) was almost
+  entirely style drift — fine-tuning adopted JSON-faithful output
+  that v1's normalization couldn't follow but v2's can.
+
+  This also retracts the 2026-05-12 reading of gpt-5.4's "30/30
+  grounding paradox" — under v2 the same trajectories score
+  **3/30 fab_runs / 3 fabs**. The earlier audit caveat ("audit
+  per-scenario before drawing") was vindicated by Stage 3 running
+  that audit end-to-end via the new analyzer.
+
+  v0's claim from the ship memo ("matches qwen2.5:7b at ~1/4 the
+  deployment footprint") holds on the four shipped metrics; on the
+  v2 grounding metric v0 is off by 8 fabrications vs qwen2.5:7b
+  (13 vs 5 on the 30-scenario library). Real but small.
+
+  Schema-version semantics: `RESULTS_SCHEMA_VERSION` 1 → 2 → 3 and
+  `BENCH_SCHEMA_VERSION` 1 → 2 → 3 track the three metric
+  generations. Schema 3 redefines `grounding_failed` from "any
+  ungrounded fact" to "fabrication present"; the v1 boolean is
+  preserved as `grounding_v1_report.has_grounding_failure` for
+  backward comparison. All seven committed summaries are at
+  schema 3 as of `3184dee`. The HF model card grounding caveat
+  for `kubelm-edge-v0` should be softened to reflect the v2
+  reading; that update is deferred to a small standalone commit
+  before Stage 4 finalizes.
