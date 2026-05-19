@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "bench_id": "4fcb8778-5d4e-4357-abf7-8a87940344cf",
   "started_at": "2026-05-14T22:44:57.579+00:00",
   "ended_at": "2026-05-14T23:02:54.401+00:00",
@@ -64,7 +64,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 16505.208,
       "duration_seconds": 53.65407200000482,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -80,7 +82,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2649.244,
       "duration_seconds": 16.25649162499758,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -96,7 +100,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6226.646,
       "duration_seconds": 19.192999207996763,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -112,7 +118,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2057.004,
       "duration_seconds": 14.088585582998348,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -128,7 +136,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2834.347,
       "duration_seconds": 22.12786937499186,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -144,7 +154,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2195.772,
       "duration_seconds": 35.18085633299779,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -160,7 +172,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4616.141,
       "duration_seconds": 49.93224554200424,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -176,7 +190,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4165.188,
       "duration_seconds": 39.33210504199087,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -192,7 +208,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4033.287,
       "duration_seconds": 50.782832375,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -208,7 +226,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2389.35,
       "duration_seconds": 107.94603541700053,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -224,7 +244,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5265.002,
       "duration_seconds": 51.98598933299945,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -240,7 +262,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 10940.974,
       "duration_seconds": 45.4769629999937,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -256,7 +280,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3266.002,
       "duration_seconds": 20.44928775000153,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -272,7 +298,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 14133.797,
       "duration_seconds": 47.10497620800743,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": false,
+      "narrative_inconsistencies": 1
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -304,7 +332,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3640.06,
       "duration_seconds": 37.98794329199882,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -320,7 +350,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2152.088,
       "duration_seconds": 36.01486858300632,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -336,7 +368,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3116.174,
       "duration_seconds": 20.68620424999972,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -352,7 +386,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2771.942,
       "duration_seconds": 19.860305624999455,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": false,
+      "narrative_inconsistencies": 1
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -368,7 +404,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 11714.607,
       "duration_seconds": 25.340068291989155,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -384,7 +422,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4000.084,
       "duration_seconds": 23.13533820900193,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -400,7 +440,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4744.333,
       "duration_seconds": 40.41105758299818,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -416,7 +458,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4279.707,
       "duration_seconds": 38.89669941700413,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -432,7 +476,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 6096.11,
       "duration_seconds": 18.883888791999198,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -448,7 +494,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3337.501,
       "duration_seconds": 36.44630429201061,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -464,7 +512,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 8984.599,
       "duration_seconds": 28.181863958001486,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -480,7 +530,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 4255.852,
       "duration_seconds": 36.79855345899705,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -496,7 +548,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6339.279,
       "duration_seconds": 23.87048450000293,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -512,7 +566,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3779.111,
       "duration_seconds": 22.8665558329958,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "kubelm-edge-v0-attempt-2",
@@ -528,7 +584,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4081.663,
       "duration_seconds": 21.822487124998588,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     }
   ],
   "model_summaries": {
@@ -543,7 +601,9 @@
       "reference_calls_passed": 21,
       "conclusion_rubric_passed": 23,
       "total_model_latency_ms": 154571.1,
-      "total_duration_seconds": 1076.8
+      "total_duration_seconds": 1076.8,
+      "trajectory_consistency_passed": 27,
+      "narrative_inconsistencies_total": 2
     }
   }
 }

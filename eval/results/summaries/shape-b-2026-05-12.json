@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "bench_id": "5ffee982-103a-414f-98bf-e9f0b056b81e",
   "started_at": "2026-05-12T02:36:28.262+00:00",
   "ended_at": "2026-05-12T04:42:26.086+00:00",
@@ -96,7 +96,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 8406.505,
       "duration_seconds": 42.42692891700062,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -112,7 +114,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2246.267,
       "duration_seconds": 14.771234333999018,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -128,7 +132,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2555.728,
       "duration_seconds": 14.863709666999057,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -144,7 +150,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2622.578,
       "duration_seconds": 14.808789208000235,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -160,7 +168,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2298.8,
       "duration_seconds": 20.99494550000236,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -176,7 +186,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2840.686,
       "duration_seconds": 35.84050929199657,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -192,7 +204,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3297.751,
       "duration_seconds": 50.23117570800241,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -208,7 +222,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2985.365,
       "duration_seconds": 36.882483249999495,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -224,7 +240,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2481.774,
       "duration_seconds": 45.38099704100023,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -240,7 +258,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2795.567,
       "duration_seconds": 108.10448387499855,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -256,7 +276,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3794.468,
       "duration_seconds": 48.25423429100192,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -272,7 +294,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2228.985,
       "duration_seconds": 36.51949533299921,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -288,7 +312,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3911.557,
       "duration_seconds": 21.568574416000047,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -304,7 +330,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3430.739,
       "duration_seconds": 36.02936704199965,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -320,7 +348,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3922.2,
       "duration_seconds": 37.64356045900058,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -336,7 +366,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3303.721,
       "duration_seconds": 38.06050574999972,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -352,7 +384,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2694.388,
       "duration_seconds": 39.13450229099908,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -368,7 +402,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2423.773,
       "duration_seconds": 20.25813095799822,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -384,7 +420,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3297.838,
       "duration_seconds": 21.590298458999314,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -400,7 +438,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2697.535,
       "duration_seconds": 16.028009375000693,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -416,7 +456,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2438.063,
       "duration_seconds": 21.0178431250024,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -432,7 +474,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3416.767,
       "duration_seconds": 38.875532957998075,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -448,7 +492,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2506.411,
       "duration_seconds": 36.69154312500177,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -464,7 +510,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2998.368,
       "duration_seconds": 15.440997541001707,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -480,7 +528,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2746.215,
       "duration_seconds": 37.56684758299889,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -496,7 +546,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2641.331,
       "duration_seconds": 18.72198437499901,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -512,7 +564,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2695.076,
       "duration_seconds": 36.93594004199986,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -528,7 +582,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3959.141,
       "duration_seconds": 21.552384250000614,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -544,7 +600,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2160.859,
       "duration_seconds": 20.975733708000917,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -560,7 +618,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2339.497,
       "duration_seconds": 19.76035395800136,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -576,7 +636,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 25670.26,
       "duration_seconds": 60.42797758300003,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -592,7 +654,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 11746.496,
       "duration_seconds": 24.348387250000087,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -608,7 +672,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 11280.545,
       "duration_seconds": 23.132838790999813,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -624,7 +690,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 13908.032,
       "duration_seconds": 27.084833457996865,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -640,7 +708,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 22317.101,
       "duration_seconds": 39.09181533299852,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -656,7 +726,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 22878.267,
       "duration_seconds": 58.56394070799797,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -672,7 +744,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 42671.843,
       "duration_seconds": 89.74264737500198,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -688,7 +762,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 28900.952,
       "duration_seconds": 63.79557858300177,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -704,7 +780,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 22626.553,
       "duration_seconds": 65.78569045900076,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -720,7 +798,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 12923.569,
       "duration_seconds": 118.78937270800088,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -736,7 +816,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 60973.257,
       "duration_seconds": 107.75802062499861,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -752,7 +834,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 54340.566,
       "duration_seconds": 87.36482125000111,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -768,7 +852,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 9822.198,
       "duration_seconds": 27.617573166997317,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -784,7 +870,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 20342.111,
       "duration_seconds": 55.62417441700018,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -800,7 +888,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 22969.668,
       "duration_seconds": 56.538121042001876,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -816,7 +906,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 21862.837,
       "duration_seconds": 57.37756074999925,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -832,7 +924,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 44645.992,
       "duration_seconds": 81.49437120799848,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -848,7 +942,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 10794.588,
       "duration_seconds": 28.19598533399767,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -864,7 +960,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 11438.611,
       "duration_seconds": 28.383384834000026,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -880,7 +978,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 14386.239,
       "duration_seconds": 27.41283249999833,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -896,7 +996,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 13356.686,
       "duration_seconds": 29.85440749999907,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -912,7 +1014,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 25730.531,
       "duration_seconds": 61.07957641699977,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -928,7 +1032,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 47163.862,
       "duration_seconds": 82.7677118749998,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -944,7 +1050,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 33991.398,
       "duration_seconds": 47.94885041700036,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -960,7 +1068,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 13710.252,
       "duration_seconds": 48.007121124999685,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -976,7 +1086,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 36107.662,
       "duration_seconds": 55.84233583300011,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -992,7 +1104,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 26893.191,
       "duration_seconds": 62.14870579200215,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -1008,7 +1122,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 30102.72,
       "duration_seconds": 49.06342004099861,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -1024,7 +1140,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 18715.608,
       "duration_seconds": 37.91517383300015,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -1040,7 +1158,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5539.569,
       "duration_seconds": 21.449252999998862,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1056,7 +1176,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 69517.249,
       "duration_seconds": 103.94487466699866,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1072,7 +1194,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 22966.117,
       "duration_seconds": 36.0146791249972,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1088,7 +1212,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 79746.185,
       "duration_seconds": 93.34540933300013,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1104,7 +1230,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 30530.344,
       "duration_seconds": 43.20475808400079,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1120,7 +1248,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 36129.195,
       "duration_seconds": 56.25212179099981,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1152,7 +1282,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 52685.085,
       "duration_seconds": 94.79272120799942,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1168,7 +1300,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 86589.108,
       "duration_seconds": 121.62261691599997,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1184,7 +1318,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 66433.542,
       "duration_seconds": 110.97190825000143,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1200,7 +1336,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 49042.834,
       "duration_seconds": 155.53953020900008,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1216,7 +1354,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 79353.603,
       "duration_seconds": 126.36524766599905,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1232,7 +1372,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 77356.271,
       "duration_seconds": 110.51751758300088,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1248,7 +1390,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 60092.184,
       "duration_seconds": 78.23645887499879,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1264,7 +1408,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 68746.896,
       "duration_seconds": 101.44621225000083,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1280,7 +1426,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 99210.927,
       "duration_seconds": 132.7260823329998,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1296,7 +1444,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 67835.619,
       "duration_seconds": 104.31683720799992,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1312,7 +1462,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 86066.827,
       "duration_seconds": 122.21169299999747,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1328,7 +1480,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 42933.703,
       "duration_seconds": 61.06623258300169,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1344,7 +1498,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 36091.823,
       "duration_seconds": 53.48588891599866,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1360,7 +1516,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 21350.74,
       "duration_seconds": 34.3870371669982,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1376,7 +1534,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 42587.182,
       "duration_seconds": 61.435075499997765,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1392,7 +1552,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 59679.513,
       "duration_seconds": 94.89482029200008,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1408,7 +1570,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 60898.454,
       "duration_seconds": 95.12145933399734,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1424,7 +1588,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 71344.998,
       "duration_seconds": 84.73807487500017,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1440,7 +1606,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 44303.422,
       "duration_seconds": 76.16224637499545,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1456,7 +1624,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 38978.357,
       "duration_seconds": 58.0567370830031,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1472,7 +1642,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 91468.027,
       "duration_seconds": 167.180431959001,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1488,7 +1660,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 59090.956,
       "duration_seconds": 77.52079304200015,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1504,7 +1678,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 62842.208,
       "duration_seconds": 79.42024012500042,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -1520,7 +1696,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 57988.602,
       "duration_seconds": 76.67632325000159,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1536,7 +1714,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 7127.008,
       "duration_seconds": 42.43403849999595,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1552,7 +1732,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4270.647,
       "duration_seconds": 16.48135095800535,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1568,7 +1750,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4525.295,
       "duration_seconds": 17.291919209004845,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1584,7 +1768,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3767.486,
       "duration_seconds": 16.54180812499544,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1600,7 +1786,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 4170.514,
       "duration_seconds": 22.011378374998458,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1616,7 +1804,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 6362.139,
       "duration_seconds": 39.602804374997504,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1632,7 +1822,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4893.464,
       "duration_seconds": 50.47612625000329,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1648,7 +1840,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 7226.304,
       "duration_seconds": 44.20710633400449,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1664,7 +1858,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3069.896,
       "duration_seconds": 44.774866584004485,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1680,7 +1876,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3915.141,
       "duration_seconds": 110.496003207998,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1696,7 +1894,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6409.221,
       "duration_seconds": 50.795242583997606,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1712,7 +1912,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6741.798,
       "duration_seconds": 42.07499312499567,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1728,7 +1930,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3525.606,
       "duration_seconds": 20.88289483299741,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1744,7 +1948,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4555.376,
       "duration_seconds": 39.96908666600211,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1760,7 +1966,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4736.952,
       "duration_seconds": 40.552524708997225,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1776,7 +1984,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3451.668,
       "duration_seconds": 40.294481584001915,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1792,7 +2002,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4074.688,
       "duration_seconds": 40.63053404200036,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1808,7 +2020,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 4352.877,
       "duration_seconds": 21.16929454199999,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1824,7 +2038,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2745.272,
       "duration_seconds": 20.328134374998626,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1840,7 +2056,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3780.652,
       "duration_seconds": 15.700542665996181,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1856,7 +2074,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2418.767,
       "duration_seconds": 21.33706770799472,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1872,7 +2092,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5047.136,
       "duration_seconds": 40.3911329160037,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1888,7 +2110,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3073.0,
       "duration_seconds": 36.347774041001685,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1904,7 +2128,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 12452.353,
       "duration_seconds": 25.50060704199859,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1920,7 +2146,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4427.404,
       "duration_seconds": 38.85907029200462,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1936,7 +2164,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3076.979,
       "duration_seconds": 20.54031370899611,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1952,7 +2182,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6990.269,
       "duration_seconds": 40.85702995799511,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1968,7 +2200,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4257.107,
       "duration_seconds": 22.22970483300014,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -1984,7 +2218,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3724.977,
       "duration_seconds": 22.940360832995793,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -2000,7 +2236,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3528.829,
       "duration_seconds": 19.670577749995573,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2016,7 +2254,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5689.093,
       "duration_seconds": 39.87021104199812,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2032,7 +2272,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5919.926,
       "duration_seconds": 19.834881208000297,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2048,7 +2290,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 7574.801,
       "duration_seconds": 20.349269667000044,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2064,7 +2308,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5866.333,
       "duration_seconds": 18.75933441700181,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2080,7 +2326,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6317.2,
       "duration_seconds": 22.85684437499731,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2096,7 +2344,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 7502.259,
       "duration_seconds": 52.34920854200027,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2112,7 +2362,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6857.702,
       "duration_seconds": 52.38611608300562,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2128,7 +2380,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5794.552,
       "duration_seconds": 41.468255332998524,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2144,7 +2398,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5273.784,
       "duration_seconds": 48.200155457998335,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2160,7 +2416,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 8239.032,
       "duration_seconds": 114.59525974999997,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2176,7 +2434,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6268.878,
       "duration_seconds": 52.54466712499561,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2192,7 +2452,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 10313.576,
       "duration_seconds": 42.7668941669981,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2208,7 +2470,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5943.456,
       "duration_seconds": 23.578036792001512,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2224,7 +2488,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 7600.208,
       "duration_seconds": 40.87194299999828,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2240,7 +2506,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 7526.571,
       "duration_seconds": 41.62835312500101,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2256,7 +2524,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5596.327,
       "duration_seconds": 40.04467354100052,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2272,7 +2542,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 8357.647,
       "duration_seconds": 43.78895091600134,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2288,7 +2560,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 5893.522,
       "duration_seconds": 24.766332250001142,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2304,7 +2578,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4169.921,
       "duration_seconds": 22.577632708998863,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2320,7 +2596,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5111.081,
       "duration_seconds": 18.080217916001857,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2336,7 +2614,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6120.051,
       "duration_seconds": 25.796921332999773,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2352,7 +2632,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6943.779,
       "duration_seconds": 42.90939595900272,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2368,7 +2650,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6292.233,
       "duration_seconds": 41.05235425000137,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2384,7 +2668,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 8779.817,
       "duration_seconds": 21.772519791004015,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2400,7 +2686,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4632.994,
       "duration_seconds": 37.34323162500368,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2416,7 +2704,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5154.83,
       "duration_seconds": 24.99153012500028,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2432,7 +2722,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5607.524,
       "duration_seconds": 39.70892616699712,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2448,7 +2740,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6109.703,
       "duration_seconds": 23.27637841700198,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2464,7 +2758,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6432.113,
       "duration_seconds": 25.459886541997548,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -2480,7 +2776,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5548.264,
       "duration_seconds": 21.573832334004692,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     }
   ],
   "model_summaries": {
@@ -2495,7 +2793,9 @@
       "reference_calls_passed": 0,
       "conclusion_rubric_passed": 6,
       "total_model_latency_ms": 92138.0,
-      "total_duration_seconds": 966.9
+      "total_duration_seconds": 966.9,
+      "trajectory_consistency_passed": 30,
+      "narrative_inconsistencies_total": 0
     },
     "qwen2.5-7b": {
       "scenarios_attempted": 30,
@@ -2508,7 +2808,9 @@
       "reference_calls_passed": 29,
       "conclusion_rubric_passed": 24,
       "total_model_latency_ms": 737811.2,
-      "total_duration_seconds": 1624.6
+      "total_duration_seconds": 1624.6,
+      "trajectory_consistency_passed": 30,
+      "narrative_inconsistencies_total": 0
     },
     "qwen2.5-32b": {
       "scenarios_attempted": 30,
@@ -2521,7 +2823,9 @@
       "reference_calls_passed": 25,
       "conclusion_rubric_passed": 26,
       "total_model_latency_ms": 1721860.0,
-      "total_duration_seconds": 2855.6
+      "total_duration_seconds": 2855.6,
+      "trajectory_consistency_passed": 29,
+      "narrative_inconsistencies_total": 0
     },
     "gpt-4o": {
       "scenarios_attempted": 30,
@@ -2534,7 +2838,9 @@
       "reference_calls_passed": 27,
       "conclusion_rubric_passed": 25,
       "total_model_latency_ms": 142698.8,
-      "total_duration_seconds": 1025.4
+      "total_duration_seconds": 1025.4,
+      "trajectory_consistency_passed": 30,
+      "narrative_inconsistencies_total": 0
     },
     "gpt-5.4": {
       "scenarios_attempted": 30,
@@ -2547,7 +2853,9 @@
       "reference_calls_passed": 30,
       "conclusion_rubric_passed": 29,
       "total_model_latency_ms": 193437.2,
-      "total_duration_seconds": 1085.2
+      "total_duration_seconds": 1085.2,
+      "trajectory_consistency_passed": 30,
+      "narrative_inconsistencies_total": 0
     }
   }
 }

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "bench_id": "b0ac9b6a-cfa1-4f70-9c74-738f0fe6dc8c",
   "started_at": "2026-05-13T20:14:01.112+00:00",
   "ended_at": "2026-05-13T20:30:39.162+00:00",
@@ -64,7 +64,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4448.383,
       "duration_seconds": 39.89077904199803,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -80,7 +82,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4122.679,
       "duration_seconds": 17.185990625002887,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -96,7 +100,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3323.99,
       "duration_seconds": 15.68949779200193,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -112,7 +118,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5202.045,
       "duration_seconds": 18.022482500004116,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -128,7 +136,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1456.366,
       "duration_seconds": 20.435243874999287,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -144,7 +154,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2383.869,
       "duration_seconds": 38.35725745799573,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -160,7 +172,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 954.509,
       "duration_seconds": 43.24990787499701,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -176,7 +190,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2709.529,
       "duration_seconds": 36.62877983300132,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -192,7 +208,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1111.785,
       "duration_seconds": 46.1102702499993,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -208,7 +226,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 617.81,
       "duration_seconds": 103.92090099999768,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -224,7 +244,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2245.937,
       "duration_seconds": 47.93718670799717,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -240,7 +262,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4407.964,
       "duration_seconds": 37.820683833997464,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -256,7 +280,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3410.486,
       "duration_seconds": 20.412236916999973,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -272,7 +298,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1341.154,
       "duration_seconds": 34.740060500000254,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -304,7 +332,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1763.521,
       "duration_seconds": 37.03629933299817,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -320,7 +350,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1427.835,
       "duration_seconds": 35.66713770800561,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -336,7 +368,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3194.993,
       "duration_seconds": 20.30694724999921,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -352,7 +386,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1420.388,
       "duration_seconds": 18.936971499999345,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -368,7 +404,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1375.308,
       "duration_seconds": 13.95054083300056,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -384,7 +422,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4314.441,
       "duration_seconds": 22.8052065410011,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -400,7 +440,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2125.856,
       "duration_seconds": 37.796810291998554,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -416,7 +458,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1639.986,
       "duration_seconds": 36.282542916997045,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -432,7 +476,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 15528.722,
       "duration_seconds": 27.96238991699647,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -448,7 +494,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1782.569,
       "duration_seconds": 36.80863787499402,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -464,7 +512,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1721.446,
       "duration_seconds": 19.425386790993798,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -480,7 +530,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 1380.222,
       "duration_seconds": 36.5922401659991,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -496,7 +548,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3054.942,
       "duration_seconds": 20.882928791994345,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -512,7 +566,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2811.989,
       "duration_seconds": 22.010025457995653,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-1.5b",
@@ -528,7 +584,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 2979.391,
       "duration_seconds": 18.940198666998185,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     }
   ],
   "model_summaries": {
@@ -543,7 +601,9 @@
       "reference_calls_passed": 3,
       "conclusion_rubric_passed": 10,
       "total_model_latency_ms": 84258.1,
-      "total_duration_seconds": 998.0
+      "total_duration_seconds": 998.0,
+      "trajectory_consistency_passed": 29,
+      "narrative_inconsistencies_total": 0
     }
   }
 }

@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "bench_id": "2d71e65f-ed0c-4cee-9fbd-b15b434c22ac",
   "started_at": "2026-05-08T03:54:01.353+00:00",
   "ended_at": "2026-05-08T12:50:49.274+00:00",
@@ -76,7 +76,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 6473.661,
       "duration_seconds": 53.48283266699946,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -92,7 +94,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2211.076,
       "duration_seconds": 36.91214512499937,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -108,7 +112,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3900.279,
       "duration_seconds": 21.412612458000694,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -124,7 +130,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3424.342,
       "duration_seconds": 36.80843204100074,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -140,7 +148,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2650.978,
       "duration_seconds": 38.43637324999963,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -156,7 +166,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2644.16,
       "duration_seconds": 14.920444542000041,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -172,7 +184,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3470.307,
       "duration_seconds": 38.68553849999989,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -188,7 +202,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 3166.685,
       "duration_seconds": 16.88777241600019,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -204,7 +220,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2754.394,
       "duration_seconds": 35.02537054200002,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "llama3.2-3b",
@@ -220,7 +238,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3953.549,
       "duration_seconds": 21.007358417000432,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -236,7 +256,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 22734.659,
       "duration_seconds": 67.76216241600014,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -252,7 +274,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 31350.77,
       "duration_seconds": 66.74920333299997,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -268,7 +292,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 9252.704,
       "duration_seconds": 27.330888417000097,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -284,7 +310,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 18985.585,
       "duration_seconds": 53.79347970900017,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -300,7 +328,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 25590.176,
       "duration_seconds": 63.2157385419996,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -316,7 +346,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 23252.647,
       "duration_seconds": 36.36937070800013,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -332,7 +364,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 19333.168,
       "duration_seconds": 65.13251316700007,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -348,7 +382,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 26885.034,
       "duration_seconds": 39.91880504200071,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -364,7 +400,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 11311.0,
       "duration_seconds": 45.45322341599967,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-7b",
@@ -380,7 +418,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 20739.182,
       "duration_seconds": 37.90160870900036,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -396,7 +436,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 68724.247,
       "duration_seconds": 114.23493270900053,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -412,7 +454,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 78998.598,
       "duration_seconds": 113.52800016699985,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -428,7 +472,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 53296.407,
       "duration_seconds": 71.61386004199994,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -444,7 +490,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 59454.547,
       "duration_seconds": 91.37846545799948,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -460,7 +508,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 54648.26,
       "duration_seconds": 89.36163324999961,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -476,7 +526,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 21650.69,
       "duration_seconds": 33.965343290999954,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -492,7 +544,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 76161.043,
       "duration_seconds": 108.81735229199967,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -508,7 +562,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 67370.075,
       "duration_seconds": 80.07246920899979,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -524,7 +580,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 68917.298,
       "duration_seconds": 101.36307220799972,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "qwen2.5-32b",
@@ -556,7 +614,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6134.054,
       "duration_seconds": 49.795398041000226,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -572,7 +632,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 9699.208,
       "duration_seconds": 43.96020358399983,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -588,7 +650,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3990.816,
       "duration_seconds": 21.21902045800016,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -604,7 +668,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 7603.679,
       "duration_seconds": 40.14665754199996,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -620,7 +686,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5138.432,
       "duration_seconds": 39.93015129200012,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -636,7 +704,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 2985.42,
       "duration_seconds": 16.756982875000176,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -652,7 +722,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6343.563,
       "duration_seconds": 43.00992320899968,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -684,7 +756,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 3556.873,
       "duration_seconds": 37.78311783400022,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-4o",
@@ -700,7 +774,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 4255.482,
       "duration_seconds": 21.13450470800035,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -716,7 +792,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 7546.436,
       "duration_seconds": 53.286738625,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -732,7 +810,9 @@
       "conclusion_rubric_passed": false,
       "model_latency_ms": 8399.804,
       "duration_seconds": 42.59978258400042,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -748,7 +828,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6099.19,
       "duration_seconds": 23.036642666999796,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -764,7 +846,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 12059.758,
       "duration_seconds": 47.110496083000726,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -780,7 +864,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 7095.171,
       "duration_seconds": 42.63845466600014,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -796,7 +882,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 8702.955,
       "duration_seconds": 22.414610083000298,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -812,7 +900,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 8389.921,
       "duration_seconds": 44.89806350000072,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -828,7 +918,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 8351.75,
       "duration_seconds": 22.48833474999992,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -844,7 +936,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 5491.105,
       "duration_seconds": 37.79027945799953,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     },
     {
       "model": "gpt-5.4",
@@ -860,7 +954,9 @@
       "conclusion_rubric_passed": true,
       "model_latency_ms": 6770.762,
       "duration_seconds": 23.56585458399968,
-      "error": null
+      "error": null,
+      "trajectory_consistency_passed": true,
+      "narrative_inconsistencies": 0
     }
   ],
   "model_summaries": {
@@ -875,7 +971,9 @@
       "reference_calls_passed": 0,
       "conclusion_rubric_passed": 2,
       "total_model_latency_ms": 34649.4,
-      "total_duration_seconds": 313.6
+      "total_duration_seconds": 313.6,
+      "trajectory_consistency_passed": 10,
+      "narrative_inconsistencies_total": 0
     },
     "qwen2.5-7b": {
       "scenarios_attempted": 10,
@@ -888,7 +986,9 @@
       "reference_calls_passed": 4,
       "conclusion_rubric_passed": 6,
       "total_model_latency_ms": 209434.9,
-      "total_duration_seconds": 503.6
+      "total_duration_seconds": 503.6,
+      "trajectory_consistency_passed": 10,
+      "narrative_inconsistencies_total": 0
     },
     "qwen2.5-32b": {
       "scenarios_attempted": 10,
@@ -901,7 +1001,9 @@
       "reference_calls_passed": 3,
       "conclusion_rubric_passed": 6,
       "total_model_latency_ms": 549221.2,
-      "total_duration_seconds": 984.2
+      "total_duration_seconds": 984.2,
+      "trajectory_consistency_passed": 9,
+      "narrative_inconsistencies_total": 0
     },
     "gpt-4o": {
       "scenarios_attempted": 10,
@@ -914,7 +1016,9 @@
       "reference_calls_passed": 5,
       "conclusion_rubric_passed": 7,
       "total_model_latency_ms": 49707.5,
-      "total_duration_seconds": 334.3
+      "total_duration_seconds": 334.3,
+      "trajectory_consistency_passed": 9,
+      "narrative_inconsistencies_total": 0
     },
     "gpt-5.4": {
       "scenarios_attempted": 10,
@@ -927,7 +1031,9 @@
       "reference_calls_passed": 5,
       "conclusion_rubric_passed": 9,
       "total_model_latency_ms": 78906.9,
-      "total_duration_seconds": 359.8
+      "total_duration_seconds": 359.8,
+      "trajectory_consistency_passed": 10,
+      "narrative_inconsistencies_total": 0
     }
   }
 }

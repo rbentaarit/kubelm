@@ -452,3 +452,106 @@ grounding (where the metric is documented brittle).
   broken pod. Validates the Phase 6 deployment story —
   K8sGPT-server-as-Deployment + kubelm-as-LLM-backend works as
   a closed loop without code changes.
+
+## 2026-05-19 — Retroactive narrative-consistency re-grade (v0.1 Stage 1.6)
+
+All committed summaries above (and their per-run `results.json`)
+have been retroactively scored against the v0.1 narrative-consistency
+metric (module: `eval/metrics/trajectory_consistency.py`, committed
+at `bab8733`, wired through the bench pipeline at `a9218be`). The
+metric flags *agent-narrative hallucination* — the failure mode
+where the conclusion claims to have called a specific MCP tool
+("Events show...", "The analyzer reported...") but the trajectory
+log shows no such call. It is precision-first: the regex set
+catches a small number of strong-signal patterns and ignores
+sloppier phrasings (those are v0.2 scope, see the module docstring).
+Other metric blocks are unchanged; this is additive only.
+
+The schema versions on every regraded summary and per-run
+`results.json` bump 1 → 2. Regenerate any cell with:
+
+```
+uv run python eval/results/summaries/regrade_trajectory_consistency.py \
+    eval/results/summaries/<file>.json
+```
+
+### Per-cut `narr_pass` totals (out of non-errored runs)
+
+| cut | model lineup | narr_pass |
+|---|---|---|
+| 2026-05-07 Shape A | llama3.2-3b · gpt-4o-mini | 10/10 · 10/10 |
+| 2026-05-07 Shape B | 3b · qwen-7b · qwen-32b · gpt-4o | 10/10 across all 4 |
+| 2026-05-11 Shape B | + gpt-5.4 (5 models × 10) | 10/10 · 10/10 · 9/9† · 9/9† · 10/10 |
+| 2026-05-12 Shape B | 5 models × 30 | 30/30 · 30/30 · 29/29† · 30/30 · 30/30 |
+| 2026-05-13 qwen-1.5b | qwen2.5-1.5b × 30 | 29/29† |
+| 2026-05-14 attempt-1 | kubelm-edge-v0-attempt-1 × 30 | **28/29†** |
+| 2026-05-14 v0 (released) | kubelm-edge-v0-attempt-2 × 30 | **27/29†** |
+
+† Denominator excludes the documented `pod-anti-affinity-001`
+settle-race error (and the two transient infra errors on the
+2026-05-11 cut). The metric runs only against non-errored runs.
+
+### Headline finding
+
+**The narrative-hallucination metric fires only on the kubelm-edge
+fine-tunes.** Across **378 base-model trajectories** (3B, 1.5B, 7B,
+32B, gpt-4o-mini, gpt-4o, gpt-5.4) the regex catches **zero**
+inconsistent claims. Across the 58 fine-tune trajectories,
+attempt-1 has **1 inconsistency** and attempt-2 (the released v0)
+has **2 inconsistencies**.
+
+The flagged cases (each hand-validated as a true positive):
+
+| run | scenario | claim | tools actually called |
+|---|---|---|---|
+| attempt-1 | `pod-pvc-not-found-001` | "Events show no immediate issues..." | `get-resource` only |
+| attempt-2 | `oom-killed-001` | "Container events show: ... reason `OOMKilled`..." | `list-filters`, `list-namespaces`, `list-resources` |
+| attempt-2 | `pod-pvc-not-found-001` | "Events show the exact reason: `PodScheduled=False`..." | `get-resource` only |
+
+The `oom-killed-001` case is the most consequential: attempt-2
+**fabricated the OOMKilled diagnosis from priors** without ever
+fetching events or running the analyzer. The four-metric bench
+passed this trajectory because the final answer happened to match
+the rubric. The new metric is the only one that surfaces it.
+
+### Caveats
+
+- **The metric is precision-first by design.** Zero hits on base
+  models doesn't mean "no base-model narrative hallucinations" —
+  it means none of those models used the specific
+  events-show / the-analyzer-reported / from-the-X-output
+  patterns that the regex catches. Sloppier phrasings
+  ("based on the data...", causal framings) are scope-deferred
+  to v0.2 per the module docstring. v0.1 prioritized
+  no-false-positives over high recall so the metric becomes a
+  trusted gate.
+- **n is small on the v0 cells.** 1 / 29 and 2 / 29 are real
+  but well within the range where one more run could flip the
+  story. The qualitative pattern — fine-tunes regress on
+  narrative consistency relative to their own base — is the
+  more durable signal than the precise counts.
+- **`pod-pvc-not-found-001` is a reproducible failure mode** for
+  both kubelm-edge attempts but for no other model in the
+  library. Worth a per-scenario audit in v0.1 (likely tracks
+  back to a training-data trajectory shape that drilled the
+  "Events show..." idiom even when the trajectory only contained
+  `get-resource`).
+- **The grounding regression headline** from the 2026-05-14
+  v0 row (`ground_fail 16 → 21 → 27` base → attempt-1 → attempt-2)
+  was previously attributed primarily to *style drift* tripping
+  a brittle rule-based metric. The new narrative-consistency
+  data points the same direction: attempt-2 is more confident
+  about facts it didn't look up. Whether the ground_fail
+  regression is *mostly* metric-style-drift or *mostly* real
+  hallucination is what Stage 2 (audit classification) +
+  Stage 3 (rule-set v2 / LLM judge) will disentangle.
+- **`shape-b-2026-05-12.json`** was the qwen2.5:7b reference
+  used as the "headline numbers within 1pt of qwen2.5:7b"
+  comparison in the v0 ship memo. Re-graded:
+  qwen2.5:7b `narr_pass = 30/30`. The v0 model is *off-by-2*
+  on the column that didn't exist when the ship decision was
+  made. Not retroactively a blocker (the published comparison
+  was honest at the time and the four-metric quality bars
+  still hold), but a real regression that should bound the
+  claim "v0 matches qwen2.5:7b" — it matches on the four
+  metrics that shipped; it does not match on the fifth.
