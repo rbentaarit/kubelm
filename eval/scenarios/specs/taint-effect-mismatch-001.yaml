@@ -1,0 +1,134 @@
+id: taint-effect-mismatch-001
+profile: base
+description: |
+  Adversarial discriminator (v0.1 Stage 4b) for the
+  effect-mismatch failure mode. A Pod is pinned to the kind
+  control-plane node (via nodeSelector) AND carries a toleration
+  for the control-plane taint — but with the wrong `effect`. The
+  control-plane taint is `node-role.kubernetes.io/control-plane:NoSchedule`;
+  the Pod tolerates the same key with `effect: NoExecute`. K8s
+  toleration matching requires the effect to match exactly (or be
+  empty), so the toleration does NOT tolerate the NoSchedule
+  taint, and the scheduler still emits FailedScheduling with the
+  "1 node(s) had untolerated taint" message naming the NoSchedule
+  effect.
+
+  Distinct from `taint-no-toleration-001`. There the pod has no
+  toleration at all — a "missing field" defect that the model
+  fixes by adding one. Here the pod HAS a toleration that looks
+  reasonable at the surface but uses the wrong effect — a
+  "wrong-value" defect that requires actually reading the
+  scheduler's event message (which names the effect) and
+  cross-referencing against the pod spec's toleration list.
+
+  This scenario specifically tests the fix-recommendation
+  fabrication mode the Stage 2 audit caught in attempt-2: the
+  model recognizing a toleration-shaped problem and recommending
+  a generic "add a toleration" fix without verifying that the
+  EXISTING toleration's effect needs to change. A grounded model
+  reads the events, sees `NoSchedule`, reads the pod spec, sees
+  `NoExecute`, identifies the mismatch, and recommends changing
+  the effect to `NoSchedule` (or removing the effect entirely
+  for a wildcard match). A naive model that pattern-matches on
+  "taint" without reading the effect details will either
+  recommend the wrong fix or miss the defect entirely.
+
+goal: "Why is sentry-pod in scenario-taint-effect-mismatch-001 stuck Pending?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-taint-effect-mismatch-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: sentry-pod
+        namespace: scenario-taint-effect-mismatch-001
+        labels: { app: sentry }
+      spec:
+        # Same forcing pattern as taint-no-toleration-001.
+        nodeSelector:
+          node-role.kubernetes.io/control-plane: ""
+        # The deceptive part: a toleration that *looks* like it
+        # should cover the control-plane taint but has the wrong
+        # effect. NoExecute does not match NoSchedule for
+        # toleration purposes; the scheduler still considers the
+        # taint untolerated. A model that reads only "we have a
+        # toleration for control-plane" without checking the
+        # effect will misdiagnose.
+        tolerations:
+          - key: node-role.kubernetes.io/control-plane
+            operator: Exists
+            effect: NoExecute
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+
+settle:
+  # Same settle pattern as taint-no-toleration-001: phase=Pending
+  # surfaces quickly, the FailedScheduling event with the taint
+  # detail follows shortly after. By the time the bench's first
+  # MCP call lands the event is in the stream.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-taint-effect-mismatch-001
+      name: sentry-pod
+      phase: Pending
+      timeout: 60s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-taint-effect-mismatch-001 } }
+      - {
+          name: get-resource,
+          args_match:
+            {
+              resourceType: pod,
+              name: sentry-pod,
+              namespace: scenario-taint-effect-mismatch-001,
+            },
+        }
+      - {
+          name: list-events,
+          args_match: { namespace: scenario-taint-effect-mismatch-001 },
+        }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must name the taint mechanism (same shape as
+    # taint-no-toleration-001's slot 1).
+    # Slot 2: must surface the EFFECT-MISMATCH specifically. This
+    # is the load-bearing slot for the adversarial test — a model
+    # that only writes "the pod has no toleration" or "add a
+    # toleration" can't satisfy this slot, since the pod IS
+    # tolerating the taint key, just with the wrong effect.
+    # Acceptable phrasings:
+    #   - "NoSchedule" — the actual taint effect (naming it
+    #     proves the model read the scheduler event)
+    #   - "wrong effect" / "effect mismatch" / "effect does not
+    #     match" — explicit identification of the defect
+    #   - "NoExecute" — the toleration's (wrong) effect, naming
+    #     it implicitly identifies the mismatch
+    must_mention:
+      - ["taint", "untolerated", "toleration"]
+      - ["NoSchedule", "NoExecute", "wrong effect", "effect mismatch", "effect does not match"]
+    # No must_not_mention fence. The taint-no-toleration-001
+    # rubric guards "NoGo"; this scenario's failure mode is more
+    # subtle and harder to catch with substring fencing without
+    # blowing up rephrase-tolerant model output. The slot 2
+    # disjunction does the work.
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes that the Pod carries a toleration for the
+      control-plane taint key but with the wrong `effect`
+      (NoExecute instead of NoSchedule), so the toleration
+      doesn't actually tolerate the taint and the scheduler
+      still rejects the Pod. The fix is to change the
+      toleration's effect to NoSchedule (or remove the effect
+      field for wildcard matching). Distinct from
+      taint-no-toleration-001 where the toleration is missing
+      entirely.
