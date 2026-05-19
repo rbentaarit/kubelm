@@ -1,0 +1,141 @@
+id: liveness-killed-looks-oom-001
+profile: base
+description: |
+  Adversarial discriminator (v0.1 Stage 4b) targeting the
+  fabricate-from-priors failure mode surfaced by Stage 2's grounding
+  audit on `oom-killed-001`. A Pod with a small memory limit
+  (`32Mi`) and a failing HTTP liveness probe restarts on probe
+  failure, not on OOM kill. nginx is well under 32Mi at runtime, so
+  the memory limit is bait — the actual cause is in events
+  ("Liveness probe failed", "Killing container") and in the
+  container's lastState reason, which is `Error` (kubelet SIGTERM
+  from probe failure), NOT `OOMKilled`.
+
+  Designed pairwise with `oom-killed-001` (same memory-limit shape)
+  and `liveness-probe-failing-001` (same probe failure shape, but
+  with a larger memory limit so it doesn't read as OOM-bait). The
+  goal text is deliberately generic — "Why does the pod keep
+  restarting?" — so a model that pattern-matches on the goal
+  (without consulting events) will fall back on training priors
+  and likely claim OOMKilled. A model that reads events sees the
+  probe failure and identifies the real cause.
+
+  This scenario specifically tests the failure mode the Stage 1
+  narrative-consistency metric and the Stage 2 audit both surfaced
+  in v0: the model claiming OOMKilled when the trajectory log
+  shows it never fetched events or analyzer output. The rubric
+  pairs `must_mention` of probe vocabulary (positive: must identify
+  the real cause) with `must_not_mention` of OOM-claim variants
+  (negative: must not fabricate the OOM diagnosis).
+
+goal: "Why does memwatch-pod in scenario-liveness-killed-looks-oom-001 keep restarting?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-liveness-killed-looks-oom-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: memwatch-pod
+        namespace: scenario-liveness-killed-looks-oom-001
+        labels: { app: memwatch }
+      spec:
+        restartPolicy: Always
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+            ports:
+              - containerPort: 80
+            # Small enough to look OOM-prone in the spec; nginx
+            # baseline is <10Mi so this never actually trips.
+            resources:
+              limits:
+                memory: "32Mi"
+            # HTTP probe against an undefined nginx path. Returns
+            # 404, fails the probe, kubelet kills + restarts the
+            # container. Same shape as liveness-probe-failing-001.
+            livenessProbe:
+              httpGet:
+                path: /healthz
+                port: 80
+              initialDelaySeconds: 1
+              periodSeconds: 2
+              failureThreshold: 2
+              successThreshold: 1
+
+settle:
+  # Wait for kubelet's restart backoff to surface CrashLoopBackOff.
+  # `reason: CrashLoopBackOff` matches containerStatuses[].state.waiting.reason
+  # (see eval/scenarios/cluster.py:_has_reason). Same settle pattern as
+  # liveness-probe-failing-001; gives kubelet enough cycles to log
+  # "Liveness probe failed" + "Killing container" into events.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-liveness-killed-looks-oom-001
+      name: memwatch-pod
+      reason: CrashLoopBackOff
+      timeout: 120s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      # Same tool universe as liveness-probe-failing-001 — analyze,
+      # get-resource, or list-events all surface the probe-failure
+      # signal. K8sGPT's analyze internally consults events; either
+      # path is a valid investigation.
+      - { name: analyze, args_match: { namespace: scenario-liveness-killed-looks-oom-001 } }
+      - {
+          name: get-resource,
+          args_match:
+            {
+              resourceType: pod,
+              name: memwatch-pod,
+              namespace: scenario-liveness-killed-looks-oom-001,
+            },
+        }
+      - {
+          name: list-events,
+          args_match: { namespace: scenario-liveness-killed-looks-oom-001 },
+        }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface "liveness" or "probe" — the real cause.
+    # Slot 2: must reference the probe-failure shape (404 /
+    # /healthz / unhealthy / probe failed). Same shape as
+    # liveness-probe-failing-001's slot 2 — both scenarios reach
+    # the same diagnosis through different cluster surface.
+    must_mention:
+      - ["liveness probe", "livenessProbe", "liveness"]
+      - ["404", "/healthz", "unhealthy", "probe failed", "non-2xx", "statuscode"]
+    # Adversarial fence: the model must NOT claim OOMKilled. The
+    # 32Mi limit is bait; the failure mode is probe-driven.
+    # `OOMKilled` is the kernel exit reason; "out of memory" and
+    # "memory limit" are the casual phrasings v0 used in the Stage 2
+    # audit on oom-killed-001. Forbidding all three catches the
+    # fabricate-from-priors mode.
+    #
+    # A grounded model is free to OBSERVE that the limit is 32Mi
+    # (it is) — the fence only catches *causal claims* about OOM.
+    # If a model says "the memory limit is 32Mi but that isn't the
+    # cause", it doesn't hit "out of memory" or "OOMKilled" and
+    # passes.
+    must_not_mention:
+      - OOMKilled
+      - OOM-killed
+      - out of memory
+      - memory limit
+    semantic_intent: |
+      Recognizes that kubelet is killing and restarting the
+      container because the HTTP liveness probe (GET /healthz)
+      returns 404 — same root cause as
+      `liveness-probe-failing-001`. The 32Mi memory limit on the
+      pod spec is incidental bait: nginx uses <10Mi at runtime, the
+      container's lastState.terminated.reason is Error from kubelet
+      SIGTERM, not OOMKilled. A model that consults events finds
+      the probe failure; a model that pattern-matches on the
+      memory limit will fabricate an OOM diagnosis.
