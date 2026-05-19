@@ -19,11 +19,13 @@ from eval.client import Tool
 from eval.metrics import (
     ConclusionRubricReport,
     GroundingReport,
+    GroundingV2Report,
     ReferenceCallsReport,
     TerminationReport,
     TrajectoryConsistencyReport,
     TrajectorySchemaReport,
     analyze_grounding,
+    analyze_grounding_v2,
     analyze_trajectory_consistency,
     classify_termination,
     evaluate_conclusion_rubric,
@@ -33,7 +35,7 @@ from eval.metrics import (
 from eval.scenarios.spec import Scenario
 from eval.trajectory import load_trajectory
 
-RESULTS_SCHEMA_VERSION = 2
+RESULTS_SCHEMA_VERSION = 3
 
 
 def _totals(events: list[dict[str, Any]]) -> dict[str, Any]:
@@ -69,6 +71,16 @@ def _schema_dict(report: TrajectorySchemaReport) -> dict[str, Any]:
         "argument_hallucinations": report.argument_hallucinations,
         "valid_calls": report.valid_calls,
         "calls": [asdict(c) for c in report.calls],
+    }
+
+
+def _grounding_v2_dict(report: GroundingV2Report) -> dict[str, Any]:
+    return {
+        "conclusion_text": report.conclusion_text,
+        "total_facts": report.total_facts,
+        "fabrications": report.fabrications,
+        "has_fabrication": report.has_fabrication,
+        "facts": [{"fact": f.fact, "label": f.label} for f in report.facts],
     }
 
 
@@ -154,6 +166,7 @@ def emit_results(
     schemas = {t.name: t.input_schema for t in tools}
     schema_report = validate_trajectory(events, schemas)
     grounding_report = analyze_grounding(events)
+    grounding_v2_report = analyze_grounding_v2(events)
     termination_report = classify_termination(events)
     trajectory_consistency_report = analyze_trajectory_consistency(events)
 
@@ -173,6 +186,7 @@ def emit_results(
         "totals": _totals(events),
         "schema_report": _schema_dict(schema_report),
         "grounding_report": _grounding_dict(grounding_report),
+        "grounding_v2_report": _grounding_v2_dict(grounding_v2_report),
         "termination_report": _termination_dict(termination_report),
         "trajectory_consistency_report": _trajectory_consistency_dict(
             trajectory_consistency_report

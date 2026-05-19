@@ -115,6 +115,11 @@ def _passing_results() -> dict:
             "argument_hallucinations": 0,
         },
         "grounding_report": {"has_grounding_failure": False},
+        "grounding_v2_report": {
+            "has_fabrication": False,
+            "fabrications": 0,
+            "total_facts": 3,
+        },
         "termination_report": {"label": "complete"},
         "reference_calls_report": {"passed": True},
         "conclusion_rubric_report": {"passed": True},
@@ -137,6 +142,11 @@ def _failing_results() -> dict:
             "argument_hallucinations": 1,
         },
         "grounding_report": {"has_grounding_failure": True},
+        "grounding_v2_report": {
+            "has_fabrication": True,
+            "fabrications": 2,
+            "total_facts": 5,
+        },
         "termination_report": {"label": "premature"},
         "reference_calls_report": {"passed": False},
         "conclusion_rubric_report": {"passed": False},
@@ -170,6 +180,7 @@ def test_record_from_results_extracts_passing(tmp_path: Path) -> None:
     assert rec.schema_passed is True
     assert rec.schema_name_halluc == 0
     assert rec.grounding_failed is False
+    assert rec.fabrications == 0
     assert rec.reference_calls_passed is True
     assert rec.conclusion_rubric_passed is True
     assert rec.trajectory_consistency_passed is True
@@ -186,6 +197,7 @@ def test_record_from_results_extracts_failures(tmp_path: Path) -> None:
     assert rec.schema_name_halluc == 1
     assert rec.schema_arg_halluc == 1
     assert rec.grounding_failed is True
+    assert rec.fabrications == 2
     assert rec.trajectory_consistency_passed is False
     assert rec.narrative_inconsistencies == 2
 
@@ -198,6 +210,19 @@ def test_record_from_results_handles_missing_trajectory_consistency(tmp_path: Pa
     rec = _record_from_results(cfg, _scenario(), "run-3", results, tmp_path, 1.0)
     assert rec.trajectory_consistency_passed is None
     assert rec.narrative_inconsistencies is None
+
+
+def test_record_from_results_falls_back_to_v1_when_v2_missing(tmp_path: Path) -> None:
+    """Pre-v2 results.json (no grounding_v2_report) uses v1 has_grounding_failure
+    and leaves fabrications None."""
+    cfg = ModelConfig(name="m", backend_url="u", model="m1")
+    results = _passing_results()
+    del results["grounding_v2_report"]
+    # Force v1 to say "ungrounded" so we can verify the fallback semantics.
+    results["grounding_report"]["has_grounding_failure"] = True
+    rec = _record_from_results(cfg, _scenario(), "run-4", results, tmp_path, 1.0)
+    assert rec.grounding_failed is True
+    assert rec.fabrications is None
 
 
 def test_model_summaries_aggregates_per_model() -> None:
@@ -215,6 +240,7 @@ def test_model_summaries_aggregates_per_model() -> None:
             schema_name_halluc=0,
             schema_arg_halluc=0,
             grounding_failed=False,
+            fabrications=0,
             reference_calls_passed=True,
             conclusion_rubric_passed=True,
             trajectory_consistency_passed=True,
@@ -231,6 +257,7 @@ def test_model_summaries_aggregates_per_model() -> None:
             schema_name_halluc=2,
             schema_arg_halluc=1,
             grounding_failed=True,
+            fabrications=4,
             reference_calls_passed=False,
             conclusion_rubric_passed=False,
             trajectory_consistency_passed=False,
@@ -253,6 +280,7 @@ def test_model_summaries_aggregates_per_model() -> None:
     assert s["a"]["name_hallucinations_total"] == 2
     assert s["a"]["argument_hallucinations_total"] == 1
     assert s["a"]["grounding_failures"] == 1
+    assert s["a"]["fabrications_total"] == 4
     assert s["a"]["reference_calls_passed"] == 1
     assert s["a"]["trajectory_consistency_passed"] == 1
     assert s["a"]["narrative_inconsistencies_total"] == 3
@@ -276,6 +304,7 @@ def test_format_summary_table_renders() -> None:
                 "name_hallucinations_total": 0,
                 "argument_hallucinations_total": 1,
                 "grounding_failures": 0,
+                "fabrications_total": 0,
                 "reference_calls_passed": 3,
                 "conclusion_rubric_passed": 2,
                 "trajectory_consistency_passed": 3,
@@ -291,6 +320,7 @@ def test_format_summary_table_renders() -> None:
     assert "model" in out
     assert "complete" in out
     assert "narr_pass" in out
+    assert "fabs" in out
 
 
 def test_format_summary_table_handles_v1_summary_without_consistency() -> None:
@@ -355,7 +385,7 @@ def test_shape_b_models_file_loads() -> None:
 
 
 def test_bench_schema_version_constant() -> None:
-    assert BENCH_SCHEMA_VERSION == 2
+    assert BENCH_SCHEMA_VERSION == 3
 
 
 def test_runrecord_serializes_to_json() -> None:

@@ -78,6 +78,8 @@ def test_emit_results_writes_well_formed_summary(tmp_path: Path) -> None:
     assert data["schema_report"]["total_calls"] == 1
     assert data["schema_report"]["valid_calls"] == 1
     assert data["grounding_report"]["has_grounding_failure"] is False
+    assert data["grounding_v2_report"]["has_fabrication"] is False
+    assert data["grounding_v2_report"]["fabrications"] == 0
     assert data["termination_report"]["label"] == "complete"
 
     # No narrative claims in the conclusion → trivially consistent.
@@ -114,6 +116,9 @@ def test_emit_results_captures_failure_modes(tmp_path: Path) -> None:
     data = json.loads(output.read_text())
     assert data["schema_report"]["name_hallucinations"] == 1
     assert data["grounding_report"]["has_grounding_failure"]
+    # v2 should flag the fabricated pod name as a fabrication.
+    assert data["grounding_v2_report"]["has_fabrication"] is True
+    assert data["grounding_v2_report"]["fabrications"] >= 1
     assert data["termination_report"]["label"] == "premature"
 
 

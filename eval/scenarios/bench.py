@@ -44,7 +44,7 @@ from eval.trajectory import TrajectoryRecorder
 
 log = logging.getLogger(__name__)
 
-BENCH_SCHEMA_VERSION = 2
+BENCH_SCHEMA_VERSION = 3
 
 
 class BenchParseError(ValueError):
@@ -86,6 +86,7 @@ class RunRecord:
     schema_name_halluc: int | None = None
     schema_arg_halluc: int | None = None
     grounding_failed: bool | None = None
+    fabrications: int | None = None
     reference_calls_passed: bool | None = None
     conclusion_rubric_passed: bool | None = None
     trajectory_consistency_passed: bool | None = None
@@ -212,12 +213,21 @@ def _record_from_results(
 ) -> RunRecord:
     schema = results["schema_report"]
     grounding = results["grounding_report"]
+    grounding_v2 = results.get("grounding_v2_report") or {}
     termination = results["termination_report"]
     ref_calls = results.get("reference_calls_report") or {}
     rubric = results.get("conclusion_rubric_report") or {}
     tc = results.get("trajectory_consistency_report") or {}
     inconsistent = tc.get("inconsistent_claims")
     results_path = output_root / run_id / scenario.id / "results.json"
+    # Schema 3+ headline: grounding_failed means "fabrication present"
+    # (the v2 metric). Pre-v2 results.json files (which lack
+    # grounding_v2_report) fall back to v1's broader
+    # "any-ungrounded-fact" definition. The bench summary's
+    # schema_version disambiguates which interpretation is in force.
+    grounding_failed = grounding_v2.get("has_fabrication")
+    if grounding_failed is None:
+        grounding_failed = grounding["has_grounding_failure"]
     return RunRecord(
         model=model_cfg.name,
         scenario=scenario.id,
@@ -227,7 +237,8 @@ def _record_from_results(
         schema_passed=schema["valid_calls"] == schema["total_calls"],
         schema_name_halluc=schema["name_hallucinations"],
         schema_arg_halluc=schema["argument_hallucinations"],
-        grounding_failed=grounding["has_grounding_failure"],
+        grounding_failed=grounding_failed,
+        fabrications=grounding_v2.get("fabrications"),
         reference_calls_passed=ref_calls.get("passed"),
         conclusion_rubric_passed=rubric.get("passed"),
         trajectory_consistency_passed=tc.get("passed"),
@@ -249,6 +260,7 @@ def _model_summaries(runs: list[RunRecord], models: list[ModelConfig]) -> dict[s
             "name_hallucinations_total": sum(r.schema_name_halluc or 0 for r in mr),
             "argument_hallucinations_total": sum(r.schema_arg_halluc or 0 for r in mr),
             "grounding_failures": sum(1 for r in mr if r.grounding_failed),
+            "fabrications_total": sum(r.fabrications or 0 for r in mr),
             "reference_calls_passed": sum(1 for r in mr if r.reference_calls_passed is True),
             "conclusion_rubric_passed": sum(1 for r in mr if r.conclusion_rubric_passed is True),
             "trajectory_consistency_passed": sum(
@@ -342,7 +354,8 @@ def format_summary_table(summary: Mapping[str, Any]) -> str:
         "schema_pass",
         "name_halluc",
         "arg_halluc",
-        "ground_fail",
+        "fab_runs",
+        "fabs",
         "narr_pass",
         "ref_pass",
         "rubric_pass",
@@ -360,6 +373,7 @@ def format_summary_table(summary: Mapping[str, Any]) -> str:
                 str(s["name_hallucinations_total"]),
                 str(s["argument_hallucinations_total"]),
                 str(s["grounding_failures"]),
+                str(s.get("fabrications_total", "-")),
                 f"{s.get('trajectory_consistency_passed', 0)}/{attempted}",
                 f"{s['reference_calls_passed']}/{attempted}",
                 f"{s['conclusion_rubric_passed']}/{attempted}",

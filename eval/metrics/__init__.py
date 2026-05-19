@@ -7,6 +7,12 @@ from eval.metrics.grounding import (
     GroundingReport,
     analyze_grounding,
 )
+from eval.metrics.grounding_v2 import (
+    FactClassification,
+    GroundingV2Report,
+    V2Classifier,
+    analyze_grounding_v2,
+)
 from eval.metrics.reference_calls import (
     ReferenceCallMatch,
     ReferenceCallsReport,
@@ -31,14 +37,18 @@ __all__ = [
     "ClaimMatch",
     "ConclusionRubricReport",
     "FactCheck",
+    "FactClassification",
     "GroundingReport",
+    "GroundingV2Report",
     "ReferenceCallMatch",
     "ReferenceCallsReport",
     "TerminationReport",
     "ToolCallValidation",
     "TrajectoryConsistencyReport",
     "TrajectorySchemaReport",
+    "V2Classifier",
     "analyze_grounding",
+    "analyze_grounding_v2",
     "analyze_trajectory_consistency",
     "classify_termination",
     "evaluate_conclusion_rubric",
