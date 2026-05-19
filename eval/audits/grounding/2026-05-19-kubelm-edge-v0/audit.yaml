@@ -1,0 +1,709 @@
+# kubelm-edge-v0 grounding audit — working file
+# See README.md in this directory for the classification taxonomy.
+# Fill in `classification:` and `rationale:` for each entry.
+- scenario_id: configmap-missing-001
+  fact: 'APP_CONFIG.valueFrom.configMapKeyRef.name: app-settings'
+  conclusion_excerpt: 'uster: - Pod name: `api-pod` - Namespace: `scenario-configmap-missing-001` Pod spec env config: - `APP_CONFIG.valueFrom.configMapKeyRef.name:
+    app-settings` That ConfigMap does not exist in that namespace, as confirmed by the missing ConfigMap entry: - `'
+  classification: ''
+  rationale: ''
+- scenario_id: configmap-missing-001
+  fact: Ready=False
+  conclusion_excerpt: 'env var Note: the pod was initially scheduled, but immediately failed with: - `phase: Pending` - `Ready=False`
+    - reason: `ContainersNotReady` And its container is still in `waiting.reason = "CreateContainerCo'
+  classification: ''
+  rationale: ''
+- scenario_id: configmap-missing-001
+  fact: configmap "app-settings"
+  conclusion_excerpt: 'there are no other issues from ConfigMap existence. So the pod failure is specifically due to: - `configmap
+    "app-settings"` not being present Fix options: - Create the missing ConfigMap `app-settings` - Update `api-pod` t'
+  classification: ''
+  rationale: ''
+- scenario_id: configmap-missing-001
+  fact: configmap "app-settings" not found
+  conclusion_excerpt: 'dy` And its container is still in `waiting.reason = "CreateContainerConfigError"` with message: - `configmap
+    "app-settings" not found` This means the ConfigMap mismatch happened very early, before pod startup could catch it.'
+  classification: ''
+  rationale: ''
+- scenario_id: configmap-missing-001
+  fact: 'phase: Pending'
+  conclusion_excerpt: 'gs`) or remove that env var Note: the pod was initially scheduled, but immediately failed with: - `phase:
+    Pending` - `Ready=False` - reason: `ContainersNotReady` And its container is still in `waiting.reason = "C'
+  classification: ''
+  rationale: ''
+- scenario_id: configmap-missing-001
+  fact: waiting.reason = "CreateContainerConfigError"
+  conclusion_excerpt: ': - `phase: Pending` - `Ready=False` - reason: `ContainersNotReady` And its container is still in `waiting.reason
+    = "CreateContainerConfigError"` with message: - `configmap "app-settings" not found` This means the ConfigMap mismatch
+    happened v'
+  classification: ''
+  rationale: ''
+- scenario_id: daemonset-no-fit-001
+  fact: 'currentNumberScheduled: 0'
+  conclusion_excerpt: 'ctor: {"workload-class":"gpu"}` - Its status in namespace `scenario-daemonset-no-fit-001` has: - `currentNumberScheduled:
+    0` - `numberMisscheduled: 0` - `desiredNumberScheduled: 0` - `numberReady: 0` This means no no'
+  classification: ''
+  rationale: ''
+- scenario_id: daemonset-no-fit-001
+  fact: 'desiredNumberScheduled: 0'
+  conclusion_excerpt: 'cenario-daemonset-no-fit-001` has: - `currentNumberScheduled: 0` - `numberMisscheduled: 0` - `desiredNumberScheduled:
+    0` - `numberReady: 0` This means no nodes match the `nodeSelector`, so Kubernetes does not create'
+  classification: ''
+  rationale: ''
+- scenario_id: daemonset-no-fit-001
+  fact: matchLabels.app="metrics-collector"
+  conclusion_excerpt: '- The matching DaemonSet exists in namespace `kube-system` and was created with: - `spec.selector.matchLabels.app="metrics-collector"`
+    - Its status there is healthy, but its DaemonSet pod also requires a node label `workload-class=gp'
+  classification: ''
+  rationale: ''
+- scenario_id: daemonset-no-fit-001
+  fact: 'nodeSelector: {"workload-class":"gpu"}'
+  conclusion_excerpt: 'ause it matches no nodes. Evidence from the cluster: - The DaemonSet pod template specifies: - `nodeSelector:
+    {"workload-class":"gpu"}` - Its status in namespace `scenario-daemonset-no-fit-001` has: - `currentNumberScheduled: 0`
+    -'
+  classification: ''
+  rationale: ''
+- scenario_id: daemonset-no-fit-001
+  fact: 'numberMisscheduled: 0'
+  conclusion_excerpt: '- Its status in namespace `scenario-daemonset-no-fit-001` has: - `currentNumberScheduled: 0` - `numberMisscheduled:
+    0` - `desiredNumberScheduled: 0` - `numberReady: 0` This means no nodes match the `nodeSelector`'
+  classification: ''
+  rationale: ''
+- scenario_id: daemonset-no-fit-001
+  fact: 'numberReady: 0'
+  conclusion_excerpt: 's: - `currentNumberScheduled: 0` - `numberMisscheduled: 0` - `desiredNumberScheduled: 0` - `numberReady:
+    0` This means no nodes match the `nodeSelector`, so Kubernetes does not create DaemonSet Pods on tho'
+  classification: ''
+  rationale: ''
+- scenario_id: daemonset-no-fit-001
+  fact: spec.selector.matchLabels.app="metrics-collector"
+  conclusion_excerpt: 'Also note: - The matching DaemonSet exists in namespace `kube-system` and was created with: - `spec.selector.matchLabels.app="metrics-collector"`
+    - Its status there is healthy, but its DaemonSet pod also requires a node label `workload-class=gp'
+  classification: ''
+  rationale: ''
+- scenario_id: daemonset-no-fit-001
+  fact: workload-class=gpu
+  conclusion_excerpt: etrics-collector"` - Its status there is healthy, but its DaemonSet pod also requires a node label `workload-class=gpu`.
+    So the root cause here is that the cluster has nodes without the label `workload-class=gpu`, or
+  classification: ''
+  rationale: ''
+- scenario_id: deployment-paused-001
+  fact: 'spec.paused: true'
+  conclusion_excerpt: 'explicitly paused. Evidence from the deployment in namespace `scenario-deployment-paused-001`: - `spec.paused:
+    true` - Replica count set to `1` Because `paused` is `true`, Kubernetes does not allow updates, includi'
+  classification: ''
+  rationale: ''
+- scenario_id: deployment-rollout-stuck-001
+  fact: 'Available: False'
+  conclusion_excerpt: 'ds. Evidence from the cluster: - The Deployment has **2 desired replicas. - Its status shows: - `Available:
+    False` - reason: `MinimumReplicasUnavailable` - message: `Deployment does not have minimum availabili'
+  classification: ''
+  rationale: ''
+- scenario_id: hpa-no-metrics-001
+  fact: Deployment/web
+  conclusion_excerpt: 'compute the desired replica count. Evidence from the cluster: - The HPA has a target reference of `Deployment/web`.
+    - It reports an error: - `failed to get cpu utilization` - `unable to get metrics for resou'
+  classification: ''
+  rationale: ''
+- scenario_id: hpa-no-metrics-001
+  fact: metrics.kubernetes.io/namespace
+  conclusion_excerpt: 'the Deployment itself explicitly does not have a metrics configuration: - `Deployment/web` has no `metrics.kubernetes.io/namespace`
+    set, which is required for pod metrics retrieval. Fix: - Configure metrics namespace in the Deplo'
+  classification: ''
+  rationale: ''
+- scenario_id: image-pull-001
+  fact: Back-off pulling image "ghcr.io/kubelm/this-image-does-not-exist:v1.2.3"
+  conclusion_excerpt: 'atus issue: - `state.waiting.reason`: `ImagePullBackOff` - `reason`: `ImagePullBackOff` - message:
+    `Back-off pulling image "ghcr.io/kubelm/this-image-does-not-exist:v1.2.3"` This means Kubernetes was able to parse the
+    image reference, but then failed to pull it from GHCR'
+  classification: ''
+  rationale: ''
+- scenario_id: image-pull-001
+  fact: enableServiceLinks=false
+  conclusion_excerpt: '` temporarily while you fix Note: the pod is also blocked by scheduler preemption because it sets `enableServiceLinks=false`,
+    but its container is currently unready and waiting for image pull to succeed before starting. In'
+  classification: ''
+  rationale: ''
+- scenario_id: image-pull-001
+  fact: 'image: ghcr.io/kubelm/this-image-does-not-exist:v1.2.3'
+  conclusion_excerpt: 'ce from the pod in namespace `scenario-image-pull-001`: - Container name: `app` - Image spec: - `image:
+    ghcr.io/kubelm/this-image-does-not-exist:v1.2.3` The pod is currently `Pending`, with only one container status issue:
+    - `state.waiting.reason`: `'
+  classification: ''
+  rationale: ''
+- scenario_id: image-pull-001
+  fact: state.waiting.reason
+  conclusion_excerpt: 'ge-does-not-exist:v1.2.3` The pod is currently `Pending`, with only one container status issue: - `state.waiting.reason`:
+    `ImagePullBackOff` - `reason`: `ImagePullBackOff` - message: `Back-off pulling image "ghcr.io/kub'
+  classification: ''
+  rationale: ''
+- scenario_id: image-pull-001
+  fact: v1.2.4
+  conclusion_excerpt: 'ce to use for pullbackoff. Fix options: - Update the pod manifest to use a valid image tag, e.g., `v1.2.4`
+    - Create a new image repository with that tag - Change the image pull policy to `Always` temporari'
+  classification: ''
+  rationale: ''
+- scenario_id: init-container-failing-001
+  fact: Initialized=False
+  conclusion_excerpt: 'immediately: - `waiting.reason: CrashLoopBackOff` Pod status confirms it is not progressing past `Initialized=False`:
+    - `phase: Pending` - reason: `ContainersNotInitialized` - message: `containers with incomplete st'
+  classification: ''
+  rationale: ''
+- scenario_id: init-container-failing-001
+  fact: 'phase: Pending'
+  conclusion_excerpt: 'g.reason: CrashLoopBackOff` Pod status confirms it is not progressing past `Initialized=False`: - `phase:
+    Pending` - reason: `ContainersNotInitialized` - message: `containers with incomplete status: [db-migrate]`'
+  classification: ''
+  rationale: ''
+- scenario_id: init-container-failing-001
+  fact: 'restartPolicy: Always'
+  conclusion_excerpt: 'us: [db-migrate]` There are no containers already running; the pod was explicitly created with: - `restartPolicy:
+    Always` So the failure is caused by the init container’s single command that exits with status `1`. In s'
+  classification: ''
+  rationale: ''
+- scenario_id: init-container-failing-001
+  fact: 'sh -c ''echo "migration failed: cannot reach DB"; exit 1'''
+  conclusion_excerpt: 'rt. Evidence from the pod spec: - Init container: `db-migrate` - Image: `busybox:1.36` - Command: `sh
+    -c ''echo "migration failed: cannot reach DB"; exit 1''` Init container logs show the failure immediately: - `waiting.reason:
+    CrashLoopBackOff` Pod statu'
+  classification: ''
+  rationale: ''
+- scenario_id: init-container-failing-001
+  fact: 'waiting.reason: CrashLoopBackOff'
+  conclusion_excerpt: '"migration failed: cannot reach DB"; exit 1''` Init container logs show the failure immediately: -
+    `waiting.reason: CrashLoopBackOff` Pod status confirms it is not progressing past `Initialized=False`: - `phase: Pending`
+    - reason:'
+  classification: ''
+  rationale: ''
+- scenario_id: init-image-pull-001
+  fact: Back-off pulling image ...
+  conclusion_excerpt: 'tag-zzz` Because Kubernetes cannot pull that image from the registry, init containers fail with a `Back-off
+    pulling image ...`. That causes `app` to wait for its init container to complete: - Container state: `waiting.reaso'
+  classification: ''
+  rationale: ''
+- scenario_id: init-image-pull-001
+  fact: Initialized=False
+  conclusion_excerpt: 'urrently `Pending`. - Its `status.phase` says `Pending`, but also has an explicit reason for that:
+    `Initialized=False`. Fix options: - Update the init image to a valid tag. - Remove the init container if it’s no long'
+  classification: ''
+  rationale: ''
+- scenario_id: init-image-pull-001
+  fact: ready=False
+  conclusion_excerpt: 'ner to complete: - Container state: `waiting.reason = "PodInitializing"` - Init container status: `ready=False`,
+    `restartCount=0` So far, neither regular container `app` nor the subsequent container `nginx` ar'
+  classification: ''
+  rationale: ''
+- scenario_id: init-image-pull-001
+  fact: restartCount=0
+  conclusion_excerpt: ': - Container state: `waiting.reason = "PodInitializing"` - Init container status: `ready=False`, `restartCount=0`
+    So far, neither regular container `app` nor the subsequent container `nginx` are started. Note:'
+  classification: ''
+  rationale: ''
+- scenario_id: init-image-pull-001
+  fact: sh -c "echo starting; sleep 1"
+  conclusion_excerpt: 'o succeed before regular containers start. In this case, `bootstrap` is configured to: - Command: `sh
+    -c "echo starting; sleep 1"` - Image: `busybox:nonexistent-tag-zzz` Because Kubernetes cannot pull that image from the
+    registr'
+  classification: ''
+  rationale: ''
+- scenario_id: init-image-pull-001
+  fact: status.phase
+  conclusion_excerpt: '` nor the subsequent container `nginx` are started. Note: - The pod is currently `Pending`. - Its `status.phase`
+    says `Pending`, but also has an explicit reason for that: `Initialized=False`. Fix options: - Upd'
+  classification: ''
+  rationale: ''
+- scenario_id: init-image-pull-001
+  fact: waiting.reason = "PodInitializing"
+  conclusion_excerpt: 'ing image ...`. That causes `app` to wait for its init container to complete: - Container state: `waiting.reason
+    = "PodInitializing"` - Init container status: `ready=False`, `restartCount=0` So far, neither regular container `app`'
+  classification: ''
+  rationale: ''
+- scenario_id: job-always-fails-001
+  fact: FailureTarget=True
+  conclusion_excerpt: 'amespace uses a container command that exits with status code 1 Specific event showing failure: - `FailureTarget=True`
+    - Reason: `BackoffLimitExceeded` - Message: `Job has reached the specified backoff limit` There w'
+  classification: ''
+  rationale: ''
+- scenario_id: job-always-fails-001
+  fact: 'failed: 4'
+  conclusion_excerpt: 'd` - Message: `Job has reached the specified backoff limit` There were also four failed attempts (`failed:
+    4`), so the job did not complete even after being restarted. So in short: the Job was blocked by a d'
+  classification: ''
+  rationale: ''
+- scenario_id: liveness-probe-failing-001
+  fact: 403 Forbidden
+  conclusion_excerpt: 'is returning: - Request: `http://kubelm-62c85725-liveness-probe-failing-001/healthz` - Response: `403
+    Forbidden` So Kubernetes keeps restarting the pod twice before it enters **CrashLoopBackOff**. Fix: - Set `'
+  classification: ''
+  rationale: ''
+- scenario_id: liveness-probe-failing-001
+  fact: 'exitCode: 0'
+  conclusion_excerpt: 'tus code from the `/healthz` endpoint. Since the container was started and completed successfully (`exitCode:
+    0`), the probe times out after two check intervals, causing a restart. In this case, nginx is return'
+  classification: ''
+  rationale: ''
+- scenario_id: liveness-probe-failing-001
+  fact: expectedResponse
+  conclusion_excerpt: 'Get.path: /healthz` - `port: 80` - `failureThreshold: 2` Because there is no `successPath` or `expectedResponse`,
+    Kubernetes expects a **4xx** or **5xx** status code from the `/healthz` endpoint. Since the conta'
+  classification: ''
+  rationale: ''
+- scenario_id: liveness-probe-failing-001
+  fact: 'failureThreshold: 2'
+  conclusion_excerpt: 'tainer name: `app` - Liveness probe configuration: - `httpGet.path: /healthz` - `port: 80` - `failureThreshold:
+    2` Because there is no `successPath` or `expectedResponse`, Kubernetes expects a **4xx** or **5xx**'
+  classification: ''
+  rationale: ''
+- scenario_id: liveness-probe-failing-001
+  fact: http://kubelm-62c85725-liveness-probe-failing-001/healthz
+  conclusion_excerpt: 's out after two check intervals, causing a restart. In this case, nginx is returning: - Request: `http://kubelm-62c85725-liveness-probe-failing-001/healthz`
+    - Response: `403 Forbidden` So Kubernetes keeps restarting the pod twice before it enters **Crash'
+  classification: ''
+  rationale: ''
+- scenario_id: liveness-probe-failing-001
+  fact: 'httpGet.path: /healthz'
+  conclusion_excerpt: 'ailure**. Evidence from the pod spec: - Container name: `app` - Liveness probe configuration: - `httpGet.path:
+    /healthz` - `port: 80` - `failureThreshold: 2` Because there is no `successPath` or `expectedResponse`,'
+  classification: ''
+  rationale: ''
+- scenario_id: liveness-probe-failing-001
+  fact: 'port: 80'
+  conclusion_excerpt: 'pod spec: - Container name: `app` - Liveness probe configuration: - `httpGet.path: /healthz` - `port:
+    80` - `failureThreshold: 2` Because there is no `successPath` or `expectedResponse`, Kubernetes exp'
+  classification: ''
+  rationale: ''
+- scenario_id: liveness-probe-failing-001
+  fact: successPath
+  conclusion_excerpt: 'ration: - `httpGet.path: /healthz` - `port: 80` - `failureThreshold: 2` Because there is no `successPath`
+    or `expectedResponse`, Kubernetes expects a **4xx** or **5xx** status code from the `/healthz` end'
+  classification: ''
+  rationale: ''
+- scenario_id: node-selector-unschedulable-001
+  fact: PodScheduled=False
+  conclusion_excerpt: 'ario-node-selector-unschedulable-001`: - Pod name: `picky-pod` - Status: `Pending` - Message: - `PodScheduled=False`
+    - `reason: Unschedulable` - `0/1 nodes are available: 1 node(s) had untolerated taint {node.ku'
+  classification: ''
+  rationale: ''
+- scenario_id: node-selector-unschedulable-001
+  fact: 'reason: Unschedulable'
+  conclusion_excerpt: 'dulable-001`: - Pod name: `picky-pod` - Status: `Pending` - Message: - `PodScheduled=False` - `reason:
+    Unschedulable` - `0/1 nodes are available: 1 node(s) had untolerated taint {node.kubernetes.io/not-ready: }` T'
+  classification: ''
+  rationale: ''
+- scenario_id: node-selector-unschedulable-001
+  fact: specialty=unobtanium
+  conclusion_excerpt: 'tolerated taint {node.kubernetes.io/not-ready: }` The pod spec includes a **nodeSelector** of: - `specialty=unobtanium`
+    Because the only node in that namespace has the taint `node.kubernetes.io/not-ready`, that node n'
+  classification: ''
+  rationale: ''
+- scenario_id: node-selector-unschedulable-001
+  fact: un-tainted
+  conclusion_excerpt: cannot proceed. Fix by removing the `nodeSelector` from `picky-pod`, or by making the unready node un-tainted.
+  classification: ''
+  rationale: ''
+- scenario_id: oom-killed-001
+  fact: 'memory: 32Mi'
+  conclusion_excerpt: 'k-off 10s restarting failed container=app` Pod spec confirms it requested memory limit/request of `memory:
+    32Mi`, and there were no resource constraints explicitly overridden. So the root cause was a memory lea'
+  classification: ''
+  rationale: ''
+- scenario_id: oom-killed-001
+  fact: 'phase: Running'
+  conclusion_excerpt: 'ster: - Pod name: `hungry-pod` - Namespace: `scenario-oom-killed-001` - Pod status: `Running` with
+    `phase: Running` Container events show: - Container `app` was killed with reason `OOMKilled` - Its exit code was `'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-command-not-found-001
+  fact: 'containerStatuses[0].lastState.terminated.message = "failed to create containerd task: failed to start container
+    \"app\": exec: \"/bin/notexist\": stat /bin/notexist: no such file or directory"'
+  conclusion_excerpt: 'reason = "CrashLoopBackOff"` - `containerStatuses[0].lastState.terminated.reason = "StartError"` -
+    `containerStatuses[0].lastState.terminated.message = "failed to create containerd task: failed to start container \"app\":
+    exec: \"/bin/notexist\": stat /bin/notexist: no such file or directory"` So the pod was started, but then Kubernetes was
+    unable to execute the container command because `'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-command-not-found-001
+  fact: containerStatuses[0].lastState.terminated.reason = "StartError"
+  conclusion_excerpt: 't` Evidence from pod status: - `containerStatuses[0].state.waiting.reason = "CrashLoopBackOff"` - `containerStatuses[0].lastState.terminated.reason
+    = "StartError"` - `containerStatuses[0].lastState.terminated.message = "failed to create containerd task: failed t'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-command-not-found-001
+  fact: containerStatuses[0].state.waiting.reason = "CrashLoopBackOff"
+  conclusion_excerpt: 'from the pod spec: - Container name: `app` - Command: `/bin/notexist` Evidence from pod status: - `containerStatuses[0].state.waiting.reason
+    = "CrashLoopBackOff"` - `containerStatuses[0].lastState.terminated.reason = "StartError"` - `containerStatuses[0].lastSt'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-command-not-found-001
+  fact: 'failed to create containerd task: failed to start container \'
+  conclusion_excerpt: 'lastState.terminated.reason = "StartError"` - `containerStatuses[0].lastState.terminated.message =
+    "failed to create containerd task: failed to start container \"app\": exec: \"/bin/notexist\": stat /bin/notexist: no
+    such file or directory"` So the pod was sta'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-crashloop-001
+  fact: 'Error: container "app"'
+  conclusion_excerpt: 'is: - `Error container=app` So the pod is terminating, and Kubernetes reports the error as: - `Error:
+    container "app"` This means there was an issue with the container `app` that caused the pod to fail startup or run'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-crashloop-001
+  fact: FailedPreemption
+  conclusion_excerpt: 'od spec and logs, we can’t determine exactly what went wrong, but it was not a benign failure like
+    `FailedPreemption`, `ResourceExhausted`, etc., because the pod did start initially. Fix options: - Investigate why c'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-crashloop-001
+  fact: ResourceExhausted
+  conclusion_excerpt: 'can’t determine exactly what went wrong, but it was not a benign failure like `FailedPreemption`, `ResourceExhausted`,
+    etc., because the pod did start initially. Fix options: - Investigate why container `app` is fai'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-insufficient-cpu-001
+  fact: -prioirty=0
+  conclusion_excerpt: 'mes ready and has a tolerating taint, Kubernetes will not allow this pod to schedule even with the
+    `-prioirty=0` setting. So in short: `heavy-pod` is Pending because it requests 100 CPU cores on a node with onl'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-insufficient-cpu-001
+  fact: app=heavy
+  conclusion_excerpt: 'from the pod in namespace `scenario-pod-insufficient-cpu-001`: - Pod name: `heavy-pod` - Labels: `app=heavy`
+    Pod spec: - Requests: - cpu: `100` That means the pod requests exactly 100 CPU cores. The node'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-insufficient-cpu-001
+  fact: pre-existing
+  conclusion_excerpt: 'cores. The node has only one available CPU core, so Kubernetes cannot schedule it. There is also a
+    pre-existing unscheduled node taint: - `node.kubernetes.io/not-ready:` This taint requires pods to be unschedu'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-pvc-not-found-001
+  fact: PodScheduled=False
+  conclusion_excerpt: 'olume `data` mounts path `/var/data` - Volume claim `data-volume` Events show the exact reason: - `PodScheduled=False`
+    - `reason: Unschedulable` - `message: "0/1 nodes are available: persistentvolumeclaim \"data-volum'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-pvc-not-found-001
+  fact: 'message: "0/1 nodes are available: persistentvolumeclaim \"data-volume\" not found. preemption: 0/1 nodes are available:
+    1 Preemption is not helpful for scheduling.'
+  conclusion_excerpt: 'im `data-volume` Events show the exact reason: - `PodScheduled=False` - `reason: Unschedulable` - `message:
+    "0/1 nodes are available: persistentvolumeclaim \"data-volume\" not found. preemption: 0/1 nodes are available: 1 Preemption
+    is not helpful for scheduling.` There is no PVC named `data-volume` in namespace `scenario-pod-pvc-not-found-001`. The
+    pod was sc'
+  classification: ''
+  rationale: ''
+- scenario_id: pod-pvc-not-found-001
+  fact: 'reason: Unschedulable'
+  conclusion_excerpt: 'h `/var/data` - Volume claim `data-volume` Events show the exact reason: - `PodScheduled=False` - `reason:
+    Unschedulable` - `message: "0/1 nodes are available: persistentvolumeclaim \"data-volume\" not found. preemption:'
+  classification: ''
+  rationale: ''
+- scenario_id: pvc-unbound-001
+  fact: 'container runtime network not ready: NetworkReady=false reason:NetworkPluginNotReady message:Network plugin not initialized'
+  conclusion_excerpt: 'e` Annotations: - `node.alpha.kubernetes.io/ttl=0` Status conditions: - `Ready=False` - message: `container
+    runtime network not ready: NetworkReady=false reason:NetworkPluginNotReady message:Network plugin not initialized` Events
+    also show a brief moment of pod startup failure before readiness was lost: - `Failed to g'
+  classification: ''
+  rationale: ''
+- scenario_id: pvc-unbound-001
+  fact: node-role.kubernetes.io/control-plane=
+  conclusion_excerpt: 'vc-unbound-001` Evidence from the kube-system namespace shows a control-plane node with the label `node-role.kubernetes.io/control-plane=`
+    and no scheduler readiness: Node name: `kubelm-ed1e0fcc-pvc-unbound-001-control-plane` Annotatio'
+  classification: ''
+  rationale: ''
+- scenario_id: pvc-unbound-001
+  fact: node.alpha.kubernetes.io/ttl=0
+  conclusion_excerpt: 'o scheduler readiness: Node name: `kubelm-ed1e0fcc-pvc-unbound-001-control-plane` Annotations: - `node.alpha.kubernetes.io/ttl=0`
+    Status conditions: - `Ready=False` - message: `container runtime network not ready: NetworkReady='
+  classification: ''
+  rationale: ''
+- scenario_id: quota-cpu-exceeded-001
+  fact: 75%
+  conclusion_excerpt: 'e new replica set is configured with: - `maxSurge: "25%"` - `maxUnavailable: "25%"` which leaves `75%`
+    of the namespace’s CPU quota available for existing Pods to use. Since those Pods already have a c'
+  classification: ''
+  rationale: ''
+- scenario_id: quota-cpu-exceeded-001
+  fact: 'maxSurge: "25%"'
+  conclusion_excerpt: 'nt never gets past rolling-update verification, because the new replica set is configured with: - `maxSurge:
+    "25%"` - `maxUnavailable: "25%"` which leaves `75%` of the namespace’s CPU quota available for existing'
+  classification: ''
+  rationale: ''
+- scenario_id: quota-cpu-exceeded-001
+  fact: 'maxUnavailable: "25%"'
+  conclusion_excerpt: 'olling-update verification, because the new replica set is configured with: - `maxSurge: "25%"` - `maxUnavailable:
+    "25%"` which leaves `75%` of the namespace’s CPU quota available for existing Pods to use. Since those P'
+  classification: ''
+  rationale: ''
+- scenario_id: quota-cpu-exceeded-001
+  fact: 'pods "worker-6c8dc4c757-hzww8" is forbidden: exceeded quota: tight-cpu'
+  conclusion_excerpt: 'ontainer `app`. - However, Pod `worker-6c8dc4c757` is being denied creation with this message: - `pods
+    "worker-6c8dc4c757-hzww8" is forbidden: exceeded quota: tight-cpu` Namespace resource limits: - The pod template uses:
+    - `requests.cpu=500m` - But the namespace h'
+  classification: ''
+  rationale: ''
+- scenario_id: quota-cpu-exceeded-001
+  fact: rolling-update
+  conclusion_excerpt: 'f `tight-cpu`, which allows only `100m` total CPU request/slice. So the Deployment never gets past
+    rolling-update verification, because the new replica set is configured with: - `maxSurge: "25%"` - `maxUnavailabl'
+  classification: ''
+  rationale: ''
+- scenario_id: rbac-denied-001
+  fact: 403 Forbidden
+  conclusion_excerpt: ault.svc/api/v1/namespaces/kube-system/pods` - Since RBAC permissions are missing, the API returns `403
+    Forbidden` - The probe exits with status `1` and reason `Error`, which is picked up by Kubernetes as a contai
+  classification: ''
+  rationale: ''
+- scenario_id: rbac-denied-001
+  fact: STATUS=$(curl -sS -o /tmp/body -w "%{http_code}" ...
+  conclusion_excerpt: 'missions, and the cluster denies those requests. Evidence from the pod spec: - Container command: `STATUS=$(curl
+    -sS -o /tmp/body -w "%{http_code}" ...` - Request: `https://kubernetes.default.svc/api/v1/namespaces/kube-system/pods`
+    Analysis of events'
+  classification: ''
+  rationale: ''
+- scenario_id: rbac-denied-001
+  fact: 'containers.with.unready.status: [probe]'
+  conclusion_excerpt: 's shows it is `Running`, but its container `probe` is `CrashLoopBackOff` and has this message: - `containers.with.unready.status:
+    [probe]` Events from other pods show normal behavior, so the issue is specific to `rbac-probe`. Conclusio'
+  classification: ''
+  rationale: ''
+- scenario_id: readiness-probe-failing-001
+  fact: Hello world!
+  conclusion_excerpt: 'response from `/healthz`. Fix options: - Serve a valid health check response in `/healthz` (e.g., `Hello
+    world!`) - Or change the probe to succeed, such as by serving a simple error page Note: the pod was initi'
+  classification: ''
+  rationale: ''
+- scenario_id: readiness-probe-failing-001
+  fact: 'Ready: False'
+  conclusion_excerpt: 'cenario-readiness-probe-failing-001`: - The pod is running (`phase: Running`) but its container is
+    `Ready: False`. - The container is configured with a readiness probe that probes port `80` with path `/healthz`,'
+  classification: ''
+  rationale: ''
+- scenario_id: readiness-probe-failing-001
+  fact: 'Ready: True'
+  conclusion_excerpt: 'ed, such as by serving a simple error page Note: the pod was initially scheduled and initialized (`Ready:
+    True`) but then transitioned back to `Ready: False` due to this probe failure.'
+  classification: ''
+  rationale: ''
+- scenario_id: readiness-probe-failing-001
+  fact: 'phase: Running'
+  conclusion_excerpt: 'Evidence from the pod in namespace `scenario-readiness-probe-failing-001`: - The pod is running (`phase:
+    Running`) but its container is `Ready: False`. - The container is configured with a readiness probe that pr'
+  classification: ''
+  rationale: ''
+- scenario_id: resource-quota-block-001
+  fact: '"Deployment scenario-resource-quota-block-001/blocked-app has 1 replicas but 0 are available with status running"'
+  conclusion_excerpt: 'he cluster: - The Deployment has `replicas: 1` - Its status shows `Available: 0` with message: - `"Deployment
+    scenario-resource-quota-block-001/blocked-app has 1 replicas but 0 are available with status running"` There is also a
+    second pod in that namespace, `scenario-resource-quota-block-001/local-path-provi'
+  classification: ''
+  rationale: ''
+- scenario_id: resource-quota-block-001
+  fact: 0/1 replicates available
+  conclusion_excerpt: 'ther pod/template container Note: the Deployment itself does not report any issues; it only shows `0/1
+    replicates available` because its selector matches nothing in that namespace.'
+  classification: ''
+  rationale: ''
+- scenario_id: resource-quota-block-001
+  fact: 'Available: 0'
+  conclusion_excerpt: 'n the namespace. Evidence from the cluster: - The Deployment has `replicas: 1` - Its status shows `Available:
+    0` with message: - `"Deployment scenario-resource-quota-block-001/blocked-app has 1 replicas but 0'
+  classification: ''
+  rationale: ''
+- scenario_id: resource-quota-block-001
+  fact: 'app: blocked-app'
+  conclusion_excerpt: 're. So the root cause is that the Deployment selector matches exactly one pod template container (`app:
+    blocked-app`) and that pod was never created or updated to run more replicas. Fix options: - Create a second r'
+  classification: ''
+  rationale: ''
+- scenario_id: resource-quota-block-001
+  fact: 'replicas: 1'
+  conclusion_excerpt: 'replica, but there are no pods in the namespace. Evidence from the cluster: - The Deployment has `replicas:
+    1` - Its status shows `Available: 0` with message: - `"Deployment scenario-resource-quota-block-001'
+  classification: ''
+  rationale: ''
+- scenario_id: resource-quota-block-001
+  fact: scenario-resource-quota-block-001/local-path-provisioner
+  conclusion_excerpt: replicas but 0 are available with status running"` There is also a second pod in that namespace, `scenario-resource-quota-block-001/local-path-provisioner`,
+    which runs fine and does not interfere. So the root cause is that the Deployment selector matche
+  classification: ''
+  rationale: ''
+- scenario_id: secret-missing-001
+  fact: envFrom.secretRef.name = "missing-secret"
+  conclusion_excerpt: 'ario-secret-missing-001`: - Container command uses environment variable `env` - Env var source is:
+    `envFrom.secretRef.name = "missing-secret"` - Pod status shows container state as: - `waiting.reason = "CreateContainerConfigError"`
+    - `re'
+  classification: ''
+  rationale: ''
+- scenario_id: secret-missing-001
+  fact: message = "secret \"missing-secret\" not found"
+  conclusion_excerpt: 'te as: - `waiting.reason = "CreateContainerConfigError"` - `reason = "ContainersNotReady"` - `message
+    = "secret \"missing-secret\" not found"` Cause in the namespace: - Secret `missing-secret` does not exist Fix: - Create
+    or update the mis'
+  classification: ''
+  rationale: ''
+- scenario_id: secret-missing-001
+  fact: reason = "ContainersNotReady"
+  conclusion_excerpt: 't"` - Pod status shows container state as: - `waiting.reason = "CreateContainerConfigError"` - `reason
+    = "ContainersNotReady"` - `message = "secret \"missing-secret\" not found"` Cause in the namespace: - Secret `missing-s'
+  classification: ''
+  rationale: ''
+- scenario_id: secret-missing-001
+  fact: waiting.reason = "CreateContainerConfigError"
+  conclusion_excerpt: 'source is: `envFrom.secretRef.name = "missing-secret"` - Pod status shows container state as: - `waiting.reason
+    = "CreateContainerConfigError"` - `reason = "ContainersNotReady"` - `message = "secret \"missing-secret\" not found"`
+    Cause i'
+  classification: ''
+  rationale: ''
+- scenario_id: service-account-missing-001
+  fact: default-serving-object
+  conclusion_excerpt: account-missing-001`, or - Update the ReplicaSet to use an existing valid service account, such as `default-serving-object`
+    if it exists.
+  classification: ''
+  rationale: ''
+- scenario_id: service-account-missing-001
+  fact: 'replicas: 0'
+  conclusion_excerpt: 'pi-5df6858ccd` has a service account spec referencing `api-runner`, but: - The pod status shows `replicas:
+    0` with reason `FailedCreate` - The error message says: - `serviceaccount "api-runner" not foun'
+  classification: ''
+  rationale: ''
+- scenario_id: service-account-missing-001
+  fact: serviceaccount "api-runner" not found
+  conclusion_excerpt: '- The pod status shows `replicas: 0` with reason `FailedCreate` - The error message says: - `serviceaccount
+    "api-runner" not found` So the issue is that the service account `api-runner` does not exist in namespace `scenario-servi'
+  classification: ''
+  rationale: ''
+- scenario_id: service-port-mismatch-001
+  fact: '8080'
+  conclusion_excerpt: 'Fix: - Create a second container in `api-pod` for port `80`, or - Update the Service to use port `8080`,
+    which is available.'
+  classification: ''
+  rationale: ''
+- scenario_id: service-port-mismatch-001
+  fact: '{ "name": "app", "state": { "running": { "startedAt": "2026-05-14T23:01:39Z" } }, ... }'
+  conclusion_excerpt: 'd to bind port `80`. However, pod status shows only one running container: - `containerStatuses`: `{
+    "name": "app", "state": { "running": { "startedAt": "2026-05-14T23:01:39Z" } }, ... }` Since there is no second container,
+    the Service uses port 80 from that non-existent container, wh'
+  classification: ''
+  rationale: ''
+- scenario_id: service-selector-mismatch-001
+  fact: 2/2
+  conclusion_excerpt: 'es no Pods. Evidence from the cluster: - Deployment `coredns` has `2` desired replicas, but only `2/2`
+    are scheduled and progressing: - `coredns-7c65d6cfc9`: selected - `local-path-provisioner-6fdc'
+  classification: ''
+  rationale: ''
+- scenario_id: service-selector-mismatch-001
+  fact: Available=False
+  conclusion_excerpt: 'loyment does not create new Pods, and existing Pods remain unchanged. The rollout status shows: - `Available=False`
+    - reason: `MinimumReplicasUnavailable` Also note that both the controller-deployed `local-path-pr'
+  classification: ''
+  rationale: ''
+- scenario_id: service-selector-mismatch-001
+  fact: Progressing=True
+  conclusion_excerpt: 'rovisioner` and the custom `local-path-provisioner-service-account` are still unscheduled with: - `Progressing=True`
+    - message: `ReplicaSet "local-path-provisioner" is progressing...` So even though Pods exist, the'
+  classification: ''
+  rationale: ''
+- scenario_id: service-selector-mismatch-001
+  fact: ReplicaSet "local-path-provisioner" is progressing...
+  conclusion_excerpt: 'cal-path-provisioner-service-account` are still unscheduled with: - `Progressing=True` - message: `ReplicaSet
+    "local-path-provisioner" is progressing...` So even though Pods exist, they do not serve requests because their selector
+    matches nothing in d'
+  classification: ''
+  rationale: ''
+- scenario_id: service-selector-mismatch-001
+  fact: controller-deployed
+  conclusion_excerpt: 'status shows: - `Available=False` - reason: `MinimumReplicasUnavailable` Also note that both the controller-deployed
+    `local-path-provisioner` and the custom `local-path-provisioner-service-account` are still unschedu'
+  classification: ''
+  rationale: ''
+- scenario_id: service-selector-mismatch-001
+  fact: controller-managed
+  conclusion_excerpt: 'ctor-mismatch-001`. In short: the selector in `coredns` does not match any existing Pods, and both
+    controller-managed Pods remain unavailable.'
+  classification: ''
+  rationale: ''
+- scenario_id: service-selector-mismatch-001
+  fact: local-path-provisioner-6fdc949f8b
+  conclusion_excerpt: 'red replicas, but only `2/2` are scheduled and progressing: - `coredns-7c65d6cfc9`: selected - `local-path-provisioner-6fdc949f8b`:
+    not selected Because the selector matches no Pods, the deployment does not create new Pods, and'
+  classification: ''
+  rationale: ''
+- scenario_id: statefulset-pvc-pending-001
+  fact: ', which does not exist.'
+  conclusion_excerpt: 'ssage says explicitly: - `StatefulSet uses the service `scenario-statefulset-pvc-pending-001/db`, which
+    does not exist.` - Additionally, the pod state shows only one Pod (`db-0`) is running out of three planned replic'
+  classification: ''
+  rationale: ''
+- scenario_id: statefulset-pvc-pending-001
+  fact: 'namespace: scenario-statefulset-pvc-pending-001'
+  conclusion_excerpt: 'is named `scenario-statefulset-pvc-pending-001/db`, but: - It does not exist in this namespace (`namespace:
+    scenario-statefulset-pvc-pending-001`), so Kubernetes rejects it. - The error message says explicitly: - `StatefulSet
+    uses the ser'
+  classification: ''
+  rationale: ''
+- scenario_id: statefulset-pvc-pending-001
+  fact: 'spec.replicas: 3'
+  conclusion_excerpt: 'vice. Evidence from the cluster: - The statefulset has three replicas configured, as shown by its `spec.replicas:
+    3`. - Its only service is named `scenario-statefulset-pvc-pending-001/db`, but: - It does not exist'
+  classification: ''
+  rationale: ''
+- scenario_id: taint-no-toleration-001
+  fact: NoGo
+  conclusion_excerpt: 'ecifically, the only available node is marked as `NotReady` with: - `node.kubernetes.io/not-ready:
+    NoGo` Because `workload-pod` requests `NoExecute` for both of these taints, Kubernetes does not schedul'
+  classification: ''
+  rationale: ''
+- scenario_id: taint-no-toleration-001
+  fact: NoSchedule
+  conclusion_excerpt: '- Change the tolerated taint on the node from `NoGo` to something that allows scheduling, such as `NoSchedule`.'
+  classification: ''
+  rationale: ''
+- scenario_id: taint-no-toleration-001
+  fact: NotReady
+  conclusion_excerpt: ', and those tolerations are **not** tolerated. Specifically, the only available node is marked as `NotReady`
+    with: - `node.kubernetes.io/not-ready: NoGo` Because `workload-pod` requests `NoExecute` for bot'
+  classification: ''
+  rationale: ''
+- scenario_id: taint-no-toleration-001
+  fact: PodScheduled=False
+  conclusion_excerpt: '-no-toleration-001`: - Pod label: `app=workload` - Status shows: - `phase: Pending` - reason: `PodScheduled=False`
+    - message: `0/1 nodes are available: 1 node(s) had untolerated taint {node.kubernetes.io/not-rea'
+  classification: ''
+  rationale: ''
+- scenario_id: taint-no-toleration-001
+  fact: app=workload
+  conclusion_excerpt: 'e satisfied. Evidence from the pod in namespace `scenario-taint-no-toleration-001`: - Pod label: `app=workload`
+    - Status shows: - `phase: Pending` - reason: `PodScheduled=False` - message: `0/1 nodes are'
+  classification: ''
+  rationale: ''
+- scenario_id: taint-no-toleration-001
+  fact: node-role.kubernetes.io/control-plane=
+  conclusion_excerpt: 'in this namespace, so there’s nothing else to satisfy the remaining toleration. Fix: - Remove the `node-role.kubernetes.io/control-plane=`
+    node selector from `workload-pod`, or - Change the tolerated taint on the node from `NoGo` to some'
+  classification: ''
+  rationale: ''
+- scenario_id: taint-no-toleration-001
+  fact: 'node.kubernetes.io/not-ready: Exists'
+  conclusion_excerpt: 'tolerated taint {node.kubernetes.io/not-ready: }` The pod explicitly requests tolerations for: - `node.kubernetes.io/not-ready:
+    Exists` - `node.kubernetes.io/unreachable: Exists` But the cluster has a node with that taint set, and th'
+  classification: ''
+  rationale: ''
+- scenario_id: taint-no-toleration-001
+  fact: 'node.kubernetes.io/not-ready: NoGo'
+  conclusion_excerpt: 'ons are **not** tolerated. Specifically, the only available node is marked as `NotReady` with: - `node.kubernetes.io/not-ready:
+    NoGo` Because `workload-pod` requests `NoExecute` for both of these taints, Kubernetes does not schedul'
+  classification: ''
+  rationale: ''
+- scenario_id: taint-no-toleration-001
+  fact: 'node.kubernetes.io/unreachable: Exists'
+  conclusion_excerpt: 'eady: }` The pod explicitly requests tolerations for: - `node.kubernetes.io/not-ready: Exists` - `node.kubernetes.io/unreachable:
+    Exists` But the cluster has a node with that taint set, and those tolerations are **not** tolerated. Spe'
+  classification: ''
+  rationale: ''
+- scenario_id: taint-no-toleration-001
+  fact: 'phase: Pending'
+  conclusion_excerpt: 'in namespace `scenario-taint-no-toleration-001`: - Pod label: `app=workload` - Status shows: - `phase:
+    Pending` - reason: `PodScheduled=False` - message: `0/1 nodes are available: 1 node(s) had untolerated'
+  classification: ''
+  rationale: ''
