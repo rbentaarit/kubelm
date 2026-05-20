@@ -678,3 +678,48 @@ Append-only log of significant decisions. Update when major direction changes.
   for `kubelm-edge-v0` should be softened to reflect the v2
   reading; that update is deferred to a small standalone commit
   before Stage 4 finalizes.
+
+- **2026-05-20:** v0.1 Stage 6 first training iteration — the
+  **data-diversity lever** — is a recorded **negative result**. It
+  did NOT close the `ref_pass` gap it targeted (Stage 5 showed v0 at
+  ref_pass 24/33 vs qwen2.5:7b's 32/33; everything else at parity).
+  The iteration rebuilt the corpus with two generator styles
+  (gpt-5.4 + qwen2.5-7b, the reference target, ref_pass 32/33) across
+  the 33-scenario library, v2-fabrication-filtered (550 records vs
+  v0's 319), recipe held constant (QLoRA r=32, 2 epochs, lr 2e-4).
+  Trained on RunPod RTX 6000 Ada, evaluated locally. Result
+  (`eval/results/summaries/kubelm-edge-v01-2026-05-20.json`):
+
+      metric      base 1.5B   v0    v0.1   qwen2.5-7b
+      ref_pass      4/33     24/33  23/33    32/33
+      rubric       12/33     24/33  21/33    25/33
+      fabs           52        7      2        6
+      complete     10/33     30/33  32/33    32/33
+
+  v0.1 vs v0: ref_pass flat (23 vs 24), rubric regressed (21 vs 24),
+  but grounding improved sharply (fabs 2 vs 7 — now frontier-level)
+  and complete +2. A lateral trade, not the targeted upgrade; clearly
+  better than its base on every column but not better than v0 on the
+  metric that mattered.
+
+  Two conclusions: (1) **ref_pass looks like a 1.5B capacity ceiling,
+  not a data-coverage problem** — training the student directly on
+  the reference target's high-ref_pass trajectories did not transfer
+  reference-call discipline; the data-diversity hypothesis is
+  disproven for this gap. (2) The rubric regression + a low per-step
+  train_loss (~0.025 vs v0 attempt-2's ~0.07) indicates **overfitting**
+  — 550 records at 2 epochs over-trained relative to v0's 319. The
+  v2-fabrication filter is what delivered the grounding win (excluding
+  generator-fabricating trajectories taught more faithful output).
+
+  Per the eval-first / no-cherry-pick commitments, v0.1 is NOT
+  released; it is recorded as-is. Next iteration pulls the **recipe
+  lever** (1 epoch + a lr-1e-4 variant on the same corpus) to test
+  whether killing the overfit recovers rubric and/or moves ref_pass.
+  If recipe-alone can't move ref_pass, the remaining lever is a
+  base bump to 3B (capacity), which changes the edge-tier deployment
+  story and is a separate decision. Artifacts (GGUF + LoRA) kept
+  locally at `~/kubelm-v01-artifacts/`, not published. RunPod
+  training is now fully CLI-reproducible via runpodctl
+  (`training/runpod_setup.sh` + `runpod_finalize.sh`, the latter
+  fixed for PEP 668 in commit `66286fc`).

@@ -758,3 +758,70 @@ frontier — rather than the full size curve:
   The 8-point gap to qwen2.5-7b is where a v0.1 data/training
   iteration has the most headroom; rubric and grounding are already
   at parity.
+
+## 2026-05-20 — kubelm-edge-v0.1 data-diversity attempt (negative result)
+
+First v0.1 training iteration. The lever (chosen 2026-05-20) was
+**data diversity**: rebuild the corpus with two generator styles
+(gpt-5.4 + qwen2.5-7b, the reference target itself, ref_pass 32/33)
+across the 33-scenario library, filtered on the calibrated v2
+grounding metric (no trajectory where the generator fabricated).
+550 records vs v0's 319. Recipe held constant (QLoRA r=32, 2 epochs,
+lr 2e-4 — only the data changed). Trained on a RunPod RTX 6000 Ada;
+evaluated locally against the 33-scenario library.
+
+| model | complete | schema | fab_runs | fabs | narr_pass | ref_pass | rubric | err |
+|---|---|---|---|---|---|---|---|---|
+| qwen2.5-1.5b (base) | 10/33 | 30/33 | 16 | 52 | 32/33 | 4/33 | 12/33 | 1 |
+| kubelm-edge-v0 | 30/33 | 33/33 | 6 | 7 | 32/33 | 24/33 | 24/33 | 0 |
+| **kubelm-edge-v0.1** | **32/33** | **32/33** | **2** | **2** | **32/33** | **23/33** | **21/33** | **1** |
+| qwen2.5-7b (ref) | 32/33 | 31/33 | 5 | 6 | 32/33 | 32/33 | 25/33 | 1 |
+
+**File:** `kubelm-edge-v01-2026-05-20.json`.
+
+### Verdict: the data lever did NOT close the ref_pass gap
+
+This is a recorded negative result, not a release. v0.1 vs v0:
+- **ref_pass 23 vs 24 — flat** (the targeted metric; still ~9 pts
+  behind qwen2.5-7b). The whole point of the iteration didn't move.
+- **rubric 21 vs 24 — regressed.**
+- **complete 32 vs 30, fabs 2 vs 7 — improved** (grounding is now
+  frontier-level: beats qwen2.5-7b's 6, near gpt-5.4's 3).
+
+So v0.1 is a lateral trade vs v0 (cleaner grounding + completion,
+worse rubric, flat ref_pass), clearly better than its base on every
+column but NOT the upgrade the iteration targeted.
+
+### What it tells us
+
+1. **ref_pass looks like a 1.5B capacity ceiling, not a
+   data-coverage problem.** Training the 1.5B student directly on the
+   reference target's (qwen2.5-7b) high-ref_pass trajectories did not
+   transfer reference-call discipline. The data-diversity hypothesis
+   is disproven for this gap.
+2. **The rubric regression + the low train_loss (per-step bottomed
+   ~0.025, vs v0 attempt-2's ~0.07) = overfitting.** 550 records at
+   2 epochs over-trained relative to v0's 319; the model memorized
+   seed phrasings (hurting rubric generalization) without learning
+   transferable tool-selection.
+3. **The v2-fabrication-filtered corpus delivered the grounding win**
+   (fabs 7→2) — excluding trajectories where the generator itself
+   fabricated taught more faithful output. That part of the data
+   change worked.
+
+### Next: recipe sweep (targets the overfit)
+
+Per the eval-first discipline, the next iteration pulls the **recipe**
+lever, not data: re-train the same v0.1 corpus at **1 epoch** (and a
+**lr 1e-4** variant) to test whether killing the overfit recovers
+rubric and/or moves ref_pass. If recipe-alone can't move ref_pass,
+the remaining lever is a base bump to 3B (capacity) — which changes
+the edge-tier deployment story and is a separate decision.
+
+### Caveats
+- 1 errored run, `pod-anti-affinity-001` (the documented kind
+  settle-race), same as every prior cut.
+- v0.1 fabricated on `pod-namespace-conflation-001` — one of the new
+  Stage 4b adversarial traps catching a real defect, as designed.
+- Compare this row to the 2026-05-20 Shape C rows above (same
+  library, same v2 metrics, same harness).
