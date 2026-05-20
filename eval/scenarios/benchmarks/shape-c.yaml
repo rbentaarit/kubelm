@@ -1,0 +1,46 @@
+# Shape C: v0.1 cut — base vs reference vs shipped vs frontier.
+#
+# The load-bearing v0.1 comparison under the new metrics (grounding v2,
+# narrative-consistency) and the expanded 33-scenario library:
+#
+#   - qwen2.5-1.5b              the base model kubelm-edge was fine-tuned from
+#   - qwen2.5-7b               the reference target the project aims to match
+#   - kubelm-edge-v0-attempt-2 the shipped v0 (1.5B QLoRA), via host Ollama
+#   - gpt-5.4                  the cloud frontier (latest temp=0-capable model)
+#
+# The three Qwen-family models run locally on Ollama (no cost). gpt-5.4
+# is a paid OpenAI API call — provide OPENAI_API_KEY in the shell. The
+# backend routes max_tokens -> max_completion_tokens automatically for
+# the gpt-5 family (eval/runner/openai_backend.py). gpt-5.4 accepts
+# temperature: 0 (gpt-5 and gpt-5.5 do not — see PROJECT.md decisions
+# log 2026-05-11); re-verify against the live /v1/models catalog at
+# each refresh, the family moves fast.
+#
+# Run with:
+#     uv run python -m eval.scenarios bench \
+#         --models-file eval/scenarios/benchmarks/shape-c.yaml
+
+- name: qwen2.5-1.5b
+  backend_url: http://localhost:11434/v1
+  model: qwen2.5:1.5b
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: qwen2.5-7b
+  backend_url: http://localhost:11434/v1
+  model: qwen2.5:7b
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: kubelm-edge-v0
+  backend_url: http://localhost:11434/v1
+  model: kubelm-edge-v0-attempt-2:latest
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: gpt-5.4
+  backend_url: https://api.openai.com/v1
+  model: gpt-5.4
+  api_key_env: OPENAI_API_KEY
+  temperature: 0.0
+  max_tokens: 2048
