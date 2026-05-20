@@ -85,23 +85,26 @@ expected:
     must_include: []
     any_of:
       # Same tool universe as liveness-probe-failing-001 — analyze,
-      # get-resource, or list-events all surface the probe-failure
-      # signal. K8sGPT's analyze internally consults events; either
-      # path is a valid investigation.
+      # get-resource, list-resources, or list-events all surface the
+      # probe-failure signal. K8sGPT's analyze internally consults
+      # events; any path is a valid investigation.
+      #
+      # 2026-05-19 validation fix: 7b's first call is
+      # list-resources(pods), and its list-events call passes
+      # namespace="" (MCP wildcard) + involvedObjectName. The
+      # original any_of omitted list-resources and over-constrained
+      # list-events on namespace, so a successful investigation
+      # scored ref=False. Per CLAUDE.md scenario patterns: include
+      # singular+plural list-resources and match list-events on
+      # involvedObjectName rather than namespace.
       - { name: analyze, args_match: { namespace: scenario-liveness-killed-looks-oom-001 } }
       - {
           name: get-resource,
-          args_match:
-            {
-              resourceType: pod,
-              name: memwatch-pod,
-              namespace: scenario-liveness-killed-looks-oom-001,
-            },
+          args_match: { resourceType: pod, name: memwatch-pod },
         }
-      - {
-          name: list-events,
-          args_match: { namespace: scenario-liveness-killed-looks-oom-001 },
-        }
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-resources, args_match: { resourceType: pod } }
+      - { name: list-events, args_match: { involvedObjectName: memwatch-pod } }
     forbidden: []
   conclusion_rubric:
     # Slot 1: must surface "liveness" or "probe" — the real cause.

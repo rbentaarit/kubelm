@@ -50,7 +50,19 @@ expected:
       - { name: list-events,  args_match: { involvedObjectName: crash-pod } }
     forbidden: []
   conclusion_rubric:
-    must_mention: ["CrashLoopBackOff", "crash-pod"]
+    # 2026-05-19 validation fix: slot 1 broadened from the exact
+    # string "CrashLoopBackOff" to accept the back-off phrasing.
+    # qwen2.5:7b diagnosed the root cause correctly (missing
+    # CONFIG_PATH -> startup failure -> "back-off restarts") but
+    # reached it via list-events + get-logs without a get-resource
+    # call, so it never echoed the literal status string. Per
+    # CLAUDE.md validation step 4 (broaden when the conclusion is
+    # substantively right). All synonyms are tool-derivable: the
+    # "Back-off restarting failed container" event text carries the
+    # back-off wording.
+    must_mention:
+      - ["CrashLoopBackOff", "back-off", "backoff", "back off"]
+      - "crash-pod"
     # 2026-05-19 v0.1 Stage 4a: forbid K8s vocabulary used
     # counterfactually from priors. Stage 2's audit surfaced v0
     # writing "it was not a benign failure like `FailedPreemption`,
