@@ -1,0 +1,113 @@
+id: pod-namespace-conflation-001
+profile: base
+description: |
+  Adversarial discriminator (v0.1 Stage 4b) for the
+  cross-resource-conflation failure mode the Stage 2 grounding
+  audit caught in attempt-2 (the model claimed
+  `local-path-provisioner` was in the scenario namespace when the
+  corpus placed it in `local-path-storage` — a fabricated
+  resource/namespace pairing).
+
+  Two Pods share the name `app-pod`. The one in the scenario
+  namespace is broken (references a nonexistent image, settles
+  into ImagePullBackOff). A decoy `app-pod` in the `default`
+  namespace runs nginx cleanly. A `list-resources` call returns
+  BOTH pods; a model that doesn't carefully scope by namespace
+  can conflate them — reporting the running pod's healthy status
+  for the failing pod, or attributing the failing pod's image to
+  the wrong namespace.
+
+  The investigation must (a) identify the broken pod by its actual
+  failure mode (ImagePullBackOff) and (b) reference the
+  nonexistent image, which is unique to the failing pod. A model
+  that reads the decoy pod's state instead will not have the
+  failing image string to cite, so the rubric's slot 2 fails.
+
+goal: "Why is app-pod in scenario-pod-namespace-conflation-001 not running?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-pod-namespace-conflation-001
+      ---
+      # The broken pod in the scenario namespace.
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: app-pod
+        namespace: scenario-pod-namespace-conflation-001
+        labels: { app: app }
+      spec:
+        containers:
+          - name: app
+            image: ghcr.io/kubelm/conflation-decoy-absent:v9.9.9
+      ---
+      # The decoy: same pod name, different namespace, healthy.
+      # Forces the model to scope by namespace rather than match
+      # on name alone.
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: app-pod
+        namespace: default
+        labels: { app: app, role: decoy }
+      spec:
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+
+settle:
+  # Wait for the broken pod (scenario namespace) to settle into
+  # ImagePullBackOff. The decoy in `default` reaches Running on
+  # its own; we don't gate on it.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-pod-namespace-conflation-001
+      name: app-pod
+      reason: ImagePullBackOff
+      timeout: 120s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-pod-namespace-conflation-001 } }
+      - {
+          name: get-resource,
+          args_match:
+            {
+              resourceType: pod,
+              name: app-pod,
+              namespace: scenario-pod-namespace-conflation-001,
+            },
+        }
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-resources, args_match: { resourceType: pod } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must name the failure mode of the BROKEN pod.
+    # Slot 2: must reference the nonexistent image — unique to the
+    # failing pod in the scenario namespace. The decoy runs nginx,
+    # so a model that read the decoy can't produce this string.
+    # This is what discriminates "read the right pod" from
+    # "conflated the two".
+    must_mention:
+      - ["ImagePullBackOff", "ErrImagePull", "image pull", "pull"]
+      - ["conflation-decoy-absent", "v9.9.9", "does not exist", "doesn't exist", "not found"]
+    # Fence against conflation: the model must not conclude the pod
+    # is healthy/running (which is true only of the decoy). These
+    # phrasings only appear when the model reported on the wrong
+    # pod.
+    must_not_mention:
+      - running fine
+      - no issues found
+      - is healthy
+    semantic_intent: |
+      Identifies the broken `app-pod` in the scenario namespace by
+      its ImagePullBackOff failure and references the nonexistent
+      image `ghcr.io/kubelm/conflation-decoy-absent:v9.9.9` as the
+      cause — without conflating it with the healthy decoy pod of
+      the same name in the `default` namespace. The fix is to
+      correct the image reference on the scenario-namespace pod.
