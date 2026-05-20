@@ -65,7 +65,12 @@ if [[ ! -x "${LLAMA_CPP_DIR}/build/bin/llama-quantize" ]]; then
     if [[ ! -d "${LLAMA_CPP_DIR}" ]]; then
         git clone --depth=1 https://github.com/ggerganov/llama.cpp "${LLAMA_CPP_DIR}"
     fi
-    pip install --quiet -r "${LLAMA_CPP_DIR}/requirements/requirements-convert_hf_to_gguf.txt"
+    # --break-system-packages: RunPod's current PyTorch templates ship an
+    # externally-managed system Python (PEP 668), so a bare `pip install`
+    # aborts with "externally-managed-environment". The pod is ephemeral,
+    # so installing the convert-script deps into system Python is fine.
+    # (Hit on the 2026-05-20 v0.1 run with the torch-2.8 template.)
+    pip install --quiet --break-system-packages -r "${LLAMA_CPP_DIR}/requirements/requirements-convert_hf_to_gguf.txt"
     cmake -B "${LLAMA_CPP_DIR}/build" -S "${LLAMA_CPP_DIR}" \
           -DGGML_CUDA=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF
     cmake --build "${LLAMA_CPP_DIR}/build" --target llama-quantize -j 4
