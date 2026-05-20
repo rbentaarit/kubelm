@@ -132,6 +132,7 @@ def convert_one(results_dir: Path, source_bench_id: str | None = None) -> dict[s
     backend = results.get("backend") or meta.get("backend") or {}
     schema_report = results.get("schema_report") or {}
     grounding_report = results.get("grounding_report") or {}
+    grounding_v2_report = results.get("grounding_v2_report") or {}
     termination_report = results.get("termination_report") or {}
     ref_report = results.get("reference_calls_report") or {}
     rubric_report = results.get("conclusion_rubric_report") or {}
@@ -175,6 +176,13 @@ def convert_one(results_dir: Path, source_bench_id: str | None = None) -> dict[s
             "conclusion_rubric_passed": bool(rubric_report.get("passed")),
             "grounding_failed": bool(grounding_report.get("has_grounding_failure")),
             "grounding_failed_v1_artifact": None,  # reviewer fills during REVIEW.md walkthrough
+            # v2 grounding (the calibrated metric). For training-data
+            # selection this is the load-bearing field: exclude any
+            # trajectory where the generator itself fabricated, so we
+            # never train the student on hallucinated content. None when
+            # the source results.json predates grounding v2 (schema < 3).
+            "grounding_v2_has_fabrication": grounding_v2_report.get("has_fabrication"),
+            "grounding_v2_fabrications": grounding_v2_report.get("fabrications"),
             "step_count": sum(1 for e in events if e.get("kind") == "assistant"),
             "model_latency_ms": totals.get("model_latency_ms"),
             "tools_cache_status": tools_status,

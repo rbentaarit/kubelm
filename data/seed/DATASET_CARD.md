@@ -286,7 +286,61 @@ review code lives in the project repo:
 under `data/seed/`. The 30-scenario library that produced the seeds
 is in `eval/scenarios/specs/`. The eval harness is in `eval/`.
 
+## v0.1 corpus (2026-05-20)
+
+A second seed cut for the v0.1 training iteration. Motivation: the
+Stage 5 benchmark (`eval/results/summaries/shape-c-2026-05-20.json`)
+showed kubelm-edge-v0's only remaining gap to qwen2.5:7b is
+`ref_pass` (reference-call discipline) — rubric, grounding (v2), and
+narrative-consistency are already at parity. v0.1 attacks that gap
+through **data**, not recipe.
+
+Two changes from the v0 corpus:
+
+1. **Two generator styles.** v0 used gpt-5.4 only (limitation #2
+   above). v0.1 adds **qwen2.5-7b — the reference target itself**
+   (`ref_pass 32/33` on the Stage 5 cut). Training the 1.5B student
+   directly on the reference's tool-selection behavior is the
+   targeted attack on the gap.
+2. **Calibrated v2-grounding selection.** Every trajectory is
+   filtered on the Stage 3 grounding-v2 metric
+   (`grounding_v2_has_fabrication: false`) in addition to
+   rubric-pass / schema-pass / termination-complete. No trajectory
+   where the generator itself fabricated enters training. This
+   supersedes review.py's v1 grounding heuristic (which left clean
+   trajectories `unreviewed`).
+
+| File | Records | Source | Pass filter |
+|---|---|---|---|
+| `v01/gpt-5.4-2026-05-20.jsonl` | 31 | Stage 5 bench (gpt-5.4) | 30 |
+| `varied/v01/gpt-5.4-2026-05-20-varied.jsonl` | 310 | 10× variants | 300 |
+| `v01/qwen2.5-7b-2026-05-20.jsonl` | 25 | Stage 5 bench (qwen2.5-7b) | 20 |
+| `varied/v01/qwen2.5-7b-2026-05-20-varied.jsonl` | 250 | 10× variants | 200 |
+
+**Training set after filter: 550 records across 32 of 33 scenarios.**
+(`pod-insufficient-cpu-001` has no clean seed — the same scenario
+excluded from v0; neither generator produced a rubric-passing,
+fabrication-free trajectory for it.) Both generators cover 19
+scenarios with distinct investigation styles.
+
+Selection criteria (config `training/configs/kubelm-edge-v01.yaml`):
+`conclusion_rubric_passed` + `schema_passed` +
+`termination_label == complete` + `grounding_v2_has_fabrication ==
+false`. No `review_status` gate — these are eval-harness trajectories
+machine-validated against the calibrated v2 metric rather than the
+v0-era human/heuristic review. That is a deliberate methodology
+choice for the iteration, documented here.
+
+Generated against K8sGPT `0.4.32`, MCP protocol `2025-03-26`, the
+same pins as v0. The trajectories carry the same schema_version 1
+record format.
+
 ## Changelog
 
+- **v0.1 (2026-05-20):** Second seed cut for the v0.1 training
+  iteration. +gpt-5.4 (31) +qwen2.5-7b (25) seeds + 560 variants
+  from the Stage 5 bench against the 33-scenario library; 550 pass
+  the v2-grounding filter. Adds a second generator style and
+  calibrated-v2 fabrication filtering. K8sGPT v0.4.32.
 - **v0 (2026-05-13):** Initial release. 29 seeds + 290 variants +
   46 negatives = 365 trajectories. K8sGPT v0.4.32.

@@ -1,0 +1,95 @@
+# kubelm-edge v0.1 — data-iteration SFT config
+#
+# Loaded by training/sft.py. Same single-stage QLoRA SFT recipe as v0;
+# the v0.1 lever is the DATA, not the recipe (Stage 5 showed the only
+# gap to qwen2.5:7b is ref_pass; rubric/grounding/narrative are already
+# at parity, schema beats it). See PROJECT.md decisions log 2026-05-20.
+#
+# What changed from kubelm-edge-v0.yaml:
+#   1. Two generator styles instead of one. v0 trained on gpt-5.4 only
+#      (DATASET_CARD limitation #2). v0.1 adds qwen2.5-7b — the
+#      reference target itself, ref_pass 32/33 on the Stage 5 cut.
+#      Training the 1.5B student directly on the reference's
+#      tool-selection behavior is the targeted attack on the ref_pass
+#      gap.
+#   2. All 33 scenarios (Stage 4 expanded library), including the 3
+#      adversarial scenarios v0's corpus never saw.
+#   3. Calibrated v2-grounding filter. v0's filter relied on the v1
+#      grounding heuristic via review.py; v0.1 filters on
+#      grounding_v2_has_fabrication (Stage 3's calibrated metric) so
+#      no trajectory where the generator itself fabricated enters
+#      training. This supersedes review.py's v1 heuristic.
+#
+# Reproducibility knobs are pinned per PROJECT.md commitment #5.
+
+base_model: Qwen/Qwen2.5-1.5B-Instruct
+base_model_revision: main   # bump to a commit SHA before publication
+
+chat_template: qwen
+max_seq_length: 16384
+
+# Dataset
+dataset:
+  format: jsonl
+  sources:
+    - data/seed/v01/gpt-5.4-2026-05-20.jsonl
+    - data/seed/varied/v01/gpt-5.4-2026-05-20-varied.jsonl
+    - data/seed/v01/qwen2.5-7b-2026-05-20.jsonl
+    - data/seed/varied/v01/qwen2.5-7b-2026-05-20-varied.jsonl
+  filter:
+    # Machine-validated selection. No review_status gate: the v0.1
+    # seeds are eval-harness trajectories, and the calibrated v2
+    # grounding metric (Stage 3) is a strictly better grounding check
+    # than review.py's v1 heuristic, which left clean trajectories
+    # "unreviewed". The hard rules below + the v2 fabrication gate are
+    # the quality bar.
+    quality.conclusion_rubric_passed: true
+    quality.schema_passed: true
+    quality.termination_label: complete
+    quality.grounding_v2_has_fabrication: false
+  shuffle_seed: 0xb1ab
+
+# LoRA / QLoRA — unchanged from v0 (recipe held constant; data is the
+# v0.1 variable). The deferred hyperparameter sweep (ROADMAP Phase 5)
+# is a separate follow-up if data-alone doesn't close ref_pass.
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0.0
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  bias: none
+  task_type: CAUSAL_LM
+
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: bfloat16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+
+# Training loop — 2 epochs, matching the v0 release (attempt-2). v0's
+# 3-epoch attempt-1 over-trained (train_loss 0.01), so 2 stays the
+# default. With ~1.75x the seed diversity, re-confirm the loss curve
+# on the smoke-test before the full run.
+training:
+  num_train_epochs: 2
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 2
+  learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  optim: paged_adamw_8bit
+  bf16: true
+  fp16: false
+  max_grad_norm: 1.0
+  logging_steps: 5
+  save_strategy: epoch
+  save_total_limit: 3
+  seed: 42
+
+output:
+  adapter_dir: adapter
+  merged_dir: merged
+  log_path: training_log.jsonl
+
+report_to: []
