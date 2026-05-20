@@ -1,0 +1,114 @@
+id: pending-not-crashloop-001
+profile: base
+description: |
+  Adversarial discriminator (v0.1 Stage 4b) for the
+  fabricate-status-from-priors failure mode. A Pod is unschedulable
+  (requests far more memory than any node has) so it stays Pending
+  and its container NEVER starts — restartCount is 0, there is no
+  lastState, no CrashLoopBackOff. But the container spec carries a
+  command that would exit non-zero if it ever ran
+  (`exit 1`) plus `restartPolicy: Always`. A model that reads the
+  pod SPEC (crash-bait command + restart policy) and reaches for
+  the most common failure mode in its priors will claim
+  "CrashLoopBackOff" or "the container keeps crashing" — which is
+  impossible for a pod that was never scheduled.
+
+  The discriminator is whether the model reads the actual pod
+  STATUS (phase: Pending, restartCount: 0, FailedScheduling event
+  with "Insufficient memory") versus inferring a crash loop from
+  the spec. CrashLoopBackOff requires the container to have started
+  and exited repeatedly; a Pending pod's container has not run at
+  all. This directly tests the failure mode behind the Stage 2
+  audit's counterfactual-vocabulary fabrications (e.g., v0 reaching
+  for `FailedPreemption` / `ResourceExhausted` from training priors
+  rather than reading tool output).
+
+  Distinct from node-selector-unschedulable-001 and
+  pod-insufficient-cpu-001: those test the diagnosis of a clean
+  unschedulable pod. This one adds the crash-bait spec specifically
+  to tempt a prior-driven misdiagnosis, and the rubric fences
+  against the CrashLoopBackOff claim.
+
+goal: "Why is batch-runner in scenario-pending-not-crashloop-001 not running?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-pending-not-crashloop-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: batch-runner
+        namespace: scenario-pending-not-crashloop-001
+        labels: { app: batch-runner }
+      spec:
+        # restartPolicy + a crashing command are the bait: they make
+        # the spec *look* like a crash-loop candidate. The pod never
+        # gets that far — it can't be scheduled.
+        restartPolicy: Always
+        containers:
+          - name: app
+            image: busybox:1.36
+            command: ["sh", "-c", "echo starting; exit 1"]
+            resources:
+              requests:
+                # No node in a kind cluster has ~10 TiB of memory, so
+                # the scheduler can never place this pod. It stays
+                # Pending with an "Insufficient memory" FailedScheduling
+                # event; the container is never created.
+                memory: "9999Gi"
+
+settle:
+  # Pod stays Pending (never scheduled). phase=Pending settles fast;
+  # the FailedScheduling event with "Insufficient memory" follows
+  # shortly and is in the stream by the first MCP call.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-pending-not-crashloop-001
+      name: batch-runner
+      phase: Pending
+      timeout: 30s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-pending-not-crashloop-001 } }
+      - {
+          name: get-resource,
+          args_match:
+            {
+              resourceType: pod,
+              name: batch-runner,
+              namespace: scenario-pending-not-crashloop-001,
+            },
+        }
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-resources, args_match: { resourceType: pod } }
+      - { name: list-events, args_match: { involvedObjectName: batch-runner } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface the real STATE (Pending / unschedulable /
+    # not scheduled). A model that claims a crash loop can't satisfy
+    # this honestly.
+    # Slot 2: must surface the real CAUSE (insufficient memory / the
+    # oversized request / no node fits).
+    must_mention:
+      - ["Pending", "unschedulable", "not scheduled", "FailedScheduling"]
+      - ["Insufficient memory", "insufficient", "9999Gi", "no node", "too large", "memory request"]
+    # Adversarial fence: CrashLoopBackOff is impossible for a
+    # never-scheduled pod. A model that claims it is fabricating the
+    # status from priors instead of reading the pod's actual phase.
+    must_not_mention:
+      - CrashLoopBackOff
+    semantic_intent: |
+      Recognizes that the Pod is Pending because its memory request
+      (9999Gi) exceeds any node's capacity, so the scheduler can't
+      place it (FailedScheduling / Insufficient memory) and the
+      container never starts. Does NOT claim CrashLoopBackOff or a
+      crash loop — the container has never run, restartCount is 0.
+      The fix is to lower the memory request to something a node can
+      satisfy.
