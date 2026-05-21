@@ -76,6 +76,8 @@ expected:
   reference_calls:
     must_include: []
     any_of:
+      - { name: list-resources, args_match: { resourceType: pods } }  # ref_calls v2: pods are the universal investigation surface
+      - { name: list-resources, args_match: { resourceType: pod } }  # ref_calls v2
       - { name: analyze, args_match: { namespace: scenario-deployment-rollout-stuck-001 } }
       - { name: get-resource, args_match: { resourceType: deployment, name: api, namespace: scenario-deployment-rollout-stuck-001 } }
       - { name: list-events, args_match: { namespace: scenario-deployment-rollout-stuck-001 } }

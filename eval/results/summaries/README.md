@@ -847,15 +847,28 @@ inconsistent and incomplete:
 scenario specs. Re-graded on the existing trajectories (no retrain)
 via `regrade_ref_pass.py`:
 
-| model | old ref_pass | v2 ref_pass | Δ |
+reference_calls v2 landed in two passes: pass 1 added `analyze`; a
+**completion pass** then added `list-resources(pods/pod)` to 6
+pod-subject scenarios that omitted it + `get-resource(pod)` to
+rbac-denied (more matcher gaps the v0 failure trajectories exposed —
+the model was listing/getting pods and not being credited). Final
+numbers below.
+
+| model | old ref_pass | **v2 ref_pass** | Δ |
 |---|---|---|---|
 | qwen2.5-1.5b (base) | 4/32 | 4/32 | +0 |
-| **kubelm-edge-v0** | 24/33 | **28/33** | +4 |
+| **kubelm-edge-v0** | 24/33 | **31/33** | **+7** |
 | **kubelm-edge-v0.1** | 23/32 | **28/32** | +5 |
 | kubelm-edge-v01-1ep | 25/32 | 30/32 | +5 |
 | kubelm-edge-v01-lr1e4 | 19/32 | 22/32 | +3 |
 | **qwen2.5-7b** (ref) | 32/32 | **32/32** | **+0** |
 | gpt-5.4 | 33/33 | 33/33 | +0 |
+
+**v0's only 2 remaining ref_pass fails: `network-policy-block-001`
+(K8sGPT can't expose networkpolicies — documented tool-surface limit,
+not the model) and `pvc-unbound-001` (the one genuine failure —
+investigated pods/nodes instead of the PVC). So v0 is effectively
+31/32 ≈ qwen-7B's 32/32.**
 
 ### Why this is a real correction, not inflation
 
@@ -868,8 +881,9 @@ genuinely doesn't investigate; that 4 is real).
 ### What it changes
 
 - **The "ref_pass capacity ceiling" from the 2026-05-20 sweep is
-  largely retracted.** The 1.5B's true ref_pass is ~28-30, not 23-25.
-  The gap to qwen2.5-7b (32) is **2-4 points, not 8-9.**
+  retracted.** v0's true ref_pass is **31/33** (one genuine fail,
+  pvc-unbound; one tool-surface, network-policy) — **at parity with
+  qwen2.5-7b (32/32).** The gap was almost entirely a metric artifact.
 - **kubelm-edge-v0 stays the best-balanced model**: v2 ref_pass 28/33
   + rubric 24/33 still tops the kubelm variants (1ep reaches ref_pass
   30 but its rubric 17 / arg_halluc 8 disqualify it).

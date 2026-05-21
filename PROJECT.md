@@ -739,9 +739,14 @@ Append-only log of significant decisions. Update when major direction changes.
   demonstrated gaps (metric code unchanged; specs only). Re-graded on
   existing trajectories (no retrain):
 
+  (v2 landed in two passes: pass 1 added analyze; a completion pass
+  added list-resources(pods/pod) to 6 pod-subject scenarios + a
+  get-resource(pod) gap — more matcher gaps the v0 failure
+  trajectories exposed.) Final:
+
       model            old ref_pass   v2 ref_pass
       qwen2.5-1.5b        4/32           4/32     (+0, genuine)
-      kubelm-edge-v0     24/33          28/33     (+4)
+      kubelm-edge-v0     24/33          31/33     (+7)
       kubelm-edge-v0.1   23/32          28/32     (+5)
       qwen2.5-7b         32/32          32/32     (+0)
       gpt-5.4            33/33          33/33     (+0)
@@ -750,12 +755,17 @@ Append-only log of significant decisions. Update when major direction changes.
   (qwen2.5-7b, gpt-5.4) didn't move** — they already made the credited
   calls — while base 1.5b stayed at 4 (it genuinely doesn't
   investigate). Only the mid models that used valid-but-uncredited
-  calls gained. So the 1.5B's true ref_pass is ~28-30, and the gap to
-  qwen2.5-7b is **2-4 points, not 8-9**. kubelm-edge-v0 stays the
-  best-balanced model (v2 ref_pass 28 + rubric 24). The committed
+  calls gained. So **v0's true ref_pass is 31/33 — at parity with
+  qwen2.5-7b (32)**; its only 2 fails are network-policy-block (the
+  documented K8sGPT can't-expose-networkpolicies tool-surface limit)
+  and pvc-unbound (the one genuine model failure). The "ref_pass gap"
+  was almost entirely a metric artifact. kubelm-edge-v0 stays the
+  best-balanced model (ref_pass 31 + rubric 24). The committed
   Shape C + v0.1 digests are re-graded to v2. Lesson (third time now,
   after grounding and this): **audit whether a metric is measuring the
   model or its own strictness before concluding a capability limit.**
-  Remaining ~4 genuine ref_pass failures (no investigation, wrong
+  Remaining genuine ref_pass failures (v0: just pvc-unbound; v0.1:
+  configmap/liveness-oom/pending/service-selector — no investigation,
+  wrong
   resource, identifier confusion) are the targeted-data candidates
   for the next iteration.

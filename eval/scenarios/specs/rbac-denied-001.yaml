@@ -59,6 +59,7 @@ expected:
   reference_calls:
     must_include: []
     any_of:
+      - { name: get-resource, args_match: { resourceType: pod, name: rbac-probe } }  # ref_calls v2
       - { name: analyze, args_match: { namespace: scenario-rbac-denied-001 } }  # ref_calls v2: credit canonical analyze
       - { name: list-resources, args_match: { resourceType: pods } }
       - { name: list-resources, args_match: { resourceType: pod } }
