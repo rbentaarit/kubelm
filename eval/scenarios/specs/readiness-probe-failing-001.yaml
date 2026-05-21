@@ -70,6 +70,7 @@ expected:
   reference_calls:
     must_include: []
     any_of:
+      - { name: list-events, args_match: { involvedObjectName: healthcheck-pod } }  # ref_calls v2
       - { name: analyze, args_match: { namespace: scenario-readiness-probe-failing-001 } }
       - { name: get-resource, args_match: { resourceType: pod, name: healthcheck-pod, namespace: scenario-readiness-probe-failing-001 } }
       - { name: list-events, args_match: { namespace: scenario-readiness-probe-failing-001 } }

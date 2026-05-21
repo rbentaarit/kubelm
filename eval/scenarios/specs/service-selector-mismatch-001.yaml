@@ -43,6 +43,7 @@ expected:
   reference_calls:
     must_include: []
     any_of:
+      - { name: analyze, args_match: { namespace: scenario-service-selector-mismatch-001 } }  # ref_calls v2: credit canonical analyze
       - { name: get-resource,   args_match: { resourceType: service, name: api-svc } }
       - { name: list-resources, args_match: { resourceType: services } }
       - { name: list-resources, args_match: { resourceType: service } }

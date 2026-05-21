@@ -63,6 +63,8 @@ expected:
   reference_calls:
     must_include: []
     any_of:
+      - { name: list-resources, args_match: { resourceType: services } }  # ref_calls v2
+      - { name: list-resources, args_match: { resourceType: service } }  # ref_calls v2
       - { name: analyze, args_match: { namespace: scenario-service-port-mismatch-001 } }
       - { name: get-resource, args_match: { resourceType: service, name: api-svc, namespace: scenario-service-port-mismatch-001 } }
       - { name: list-resources, args_match: { resourceType: endpoints, namespace: scenario-service-port-mismatch-001 } }

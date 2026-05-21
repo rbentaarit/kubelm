@@ -42,6 +42,7 @@ expected:
   reference_calls:
     must_include: []
     any_of:
+      - { name: analyze, args_match: { namespace: scenario-oom-killed-001 } }  # ref_calls v2: credit canonical analyze
       - { name: get-resource, args_match: { resourceType: pod, name: hungry-pod } }
       - { name: list-events,  args_match: { involvedObjectName: hungry-pod } }
       - { name: list-resources, args_match: { resourceType: pods } }

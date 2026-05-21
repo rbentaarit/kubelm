@@ -40,6 +40,7 @@ expected:
   reference_calls:
     must_include: []
     any_of:
+      - { name: analyze, args_match: { namespace: scenario-node-selector-unschedulable-001 } }  # ref_calls v2: credit canonical analyze
       - { name: list-resources, args_match: { resourceType: pods } }
       - { name: list-resources, args_match: { resourceType: pod } }
       - { name: list-events }

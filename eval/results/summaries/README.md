@@ -825,3 +825,62 @@ the edge-tier deployment story and is a separate decision.
   Stage 4b adversarial traps catching a real defect, as designed.
 - Compare this row to the 2026-05-20 Shape C rows above (same
   library, same v2 metrics, same harness).
+
+## 2026-05-21 — reference_calls v2 correction (ref_pass was understated)
+
+Triggered by auditing v0.1's 9 ref_pass failures: ~5 of 9 were
+**matcher artifacts**, not model failures (same pattern as the
+grounding v1→v2 story). The `any_of` reference-call specs were
+inconsistent and incomplete:
+- 9 of the 33 scenarios (the oldest) omitted `analyze` from `any_of`
+  — even though `analyze` on the scenario namespace is K8sGPT's
+  canonical investigation tool and the other 24 scenarios credit it.
+- a few `list-events` matchers keyed on `namespace=` instead of
+  `involvedObjectName=<pod>`, and a few `list-resources` matchers
+  omitted the resource type the model actually listed
+  (service-port: services; service-account: deployments) — both
+  violate the scenario-authoring rules in CLAUDE.md.
+
+**reference_calls v2** adds `analyze(namespace)` to all 33 scenarios'
+`any_of` and patches the three demonstrated `list-events` /
+`list-resources` gaps. The metric *code* is unchanged; only the
+scenario specs. Re-graded on the existing trajectories (no retrain)
+via `regrade_ref_pass.py`:
+
+| model | old ref_pass | v2 ref_pass | Δ |
+|---|---|---|---|
+| qwen2.5-1.5b (base) | 4/32 | 4/32 | +0 |
+| **kubelm-edge-v0** | 24/33 | **28/33** | +4 |
+| **kubelm-edge-v0.1** | 23/32 | **28/32** | +5 |
+| kubelm-edge-v01-1ep | 25/32 | 30/32 | +5 |
+| kubelm-edge-v01-lr1e4 | 19/32 | 22/32 | +3 |
+| **qwen2.5-7b** (ref) | 32/32 | **32/32** | **+0** |
+| gpt-5.4 | 33/33 | 33/33 | +0 |
+
+### Why this is a real correction, not inflation
+
+**The reference models didn't move** (qwen2.5-7b +0, gpt-5.4 +0):
+they already made the calls the old specs credited, so broadening the
+matchers gave them nothing. Only the smaller models — which used
+valid-but-uncredited calls — gained. base 1.5b stayed at 4/32 (it
+genuinely doesn't investigate; that 4 is real).
+
+### What it changes
+
+- **The "ref_pass capacity ceiling" from the 2026-05-20 sweep is
+  largely retracted.** The 1.5B's true ref_pass is ~28-30, not 23-25.
+  The gap to qwen2.5-7b (32) is **2-4 points, not 8-9.**
+- **kubelm-edge-v0 stays the best-balanced model**: v2 ref_pass 28/33
+  + rubric 24/33 still tops the kubelm variants (1ep reaches ref_pass
+  30 but its rubric 17 / arg_halluc 8 disqualify it).
+- The Shape C and v0.1 digests above have their `reference_calls`
+  re-graded to v2 (per-run results.json + model_summaries); their
+  ref_pass cells now reflect these numbers.
+
+### Caveat
+
+- This corrects *ref_pass measurement*, not the model. v0 is still
+  the released edge model; no retrain happened. The remaining real
+  ref_pass failures (~4 of 9: didn't investigate, wrong resource,
+  identifier confusion) are genuine and are the targeted-data
+  candidates for a future iteration.

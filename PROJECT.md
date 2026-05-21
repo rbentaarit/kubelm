@@ -723,3 +723,39 @@ Append-only log of significant decisions. Update when major direction changes.
   training is now fully CLI-reproducible via runpodctl
   (`training/runpod_setup.sh` + `runpod_finalize.sh`, the latter
   fixed for PEP 668 in commit `66286fc`).
+
+- **2026-05-21:** **reference_calls v2** — the "ref_pass capacity
+  ceiling" from the 2026-05-20 sweep is largely RETRACTED; it was a
+  metric artifact, like grounding v1→v2. Auditing v0.1's 9 ref_pass
+  failures found ~5 of 9 were the `reference_calls` matchers rejecting
+  *valid* investigation calls, not the model failing. The `any_of`
+  specs were inconsistent: 9 of 33 scenarios (the oldest) omitted
+  `analyze` from `any_of` though it's K8sGPT's canonical tool and the
+  other 24 credit it; a few `list-events` matchers keyed on
+  `namespace=` instead of `involvedObjectName=`, and a few
+  `list-resources` matchers omitted the type the model listed — all
+  violations of the scenario-authoring rules already in CLAUDE.md.
+  v2 adds `analyze(namespace)` to all 33 + patches the three
+  demonstrated gaps (metric code unchanged; specs only). Re-graded on
+  existing trajectories (no retrain):
+
+      model            old ref_pass   v2 ref_pass
+      qwen2.5-1.5b        4/32           4/32     (+0, genuine)
+      kubelm-edge-v0     24/33          28/33     (+4)
+      kubelm-edge-v0.1   23/32          28/32     (+5)
+      qwen2.5-7b         32/32          32/32     (+0)
+      gpt-5.4            33/33          33/33     (+0)
+
+  **The correction is real, not inflation: the reference models
+  (qwen2.5-7b, gpt-5.4) didn't move** — they already made the credited
+  calls — while base 1.5b stayed at 4 (it genuinely doesn't
+  investigate). Only the mid models that used valid-but-uncredited
+  calls gained. So the 1.5B's true ref_pass is ~28-30, and the gap to
+  qwen2.5-7b is **2-4 points, not 8-9**. kubelm-edge-v0 stays the
+  best-balanced model (v2 ref_pass 28 + rubric 24). The committed
+  Shape C + v0.1 digests are re-graded to v2. Lesson (third time now,
+  after grounding and this): **audit whether a metric is measuring the
+  model or its own strictness before concluding a capability limit.**
+  Remaining ~4 genuine ref_pass failures (no investigation, wrong
+  resource, identifier confusion) are the targeted-data candidates
+  for the next iteration.

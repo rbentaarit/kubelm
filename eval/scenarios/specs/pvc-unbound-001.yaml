@@ -38,6 +38,7 @@ expected:
   reference_calls:
     must_include: []
     any_of:
+      - { name: analyze, args_match: { namespace: scenario-pvc-unbound-001 } }  # ref_calls v2: credit canonical analyze
       - { name: list-resources, args_match: { resourceType: persistentvolumeclaims } }
       - { name: list-resources, args_match: { resourceType: persistentvolumeclaim } }
       - { name: get-resource,   args_match: { resourceType: persistentvolumeclaim, name: data-pvc } }
