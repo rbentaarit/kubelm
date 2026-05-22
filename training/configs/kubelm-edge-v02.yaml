@@ -1,0 +1,100 @@
+# kubelm-edge v0.2 — prompt-alignment SFT config
+#
+# Loaded by training/sft.py. Same single-stage QLoRA SFT recipe and the
+# same trajectories as v0.1; the v0.2 lever is the SYSTEM PROMPT.
+#
+# What changed from kubelm-edge-v01.yaml:
+#   1. Corrected root-cause system prompt baked into every record. v0's
+#      prompt told the model to "stop as soon as you have enough
+#      evidence", which produced premature, symptom-level conclusions
+#      (deployment-rollout-stuck, service-account-missing failed the
+#      rubric). The new prompt (eval/runner/loop.py DEFAULT_SYSTEM_PROMPT)
+#      instructs the model to drill to ROOT CAUSE and conclude by naming
+#      the failing resource. At inference on v0 (no retrain) it flipped
+#      both failures to PASS (rubric 24->27).
+#   2. The drill-down clause is resource-type-aware, NOT Pod-centric. An
+#      earlier draft hard-coded "inspect the affected Pods", which
+#      misdirected non-Pod scenarios: pvc-unbound hunted for a Pod named
+#      data-pvc, found none, and fabricated K8s API fields. The shipped
+#      prompt drills per resource kind (workload->Pods, PVC->StorageClass,
+#      scheduling->nodes/taints) and forbids inventing field names/values.
+#      Validated at inference: pvc-unbound, statefulset-pvc-pending,
+#      pod-pvc-not-found all PASS with zero fabrications.
+#
+# The corpus is data/seed/v02/*, produced by
+# data/seed/bake_system_prompt.py from the v0.1 trajectories: identical
+# investigations, only messages[0]/system_prompt swapped to the canonical
+# DEFAULT_SYSTEM_PROMPT. Training data thus matches the deployment prompt
+# (PROJECT.md commitment #4). Recipe and data filter unchanged from v0.1.
+#
+# Reproducibility knobs are pinned per PROJECT.md commitment #5.
+
+base_model: Qwen/Qwen2.5-1.5B-Instruct
+base_model_revision: main   # bump to a commit SHA before publication
+
+chat_template: qwen
+max_seq_length: 16384
+
+# Dataset
+dataset:
+  format: jsonl
+  sources:
+    - data/seed/v02/gpt-5.4-2026-05-20.jsonl
+    - data/seed/varied/v02/gpt-5.4-2026-05-20-varied.jsonl
+    - data/seed/v02/qwen2.5-7b-2026-05-20.jsonl
+    - data/seed/varied/v02/qwen2.5-7b-2026-05-20-varied.jsonl
+  filter:
+    # Machine-validated selection. No review_status gate: the seeds are
+    # eval-harness trajectories, and the calibrated v2 grounding metric
+    # (Stage 3) is a strictly better grounding check than review.py's v1
+    # heuristic, which left clean trajectories "unreviewed". The hard
+    # rules below + the v2 fabrication gate are the quality bar.
+    quality.conclusion_rubric_passed: true
+    quality.schema_passed: true
+    quality.termination_label: complete
+    quality.grounding_v2_has_fabrication: false
+  shuffle_seed: 0xb1ab
+
+# LoRA / QLoRA — unchanged from v0/v0.1 (recipe held constant; the
+# system prompt is the v0.2 variable).
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0.0
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  bias: none
+  task_type: CAUSAL_LM
+
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: bfloat16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+
+# Training loop — 2 epochs, matching v0 (attempt-2) and v0.1. v0's
+# 3-epoch attempt-1 over-trained (train_loss 0.01), so 2 stays the
+# default. Re-confirm the loss curve on the smoke-test before the full
+# run.
+training:
+  num_train_epochs: 2
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 2
+  learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  optim: paged_adamw_8bit
+  bf16: true
+  fp16: false
+  max_grad_norm: 1.0
+  logging_steps: 5
+  save_strategy: epoch
+  save_total_limit: 3
+  seed: 42
+
+output:
+  adapter_dir: adapter
+  merged_dir: merged
+  log_path: training_log.jsonl
+
+report_to: []
