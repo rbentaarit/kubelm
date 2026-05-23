@@ -43,6 +43,12 @@ dataset:
     - data/seed/varied/v02/gpt-5.4-2026-05-20-varied.jsonl
     - data/seed/v02/qwen2.5-7b-2026-05-20.jsonl
     - data/seed/varied/v02/qwen2.5-7b-2026-05-20-varied.jsonl
+    # pod-insufficient-cpu-001 corrective seed (qwen2.5:32b). The other
+    # generators never produced a clean trajectory for it because the
+    # scenario was unsolvable until the kind --wait fix surfaced the real
+    # "Insufficient cpu" verdict (see cluster.py / pod-insufficient-cpu-001).
+    - data/seed/v02/pod-insufficient-cpu-corrective-2026-05-22.jsonl
+    - data/seed/varied/v02/pod-insufficient-cpu-corrective-2026-05-22-varied.jsonl
   filter:
     # Machine-validated selection. No review_status gate: the seeds are
     # eval-harness trajectories, and the calibrated v2 grounding metric
