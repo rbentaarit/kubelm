@@ -32,6 +32,7 @@ class WaitForStatus:
     reason: str | None = None
     phase: str | None = None
     condition: str | None = None
+    message_contains: str | None = None
     timeout_seconds: int = DEFAULT_SETTLE_TIMEOUT
 
 
@@ -141,6 +142,7 @@ def _parse_settle_step(raw: dict[str, Any], ctx: str) -> WaitForStatus:
         reason=body.get("reason"),
         phase=body.get("phase"),
         condition=body.get("condition"),
+        message_contains=body.get("message_contains"),
         timeout_seconds=_parse_duration(body.get("timeout"), default=DEFAULT_SETTLE_TIMEOUT),
     )
 

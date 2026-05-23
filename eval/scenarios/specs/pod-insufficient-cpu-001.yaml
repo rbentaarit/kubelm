@@ -38,17 +38,24 @@ setup:
                 cpu: "100"   # 100 cores — no kind node will have this
 
 settle:
-  # Pod stays Pending. Scheduler will try and fail; FailedScheduling
-  # event appears in the namespace event stream. 60s phase=Pending
-  # is a low-overhead confirmation the Pod object exists; by the
-  # time the bench's first MCP call lands the scheduler has retried
-  # and the event is visible.
+  # Wait for the scheduler to actually report the CPU shortage, not just
+  # for the Pod to be Pending. On a fresh kind cluster the control-plane
+  # node starts NotReady, so the scheduler's FIRST verdict is "untolerated
+  # taint node.kubernetes.io/not-ready" — and that stale message lingers
+  # in the PodScheduled condition after the node goes Ready and the taint
+  # clears. phase=Pending settles instantly, inside that race window, so
+  # every model (incl. gpt-5.4 / qwen2.5:32b) saw the taint and concluded
+  # the wrong root cause. message_contains forces the wait until the
+  # scheduler has re-evaluated against the Ready node and written the
+  # intended "Insufficient cpu" verdict. The verdict lives in a
+  # PodScheduled condition with status=False, which neither `reason` nor
+  # `condition` (status==True) can match — hence message_contains.
   - wait_for_status:
       kind: Pod
       namespace: scenario-pod-insufficient-cpu-001
       name: heavy-pod
-      phase: Pending
-      timeout: 60s
+      message_contains: "Insufficient cpu"
+      timeout: 120s
 
 expected:
   reference_calls:

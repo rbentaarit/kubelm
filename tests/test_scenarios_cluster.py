@@ -73,6 +73,7 @@ def test_kind_create_cluster_constructs_command(fake_run: _FakeRun, tmp_path: Pa
     assert "--name" in cmd and "kubelm-x" in cmd
     assert "--kubeconfig" in cmd and str(kc_path) in cmd
     assert "--image" in cmd and "kindest/node:v1" in cmd
+    assert "--wait" in cmd  # block until node Ready (sheds not-ready taint)
     assert kc.name == "kubelm-x"
     assert kc.kubeconfig_path == kc_path
 
@@ -254,6 +255,52 @@ def test_wait_for_status_matches_condition_only_when_true(
         namespace="ns",
         kubeconfig_path=tmp_path / "kc",
         condition="Available",
+        timeout_seconds=10,
+        sleep=clock.sleep,
+        now=clock.now,
+    )
+    assert seq == []
+
+
+def test_wait_for_status_matches_message_contains_in_condition(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # Mirrors the pod-insufficient-cpu race: the scheduler first writes a
+    # stale not-ready-taint verdict into the PodScheduled condition, then
+    # re-evaluates against the Ready node and writes "Insufficient cpu".
+    # message_contains must skip the stale message and match the second.
+    stale = {
+        "status": {
+            "conditions": [
+                {
+                    "type": "PodScheduled",
+                    "status": "False",
+                    "message": "0/1 nodes are available: 1 node(s) had untolerated "
+                    "taint {node.kubernetes.io/not-ready: }.",
+                }
+            ]
+        }
+    }
+    ready = {
+        "status": {
+            "conditions": [
+                {
+                    "type": "PodScheduled",
+                    "status": "False",
+                    "message": "0/1 nodes are available: 1 Insufficient cpu.",
+                }
+            ]
+        }
+    }
+    seq = [json.dumps(stale), json.dumps(ready)]
+    monkeypatch.setattr(subprocess, "run", _FakeRun(responder=lambda _cmd: (0, seq.pop(0), "")))
+    clock = _Clock()
+    wait_for_status(
+        kind="Pod",
+        name="heavy-pod",
+        namespace="ns",
+        kubeconfig_path=tmp_path / "kc",
+        message_contains="Insufficient cpu",
         timeout_seconds=10,
         sleep=clock.sleep,
         now=clock.now,

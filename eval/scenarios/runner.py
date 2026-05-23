@@ -119,6 +119,7 @@ def _settle_scenario(scenario: Scenario, *, kubeconfig_path: Path) -> None:
             reason=cond.reason,
             phase=cond.phase,
             condition=cond.condition,
+            message_contains=cond.message_contains,
             timeout_seconds=cond.timeout_seconds,
         )
 

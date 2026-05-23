@@ -92,7 +92,15 @@ def kind_create_cluster(
     kubeconfig_path: Path,
     image: str | None = None,
     timeout: float = 180,
+    wait_ready_seconds: int = 90,
 ) -> KindCluster:
+    # --wait blocks until the control-plane node reaches Ready and sheds
+    # its node.kubernetes.io/not-ready taint. Without it kind returns as
+    # soon as the API server answers, so setup can land a Pod while the
+    # node is still NotReady — the scheduler then records a transient
+    # "untolerated taint not-ready" verdict and parks the Pod there,
+    # masking the scenario's intended cause (e.g. Insufficient cpu, which
+    # never surfaces). See pod-insufficient-cpu-001.
     cmd = [
         "kind",
         "create",
@@ -101,6 +109,8 @@ def kind_create_cluster(
         name,
         "--kubeconfig",
         str(kubeconfig_path),
+        "--wait",
+        f"{wait_ready_seconds}s",
     ]
     if image:
         cmd += ["--image", image]
@@ -252,17 +262,33 @@ def _has_reason(status: Mapping[str, Any], reason: str) -> bool:
     return False
 
 
+def _has_message(status: Mapping[str, Any], needle: str) -> bool:
+    """Search Pod status for a substring in the top-level or any condition message.
+
+    Needed for signals that live only in a condition message — e.g. the
+    scheduler writes "Insufficient cpu" into the PodScheduled condition
+    (status=False), which neither `reason` nor `condition` (status==True)
+    can match.
+    """
+    if needle in (status.get("message") or ""):
+        return True
+    return any(needle in (cond.get("message") or "") for cond in status.get("conditions") or [])
+
+
 def _matches(
     obj: Mapping[str, Any],
     *,
     reason: str | None,
     phase: str | None,
     condition: str | None,
+    message_contains: str | None,
 ) -> bool:
     status = obj.get("status") or {}
     if phase is not None and status.get("phase") != phase:
         return False
     if reason is not None and not _has_reason(status, reason):
+        return False
+    if message_contains is not None and not _has_message(status, message_contains):
         return False
     if condition is not None:
         conds = status.get("conditions") or []
@@ -280,14 +306,15 @@ def wait_for_status(
     reason: str | None = None,
     phase: str | None = None,
     condition: str | None = None,
+    message_contains: str | None = None,
     timeout_seconds: int,
     poll_interval_seconds: float = 2.0,
     sleep: Callable[[float], None] = time.sleep,
     now: Callable[[], float] = time.monotonic,
 ) -> None:
     """Poll kubectl get until the resource matches; raise TimeoutError otherwise."""
-    if reason is None and phase is None and condition is None:
-        raise ValueError("at least one of reason/phase/condition must be set")
+    if reason is None and phase is None and condition is None and message_contains is None:
+        raise ValueError("at least one of reason/phase/condition/message_contains must be set")
     deadline = now() + timeout_seconds
     last_state: dict[str, Any] | None = None
     while now() < deadline:
@@ -297,13 +324,20 @@ def wait_for_status(
             sleep(poll_interval_seconds)
             continue
         last_state = obj
-        if _matches(obj, reason=reason, phase=phase, condition=condition):
+        if _matches(
+            obj,
+            reason=reason,
+            phase=phase,
+            condition=condition,
+            message_contains=message_contains,
+        ):
             return
         sleep(poll_interval_seconds)
     raise TimeoutError(
         f"timed out after {timeout_seconds}s waiting for "
         f"{kind}/{name} in {namespace} (reason={reason} phase={phase} "
-        f"condition={condition}); last state: {last_state}"
+        f"condition={condition} message_contains={message_contains!r}); "
+        f"last state: {last_state}"
     )
 
 
