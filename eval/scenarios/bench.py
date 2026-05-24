@@ -59,6 +59,7 @@ class ModelConfig:
     api_key_env: str | None = None
     temperature: float = 0.0
     max_tokens: int = 2048
+    reasoning_effort: str | None = None
 
     def resolve_api_key(self) -> str | None:
         if self.api_key_env is None:
@@ -72,6 +73,7 @@ class ModelConfig:
             api_key=self.resolve_api_key(),
             temperature=self.temperature,
             max_tokens=self.max_tokens,
+            reasoning_effort=self.reasoning_effort,
         )
 
 
@@ -110,6 +112,7 @@ def _parse_model(raw: Mapping[str, Any], ctx: str) -> ModelConfig:
         api_key_env=raw.get("api_key_env"),
         temperature=float(raw.get("temperature") or 0.0),
         max_tokens=int(raw.get("max_tokens") or 2048),
+        reasoning_effort=raw.get("reasoning_effort"),
     )
 
 

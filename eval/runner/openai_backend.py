@@ -63,6 +63,7 @@ class OpenAICompatBackend:
     api_key: str | None = None
     temperature: float = 0.0
     max_tokens: int = 2048
+    reasoning_effort: str | None = None
     timeout: float = 120.0
     http: requests.Session = field(default_factory=requests.Session)
 
@@ -80,6 +81,12 @@ class OpenAICompatBackend:
             payload["max_completion_tokens"] = self.max_tokens
         else:
             payload["max_tokens"] = self.max_tokens
+        # reasoning_effort="none" disables thinking on reasoning-capable
+        # backends (e.g. ollama's Qwen3.5 renderer, which ignores the
+        # legacy /no_think token over /v1). Left unset for non-reasoning
+        # models so it has no effect on them.
+        if self.reasoning_effort is not None:
+            payload["reasoning_effort"] = self.reasoning_effort
         if tools:
             payload["tools"] = [_tool_to_openai(t) for t in tools]
             payload["tool_choice"] = "auto"
