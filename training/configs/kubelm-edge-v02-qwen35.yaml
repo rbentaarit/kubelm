@@ -1,0 +1,106 @@
+# kubelm-edge v0.2 (Qwen3.5-2B base) — base-model PIVOT config
+#
+# Loaded by training/sft.py. Same v0.2 corpus and recipe as
+# kubelm-edge-v02.yaml; the only change is the BASE MODEL.
+#
+# Why the pivot (decisions log 2026-05-23): the base-model bake-off +
+# no-think confirmation showed Qwen3.5-2B is a dramatically stronger
+# foundation than Qwen2.5-1.5B for this surface. Untrained, no-think,
+# apples-to-apples on the 33-scenario library: ref_pass 31 vs 6,
+# rubric 19 vs 8, schema 35 vs 29, and 0 fabrications vs 59. The
+# 0-fabrications-untrained result is the headline — grounding is where
+# this project's thesis lives, and Qwen3.5-2B starts natively grounded.
+# Unlike Qwen3-1.7B (whose advantage was purely thinking-mode and
+# collapsed no-think), Qwen3.5-2B holds up — and even improves — with
+# thinking off (the deployment config).
+#
+# kubelm-edge-v02.yaml (Qwen2.5-1.5B) is kept as the FALLBACK: the
+# corpus is identical, so if this pivot misses the edge latency bar we
+# revert with no rework.
+#
+# === TIER-1 BOX CHECKS (verify on the GPU box BEFORE the full paid run;
+#     these are silent-corruption risks that --dry-run cannot catch) ===
+#   1. FastLanguageModel.from_pretrained loads Qwen3.5-2B's TEXT
+#      backbone. Qwen3.5 is a VLM (Qwen3_5ForConditionalGeneration with
+#      a separable qwen3_5_text backbone). Unsloth docs confirm text
+#      fine-tuning is supported family-wide, but confirm the loader
+#      doesn't error or pull the vision tower. If FastLanguageModel
+#      rejects it, switch to Unsloth's FastModel text path.
+#   2. apply_chat_template renders NO-THINK training text. Qwen3.5's
+#      template is thinking-capable; the corpus assistant turns carry
+#      direct conclusions (no <think>), so rendered text should contain
+#      no thinking scaffolding. Inspect one rendered example — if a
+#      <think> block is injected, render with the no-think variant
+#      (enable_thinking=False) so we train the deployment behavior.
+#   3. train_on_responses_only masking. Qwen3.5's instruction/response
+#      chat markers differ from Qwen2.5's. The smoke-test masking ratio
+#      (sft.py:_smoke_test_masking, expect ~90-99% masked) is the proof
+#      it took; if the ratio is wrong, the response part markers in
+#      train_on_responses_only need updating for the Qwen3.5 template.
+#   Also: deploy serving must disable thinking (reasoning_effort=none on
+#   ollama /v1, or rely on the no-think fine-tune) — confirm at eval.
+
+base_model: Qwen/Qwen3.5-2B
+base_model_revision: main   # bump to a commit SHA before publication
+
+chat_template: qwen3.5      # informational; sft.py uses the tokenizer's bundled template
+max_seq_length: 16384
+
+# Dataset — IDENTICAL to kubelm-edge-v02.yaml (v0.2 corpus, corrected
+# prompt baked in, 561 records after filter, all 33 scenarios covered).
+dataset:
+  format: jsonl
+  sources:
+    - data/seed/v02/gpt-5.4-2026-05-20.jsonl
+    - data/seed/varied/v02/gpt-5.4-2026-05-20-varied.jsonl
+    - data/seed/v02/qwen2.5-7b-2026-05-20.jsonl
+    - data/seed/varied/v02/qwen2.5-7b-2026-05-20-varied.jsonl
+    - data/seed/v02/pod-insufficient-cpu-corrective-2026-05-22.jsonl
+    - data/seed/varied/v02/pod-insufficient-cpu-corrective-2026-05-22-varied.jsonl
+  filter:
+    quality.conclusion_rubric_passed: true
+    quality.schema_passed: true
+    quality.termination_label: complete
+    quality.grounding_v2_has_fabrication: false
+  shuffle_seed: 0xb1ab
+
+# LoRA / QLoRA — recipe held constant from v0/v0.1/v0.2 (Qwen2.5). The
+# 2B dense text backbone is close enough in scale that the v0 recipe is
+# the right starting point; revisit only if the loss curve misbehaves.
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0.0
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  bias: none
+  task_type: CAUSAL_LM
+
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: bfloat16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+
+training:
+  num_train_epochs: 2
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 2
+  learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  optim: paged_adamw_8bit
+  bf16: true
+  fp16: false
+  max_grad_norm: 1.0
+  logging_steps: 5
+  save_strategy: epoch
+  save_total_limit: 3
+  seed: 42
+
+output:
+  adapter_dir: adapter
+  merged_dir: merged
+  log_path: training_log.jsonl
+
+report_to: []
