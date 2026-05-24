@@ -38,6 +38,8 @@ are the same.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import copy
 import json
 import os
 import sys
@@ -101,9 +103,25 @@ def _load_trajectory_dataset(cfg: dict[str, Any]) -> list[dict[str, Any]]:
     return records
 
 
-def _to_sft_example(record: dict[str, Any]) -> dict[str, Any]:
-    """Strip everything except `messages` — that's the only thing the trainer sees."""
-    return {"messages": record["messages"]}
+def _to_sft_example(record: dict[str, Any], *, dictify_args: bool = False) -> dict[str, Any]:
+    """Strip everything except `messages` — that's the only thing the trainer sees.
+
+    With `dictify_args`, parse tool-call arguments from JSON strings (OpenAI
+    wire format) into dicts. Qwen3.5's chat template iterates
+    `tool_call.arguments|items` and raises "Can only get item pairs from a
+    mapping" on a string. Off by default so the proven Qwen2.5 path keeps its
+    string-args render byte-for-byte; enabled for the Qwen3.5 base.
+    """
+    if not dictify_args:
+        return {"messages": record["messages"]}
+    messages = copy.deepcopy(record["messages"])
+    for m in messages:
+        for tc in m.get("tool_calls") or []:
+            fn = tc.get("function")
+            if fn and isinstance(fn.get("arguments"), str):
+                with contextlib.suppress(json.JSONDecodeError):
+                    fn["arguments"] = json.loads(fn["arguments"])
+    return {"messages": messages}
 
 
 def _smoke_test_masking(trainer: Any, tokenizer: Any) -> None:
@@ -253,6 +271,20 @@ def main() -> int:
         dtype=None,  # auto
     )
 
+    # Restore the base model's chat template. Unsloth's from_pretrained can
+    # install a tool-schema-enumerating variant that, for Qwen3.5's
+    # per-parameter template (`tool_call.arguments|items`), renders every
+    # unused tool parameter as a literal `None` — polluting both the
+    # training target and the exported GGUF template (train/inference
+    # mismatch). The stock base template renders only the real args. Opt-in
+    # per config so the proven Qwen2.5 path is untouched.
+    if cfg.get("restore_base_chat_template"):
+        from transformers import AutoTokenizer
+
+        base_template = AutoTokenizer.from_pretrained(cfg["base_model"]).chat_template
+        tokenizer.chat_template = base_template
+        print("  restored base chat template (clean tool-call render)", file=sys.stderr)
+
     # Unsloth's get_peft_model sets task_type="CAUSAL_LM" internally
     # (FastLanguageModel only supports causal LMs). Passing task_type
     # from outside collides with the internal kwarg and raises
@@ -285,9 +317,10 @@ def main() -> int:
             )
         }
 
-    train_dataset = Dataset.from_list([_to_sft_example(r) for r in records]).map(
-        _render, remove_columns=["messages"]
-    )
+    dictify_args = bool(cfg.get("restore_base_chat_template"))
+    train_dataset = Dataset.from_list(
+        [_to_sft_example(r, dictify_args=dictify_args) for r in records]
+    ).map(_render, remove_columns=["messages"])
 
     train_cfg = cfg["training"]
     # Note: we DO NOT set `assistant_only_loss` on SFTConfig. Unsloth's

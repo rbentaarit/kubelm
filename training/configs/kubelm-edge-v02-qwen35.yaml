@@ -44,6 +44,12 @@ base_model: Qwen/Qwen3.5-2B
 base_model_revision: main   # bump to a commit SHA before publication
 
 chat_template: qwen3.5      # informational; sft.py uses the tokenizer's bundled template
+# Restore the stock Qwen3.5 chat template after Unsloth load. Unsloth's
+# from_pretrained installs a tool-schema-enumerating variant that renders
+# unused tool params as literal `None` for Qwen3.5's per-parameter
+# template — found at the v0.3 smoke-test gate (2026-05-24). The clean
+# base template renders only real args. Qwen2.5 path leaves this unset.
+restore_base_chat_template: true
 max_seq_length: 16384
 
 # Dataset — IDENTICAL to kubelm-edge-v02.yaml (v0.2 corpus, corrected
@@ -82,7 +88,12 @@ quantization:
   bnb_4bit_use_double_quant: true
 
 training:
-  num_train_epochs: 2
+  # 1 epoch (not 2). Both v0.1 and v0.2 overfit at 2 epochs on the
+  # ~560-record corpus (per-step loss bottomed ~0.024 vs v0's ~0.07),
+  # regressing rubric. v0's 319-record corpus tolerated 2 epochs; this
+  # larger corpus does not. Qwen3.5-2B is also a stronger base needing
+  # less adaptation. Revisit if 1 epoch underfits.
+  num_train_epochs: 1
   per_device_train_batch_size: 8
   gradient_accumulation_steps: 2
   learning_rate: 2.0e-4
