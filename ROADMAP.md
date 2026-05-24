@@ -183,17 +183,17 @@ hallucination rates scale with model size."
 
 ### Followups surfaced during Phase 3
 
-- **Grounding-metric v2.** The v1 rule-based analyzer's substring
-  matcher mishandles structured paraphrase (dotted paths, quote
-  variants, YAML notation, string composition from primitives). It
-  systematically penalizes verbose-but-faithful models. A v2 needs
-  to tolerate these rephrasings — either by parsing the model's
-  output for structural facts and matching against tool-result
-  JSON paths, or by using an LLM-judge to verify faithfulness
-  rather than substring presence. Until this lands, cross-model
-  grounding comparisons aren't reliable enough to drive
-  architectural claims. May fit better in Phase 4 / Phase 5
-  prep, but flagging here as a Phase 3 surfaced issue.
+- **Grounding-metric v2. [DONE 2026-05-19]** The v1 rule-based
+  analyzer's substring matcher mishandled structured paraphrase
+  (dotted paths, quote variants, YAML notation, string composition).
+  Shipped `eval/metrics/grounding_v2.py` — a 5-label classifier
+  (fabrication / structural_rephrase / composed_inference /
+  scenario_fill / unsupported_tool) calibrated against a hand-graded
+  set, with a rule cascade that tolerates faithful rephrasing and
+  only flags genuine fabrications. RESULTS_SCHEMA / BENCH_SCHEMA
+  bumped to 3; `grounding_failed` redefined as "fabrication present."
+  The v2 metric inverted the v1 story (base 1.5B fabricates more than
+  the fine-tunes, not less). See PROJECT.md decisions log 2026-05-19.
 - **K8sGPT MCP `networkpolicies` upstream.** File against
   k8sgpt-ai/k8sgpt to add networkpolicy support to
   `list-resources`. Currently the
@@ -438,6 +438,43 @@ metrics, don't release. Iterate the data.
 - [ ] Hyperparameter sweep (5–10 runs) — deferred to v0.1 or
       kubelm-standard
 - [ ] Blog post on the fine-tuning process and results
+
+### Post-v0 iteration status (v0.1 / v0.2)
+
+Iteration on the shipped `kubelm-edge` model + the eval harness, not a
+new phase. Full detail in the PROJECT.md decisions log.
+
+- **v0.1 (data diversity) — negative, not released.** Added a second
+  generator (qwen2.5-7b, the reference target) to the corpus to close
+  the apparent `ref_pass` gap. A recipe sweep (1-epoch, lr-1e-4) was
+  also negative. The "gap" then turned out to be a metric artifact:
+  after `reference_calls` v2, v0's true ref_pass is 31/33 — at parity
+  with qwen2.5-7b (32). v0 already matches/beats qwen2.5-7b on every
+  metric at ~1/4 the footprint; the core thesis is validated.
+- **v0.2 (prompt + benchmark validity) — in progress.**
+  - Corrected root-cause **system prompt** (commit `b3bb99f`): a free
+    inference-time reliability gain (rubric 24→29, fabrications →11,
+    narrative 33/33) — the "ship the prompt" branch this project
+    anticipated. Baked into the v0.2 corpus (`data/seed/v02/*`).
+  - **Benchmark-validity fixes:** pod-insufficient-cpu-001 was
+    unsolvable (kind started the Pod before the node was Ready);
+    fixed with `kind create --wait` + a `message_contains` settle
+    matcher (commit `03df427`). v0.2 corpus now covers all 33.
+  - **Base-model re-survey + bake-off → PIVOT to Qwen3.5-2B.** Survey
+    excluded Llama/Gemma (license #6) and Kimi/DeepSeek (no small dense
+    models). Bake-off then no-think confirmation: Qwen3-1.7B's lead was
+    thinking-only and collapsed no-think, but **Qwen3.5-2B holds up and
+    improves no-think** — untrained, apples-to-apples it beats
+    Qwen2.5-1.5B on every axis (ref 31 vs 6, rubric 19 vs 8, schema
+    35 vs 29, **0 fabrications vs 59**). Pivot config
+    `training/configs/kubelm-edge-v02-qwen35.yaml` (text Q4_K_M GGUF
+    1.3 GB fits the edge target; Unsloth supports text fine-tuning the
+    family). Qwen2.5-1.5B kept as fallback (identical corpus). Residual
+    risk: 2B per-step latency on a real edge box vs the <5s target —
+    measure at eval.
+  - **Open:** gated v0.2 retrain on Qwen3.5-2B (cloud cost; 3 Tier-1
+    box checks) + 2 multi-hop drill-to-cause eval scenarios (1
+    validated, 1 a K8sGPT MCP readiness blind-spot, held).
 
 ---
 

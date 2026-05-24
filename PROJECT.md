@@ -769,3 +769,85 @@ Append-only log of significant decisions. Update when major direction changes.
   wrong
   resource, identifier confusion) are the targeted-data candidates
   for the next iteration.
+- **2026-05-22:** **v0.2 lever = the system prompt — the "ship the
+  prompt" branch (this file's "why this thesis might be wrong" #2)
+  partly realized.** v0's genuine rubric failures were
+  under-instruction, not capacity: the old prompt said "stop as soon
+  as you have enough evidence," producing premature, symptom-level
+  conclusions. The new `DEFAULT_SYSTEM_PROMPT` (`eval/runner/loop.py`,
+  commit `b3bb99f`) instructs drill-to-ROOT-CAUSE and concluding by
+  naming the failing resource. Critical iteration: the first draft
+  (`e92acc5`) hard-coded "inspect the affected Pods" and misdirected
+  every non-Pod scenario — pvc-unbound hunted for a Pod named
+  `data-pvc`, found none, and fabricated K8s API fields. Generalized
+  to a resource-type-aware drill-down (workload→Pods,
+  PVC→StorageClass, scheduling→nodes/taints) plus an explicit
+  anti-fabrication line. At inference on v0 (NO retrain), with the
+  `--wait` benchmark fix below: rubric 24→29, fabrications down to 11
+  (from 27 under the buggy cluster setup), narrative 33/33, schema 30
+  — pvc-unbound and the other genuine failures fixed for free. The
+  v0.2 corpus (`data/seed/v02/*`, commit `e1eb4b7`) bakes this prompt
+  into the trajectories so a future retrain trains under the same
+  contract; corpus + config ready but the retrain is gated (cloud
+  cost) and not yet run.
+- **2026-05-22:** **Benchmark-validity fix: pod-insufficient-cpu-001
+  was unsolvable by any model** (gpt-5.4 / qwen2.5-7b / qwen2.5-32b
+  all failed → it never produced a clean seed). The harness, not the
+  models, was the limit: `kind create` lacked `--wait`, so setup
+  landed the Pod while the control-plane node was still NotReady; the
+  scheduler recorded a transient "untolerated taint not-ready"
+  verdict and parked the Pod there, and the rubric-required
+  "Insufficient cpu" verdict never surfaced. Fix (commit `03df427`):
+  `kind create --wait` so the node is Ready (taint shed) before setup
+  — hardening every scheduling scenario — plus a `message_contains`
+  settle matcher (the verdict lives in a `PodScheduled` condition with
+  status=False, unmatchable by `reason`/`condition`). qwen2.5:32b now
+  solves it cleanly; a corrective seed (commit `73bde01`) brings the
+  v0.2 corpus to all 33 scenarios. Fifth instance of "audit whether
+  the harness, not the model, is the limit" — generating a real
+  trajectory exposed it.
+- **2026-05-23:** **Base-model bake-off for v0.2 → stay on
+  Qwen2.5-1.5B.** Re-surveyed the ~1–2B Apache-2.0 / ungated /
+  native-tool-calling field: Llama-3.2 and Gemma are excluded by
+  commitment #6 (custom licenses + gated downloads); Kimi (Moonshot)
+  and DeepSeek ship only frontier-size MoE, no small dense models; the
+  2026 Qwen3.5-0.8B/2B are multimodal (vision-encoder tax on CPU).
+  Benched the viable bases untrained on the 33-scenario library. With
+  thinking-on, Qwen3-1.7B (rubric 15, complete 21) and Qwen3.5-2B (ref
+  31, 0 fabrications) appeared to beat untrained Qwen2.5-1.5B (rubric
+  8, complete 9, 59 fabrications). But the advantage was *entirely
+  thinking-mode*: an apples-to-apples no-think re-run of Qwen3-1.7B
+  collapsed (complete 21→3, ref 12→4, rubric 15→7; premature on 30/35
+  — concludes after a single tool call). We deploy CPU-edge no-think
+  (commitment #7) and train on a no-think corpus, so Qwen3 offers no
+  advantage in the deployment configuration; Qwen3.5-2B is also 2B +
+  multimodal + 2.3× slower. No base switch — the v0.2 lever stays
+  prompt + data. Sixth audit-saved wrong conclusion: the thinking
+  confound would have switched the base and wasted GPU fine-tuning a
+  weaker no-think foundation.
+- **2026-05-23 (supersedes the entry above):** **Pivot to Qwen3.5-2B
+  for v0.2.** The "stay on Qwen2.5-1.5B" call above was itself a
+  premature extrapolation — it measured the no-think collapse on
+  Qwen3-1.7B and *assumed* Qwen3.5-2B would behave the same. Tested it
+  no-think (via `reasoning_effort:none` over /v1, wired into the bench
+  backend): Qwen3.5-2B does the opposite — it *holds up and improves*
+  with thinking off. Untrained, no-think, apples-to-apples on the
+  library: complete 12, schema **35/35**, ref_pass **31**, rubric
+  **19**, **0 fabrications**, per-step 4.1s on M1 (half its thinking-on
+  cost). It beats untrained Qwen2.5-1.5B on every quality axis (ref 31
+  vs 6, rubric 19 vs 8, schema 35 vs 29, **0 fabs vs 59**). 0
+  fabrications untrained is the headline — grounding is the project's
+  core thesis and Qwen3.5-2B starts natively grounded, a far better
+  fine-tuning foundation. Preflight cleared: Unsloth supports text
+  fine-tuning the Qwen3.5 family; text-only Q4_K_M GGUF is 1.3 GB (fits
+  the 2 GB edge target; vision mmproj is a separate file we don't
+  ship); dense `qwen3_5_text` backbone. Config:
+  `training/configs/kubelm-edge-v02-qwen35.yaml` (same v0.2 corpus +
+  recipe; only the base changes). Qwen2.5-1.5B kept as the fallback
+  (`kubelm-edge-v02.yaml`) — corpus is identical, so reverting costs
+  nothing. Residual risk: 2B per-step latency on a real 2-core/2GB edge
+  box (vs M1) may approach the <5s target — measure at eval; the
+  gated GPU retrain is the real test and carries three Tier-1 box
+  checks (FastLanguageModel text load, no-think chat-template render,
+  train_on_responses_only masking). Lesson (again): audit before
+  concluding applies to *my own* extrapolations, not just metrics.
