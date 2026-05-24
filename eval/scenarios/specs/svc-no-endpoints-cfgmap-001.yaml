@@ -1,0 +1,113 @@
+id: svc-no-endpoints-cfgmap-001
+profile: base
+description: |
+  A Service whose selector correctly matches a Pod, but the Pod never
+  becomes a ready endpoint because its container cannot start: it
+  references a ConfigMap (`web-config`) that does not exist, so kubelet
+  parks it in `CreateContainerConfigError`. The Service therefore has no
+  endpoints and serves no traffic.
+
+  This is a MULTI-HOP drill-to-cause scenario — the only kind in the
+  library where the symptom and the root cause live on different
+  resources two hops apart. The symptom is at the Service layer ("no
+  traffic / no endpoints"); the cause is at the ConfigMap layer, reached
+  only by going Service -> selected Pod -> container status -> missing
+  ConfigMap.
+
+  Discriminates shallow vs deep investigation. A model that pattern-
+  matches "Service has no endpoints" will reach for a selector mismatch
+  (cf. service-selector-mismatch-001) — but here the selector is
+  CORRECT. The only way to the real answer is to inspect the Pod the
+  selector matches and read why it never started. Distinct from
+  configmap-missing-001, whose goal points straight at the Pod; here the
+  goal points at the Service and the ConfigMap must be discovered.
+
+goal: "Why is web-svc in scenario-svc-no-endpoints-cfgmap-001 not serving any traffic?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-svc-no-endpoints-cfgmap-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: web-pod
+        namespace: scenario-svc-no-endpoints-cfgmap-001
+        labels: { app: web }
+      spec:
+        restartPolicy: Always
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+            ports:
+              - containerPort: 80
+            env:
+              - name: APP_GREETING
+                valueFrom:
+                  configMapKeyRef:
+                    name: web-config
+                    key: greeting
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: web-svc
+        namespace: scenario-svc-no-endpoints-cfgmap-001
+      spec:
+        selector: { app: web }   # selector is CORRECT — matches web-pod
+        ports:
+          - port: 80
+            targetPort: 80
+
+settle:
+  # Wait on the Pod (fixed name — no controller, so no generated suffix)
+  # for CreateContainerConfigError, the deterministic signal that kubelet
+  # refused to start the container because `web-config` is missing. Pod
+  # phase is Pending throughout; settling on phase would fire before
+  # kubelet has tried (and failed) to resolve the ConfigMap reference.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-svc-no-endpoints-cfgmap-001
+      name: web-pod
+      reason: CreateContainerConfigError
+      timeout: 120s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      # Service layer (the symptom) and Pod layer (the cause) are both
+      # legitimate entry points; a complete investigation touches both.
+      - { name: analyze, args_match: { namespace: scenario-svc-no-endpoints-cfgmap-001 } }
+      - { name: get-resource, args_match: { resourceType: service, name: web-svc } }
+      - { name: list-resources, args_match: { resourceType: services } }
+      - { name: list-resources, args_match: { resourceType: service } }
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-resources, args_match: { resourceType: pod } }
+      - { name: get-resource, args_match: { resourceType: pod, name: web-pod, namespace: scenario-svc-no-endpoints-cfgmap-001 } }
+      - { name: list-events, args_match: { namespace: scenario-svc-no-endpoints-cfgmap-001 } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must surface the ConfigMap as the mechanism — proves the
+    # model drilled past the Service to the container config, not a
+    # selector/endpoint guess.
+    # Slot 2: must name the specific missing ConfigMap. K8sGPT's pod
+    # analyzer and the resulting events surface "configmap web-config not
+    # found", so this name is tool-derivable. Naming it is only possible
+    # after reaching the Pod — that is the multi-hop discriminator.
+    # We do NOT require "no endpoints" — the goal already implies it
+    # (parrotable).
+    must_mention:
+      - ["configmap", "ConfigMap", "config map"]
+      - ["web-config", "not found", "missing", "doesn't exist", "does not exist"]
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes that web-svc has no endpoints because the only Pod its
+      selector matches (web-pod) never becomes Ready: the container is
+      stuck in CreateContainerConfigError because the ConfigMap
+      `web-config` it references does not exist. The selector is correct;
+      the fix is to create the missing ConfigMap, not to change the
+      Service.
