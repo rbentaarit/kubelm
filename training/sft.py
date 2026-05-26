@@ -42,6 +42,7 @@ import contextlib
 import copy
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -278,12 +279,20 @@ def main() -> int:
     # training target and the exported GGUF template (train/inference
     # mismatch). The stock base template renders only the real args. Opt-in
     # per config so the proven Qwen2.5 path is untouched.
+    render_tokenizer = tokenizer
     if cfg.get("restore_base_chat_template"):
         from transformers import AutoTokenizer
 
-        base_template = AutoTokenizer.from_pretrained(cfg["base_model"]).chat_template
-        tokenizer.chat_template = base_template
-        print("  restored base chat template (clean tool-call render)", file=sys.stderr)
+        # Unsloth's from_pretrained patches the tokenizer's apply_chat_template
+        # to enumerate the full tool-param schema as None for Qwen3.5 — and the
+        # patch is in the METHOD, not the template string, so overwriting
+        # tokenizer.chat_template alone does not fix it (verified at the v0.3
+        # gate). Render the training text with a fresh, unpatched AutoTokenizer
+        # (clean), and also copy its template onto the model tokenizer so the
+        # exported GGUF carries the clean template for inference.
+        render_tokenizer = AutoTokenizer.from_pretrained(cfg["base_model"])
+        tokenizer.chat_template = render_tokenizer.chat_template
+        print("  using fresh tokenizer for clean tool-call render", file=sys.stderr)
 
     # Unsloth's get_peft_model sets task_type="CAUSAL_LM" internally
     # (FastLanguageModel only supports causal LMs). Passing task_type
@@ -309,13 +318,20 @@ def main() -> int:
     # (the rendered string is captured in the run output, not deferred
     # to a closure).
     def _render(example: dict[str, Any]) -> dict[str, Any]:
-        return {
-            "text": tokenizer.apply_chat_template(
-                example["messages"],
-                tokenize=False,
-                add_generation_prompt=False,
-            )
-        }
+        text = render_tokenizer.apply_chat_template(
+            example["messages"],
+            tokenize=False,
+            add_generation_prompt=False,
+        )
+        # Robust safety net for Qwen3.5: even with a "fresh" AutoTokenizer
+        # loaded after FastLanguageModel.from_pretrained, Unsloth's patches
+        # leak into apply_chat_template and the template enumerates the full
+        # tool-param schema as `None`. Strip those blocks mechanically — it's
+        # string-level, cannot be subverted by patches, and is a no-op for
+        # Qwen2.5 (whose template renders args as JSON, no <parameter=>).
+        if cfg.get("restore_base_chat_template"):
+            text = re.sub(r"<parameter=\w+>\s*None\s*</parameter>\s*", "", text)
+        return {"text": text}
 
     dictify_args = bool(cfg.get("restore_base_chat_template"))
     train_dataset = Dataset.from_list(
