@@ -1,0 +1,23 @@
+# v0.3 re-run only.
+#
+# The shape-d.yaml run (bench c68fe996, 2026-05-27) had llama-server capped
+# at -c 8192; 10/35 v0.3 trajectories accumulated >8K tokens and errored
+# with HTTP 400 ("request exceeds the available context size (8192 tokens),
+# try increasing it"). v0.3 was trained at max_seq_length=16384, so the
+# right serving config matches that. This file re-runs v0.3 alone against
+# llama-server launched with -c 16384.
+#
+# The other three columns from c68fe996 (qwen2.5-1.5b, qwen2.5-7b,
+# kubelm-edge-v0) are unaffected by the bug and reusable.
+#
+# Run with:
+#     uv run python -m eval.scenarios bench \
+#         --models-file eval/scenarios/benchmarks/v03-only.yaml
+
+- name: kubelm-edge-v0.3
+  backend_url: http://127.0.0.1:8088/v1
+  model: kubelm-edge-v0.3
+  temperature: 0.0
+  max_tokens: 2048
+  chat_template_kwargs:
+    enable_thinking: false

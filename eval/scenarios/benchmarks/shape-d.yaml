@@ -1,0 +1,51 @@
+# Shape D: v0.3 cut — base vs reference vs shipped vs v0.3 candidate.
+#
+# The v0.3 comparison under the corrected-prompt regime and the 35-scenario
+# library (now including svc-no-endpoints-cfgmap-001 and svc-pods-unready-001):
+#
+#   - qwen2.5-1.5b              the base model kubelm-edge v0/v0.1/v0.2 was tuned from
+#   - qwen2.5-7b                the reference target the project aims to match
+#   - kubelm-edge-v0            the shipped v0 (1.5B QLoRA) via host Ollama;
+#                               served under the corrected DEFAULT_SYSTEM_PROMPT
+#                               (b3bb99f), which is the current best deployable.
+#   - kubelm-edge-v0.3          v0.3 candidate: Qwen3.5-2B QLoRA trained on the
+#                               v0.2 corpus with the render fix (commits f689b4b
+#                               + 9d0b0f4), served via llama-server on port 8088
+#                               (ollama 0.23.1 qwen3next loader rejects it; the
+#                               GGUF is valid — confirmed by llama-cli + this
+#                               server). chat_template_kwargs disables thinking
+#                               to match the no-think training corpus.
+#
+# Local-only — no paid API. llama-server must be up on 127.0.0.1:8088 against
+# ~/kubelm-v03-artifacts/kubelm-edge.Q4_K_M.gguf (built with --jinja so the
+# embedded Qwen3.5 chat template is used; see the v0.3 train memory).
+#
+# Run with:
+#     uv run python -m eval.scenarios bench \
+#         --models-file eval/scenarios/benchmarks/shape-d.yaml
+
+- name: qwen2.5-1.5b
+  backend_url: http://localhost:11434/v1
+  model: qwen2.5:1.5b
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: qwen2.5-7b
+  backend_url: http://localhost:11434/v1
+  model: qwen2.5:7b
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: kubelm-edge-v0
+  backend_url: http://localhost:11434/v1
+  model: kubelm-edge-v0-attempt-2:latest
+  temperature: 0.0
+  max_tokens: 2048
+
+- name: kubelm-edge-v0.3
+  backend_url: http://127.0.0.1:8088/v1
+  model: kubelm-edge-v0.3
+  temperature: 0.0
+  max_tokens: 2048
+  chat_template_kwargs:
+    enable_thinking: false
