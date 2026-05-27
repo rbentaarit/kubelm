@@ -64,6 +64,7 @@ class OpenAICompatBackend:
     temperature: float = 0.0
     max_tokens: int = 2048
     reasoning_effort: str | None = None
+    chat_template_kwargs: dict[str, Any] | None = None
     timeout: float = 120.0
     http: requests.Session = field(default_factory=requests.Session)
 
@@ -87,6 +88,11 @@ class OpenAICompatBackend:
         # models so it has no effect on them.
         if self.reasoning_effort is not None:
             payload["reasoning_effort"] = self.reasoning_effort
+        # chat_template_kwargs is the llama.cpp /v1 lever for Qwen3.5-style
+        # templates that take template variables (e.g. enable_thinking=false).
+        # Ollama exposes the same control via reasoning_effort over /v1.
+        if self.chat_template_kwargs is not None:
+            payload["chat_template_kwargs"] = self.chat_template_kwargs
         if tools:
             payload["tools"] = [_tool_to_openai(t) for t in tools]
             payload["tool_choice"] = "auto"

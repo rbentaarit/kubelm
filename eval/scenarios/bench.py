@@ -60,6 +60,7 @@ class ModelConfig:
     temperature: float = 0.0
     max_tokens: int = 2048
     reasoning_effort: str | None = None
+    chat_template_kwargs: dict[str, Any] | None = None
 
     def resolve_api_key(self) -> str | None:
         if self.api_key_env is None:
@@ -74,6 +75,7 @@ class ModelConfig:
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             reasoning_effort=self.reasoning_effort,
+            chat_template_kwargs=self.chat_template_kwargs,
         )
 
 
@@ -105,6 +107,9 @@ def _require(data: Mapping[str, Any], key: str, ctx: str) -> Any:
 
 
 def _parse_model(raw: Mapping[str, Any], ctx: str) -> ModelConfig:
+    ctk = raw.get("chat_template_kwargs")
+    if ctk is not None and not isinstance(ctk, dict):
+        raise BenchParseError(f"{ctx}: chat_template_kwargs must be a mapping")
     return ModelConfig(
         name=_require(raw, "name", ctx),
         backend_url=_require(raw, "backend_url", ctx),
@@ -113,6 +118,7 @@ def _parse_model(raw: Mapping[str, Any], ctx: str) -> ModelConfig:
         temperature=float(raw.get("temperature") or 0.0),
         max_tokens=int(raw.get("max_tokens") or 2048),
         reasoning_effort=raw.get("reasoning_effort"),
+        chat_template_kwargs=ctk,
     )
 
 
