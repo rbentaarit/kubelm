@@ -1,0 +1,108 @@
+id: svc-pods-unready-001
+profile: base
+description: |
+  A Service whose selector correctly matches a Pod that is Running, yet
+  the Service still has no ready endpoints: the Pod fails its readiness
+  probe (HTTP GET /healthz returns 404 from default nginx), so it never
+  becomes Ready and is never added to the Service's endpoint set.
+
+  Second MULTI-HOP drill-to-cause scenario, paired with
+  svc-no-endpoints-cfgmap-001. Both share the same symptom — "Service
+  serves no traffic / has no endpoints" — but the root causes differ:
+  there the Pod never STARTS (CreateContainerConfigError); here the Pod
+  is fully RUNNING but never READY. A model that lazily maps
+  "no endpoints -> selector mismatch" fails both; only drilling to the
+  Pod and reading its container/readiness state distinguishes them.
+
+  The specific trap here is "Running != Ready": a shallow look sees the
+  Pod is Running and may wrongly conclude the workload is healthy. The
+  correct read requires inspecting the Pod's Ready condition and the
+  readiness-probe failure. Distinct from readiness-probe-failing-001,
+  whose goal points straight at the Pod; here the goal is at the Service
+  and the Pod's not-Ready state must be discovered.
+
+goal: "Why is web-svc in scenario-svc-pods-unready-001 not serving any traffic?"
+
+setup:
+  - apply_inline: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: scenario-svc-pods-unready-001
+      ---
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: web-pod
+        namespace: scenario-svc-pods-unready-001
+        labels: { app: web }
+      spec:
+        restartPolicy: Always
+        containers:
+          - name: app
+            image: nginx:1.27-alpine
+            ports:
+              - containerPort: 80
+            readinessProbe:
+              httpGet:
+                path: /healthz   # nginx default config has no /healthz -> 404
+                port: 80
+              initialDelaySeconds: 1
+              periodSeconds: 2
+              failureThreshold: 2
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: web-svc
+        namespace: scenario-svc-pods-unready-001
+      spec:
+        selector: { app: web }   # selector is CORRECT — matches web-pod
+        ports:
+          - port: 80
+            targetPort: 80
+
+settle:
+  # Wait for the Pod (fixed name — no controller) to reach Running so
+  # kubelet has started probing. We do NOT wait for Ready=True (it never
+  # will be) — the `condition` matcher only matches status==True anyway —
+  # and wait_for_status cannot match events. By the time Running is
+  # observed the readiness probe has already failed several times and the
+  # Ready condition is False, so the Service endpoint set is empty.
+  - wait_for_status:
+      kind: Pod
+      namespace: scenario-svc-pods-unready-001
+      name: web-pod
+      phase: Running
+      timeout: 90s
+
+expected:
+  reference_calls:
+    must_include: []
+    any_of:
+      - { name: analyze, args_match: { namespace: scenario-svc-pods-unready-001 } }
+      - { name: get-resource, args_match: { resourceType: service, name: web-svc } }
+      - { name: list-resources, args_match: { resourceType: services } }
+      - { name: list-resources, args_match: { resourceType: service } }
+      - { name: list-resources, args_match: { resourceType: pods } }
+      - { name: list-resources, args_match: { resourceType: pod } }
+      - { name: get-resource, args_match: { resourceType: pod, name: web-pod, namespace: scenario-svc-pods-unready-001 } }
+      - { name: list-events, args_match: { namespace: scenario-svc-pods-unready-001 } }
+    forbidden: []
+  conclusion_rubric:
+    # Slot 1: must attribute the failure to the readiness probe / not-Ready
+    # state — proves the model read the Pod's condition rather than
+    # stopping at "Running" or guessing a selector problem.
+    # Slot 2: must surface the probe-failure shape (404 / /healthz /
+    # non-2xx), derivable only from events/probe spec — the multi-hop
+    # discriminator. "no endpoints" is NOT required (parrotable from goal).
+    must_mention:
+      - ["readiness probe", "readinessProbe", "readiness", "not ready", "unready", "not Ready"]
+      - ["404", "/healthz", "non-2xx", "non-200", "HTTP probe failed", "statuscode", "probe failed"]
+    must_not_mention: []
+    semantic_intent: |
+      Recognizes that web-svc has no endpoints because the Pod its
+      selector matches (web-pod) is Running but never Ready: its readiness
+      probe (HTTP GET /healthz) returns 404, so kubelet keeps it out of
+      the Service's endpoint set. The selector is correct and the Pod is
+      not crashed; the fix is to correct the probe path or serve /healthz.
