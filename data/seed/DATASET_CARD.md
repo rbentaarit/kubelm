@@ -201,6 +201,17 @@ Each record carries the eval harness's read-outs:
   - Eval result vs base 1.5B: `complete` 8→29/30, `rubric_pass`
     10→23/30, `ref_pass` 3→21/30. Full row in
     [`eval/results/summaries/kubelm-edge-v0-2026-05-14.json`](https://github.com/rbentaarit/kubelm/blob/main/eval/results/summaries/kubelm-edge-v0-2026-05-14.json).
+- **`kubelm-edge-v0.3`** (2B, Qwen 3.5 base) — released
+  2026-05-27. Trained on the v0.2 corpus (561 records, see below).
+  Supersedes `kubelm-edge-v0` as the headline deployable.
+  - LoRA adapter: [`rbentaarit/kubelm-edge-v0.3-lora`](https://huggingface.co/rbentaarit/kubelm-edge-v0.3-lora)
+  - Q4_K_M GGUF: [`rbentaarit/kubelm-edge-v0.3-GGUF`](https://huggingface.co/rbentaarit/kubelm-edge-v0.3-GGUF)
+  - Eval result on the 35-scenario library: `rubric_pass` 32/35,
+    `ref_pass` 32/35, `fabrications` 3, `schema_pass` 35/35,
+    `complete` 35/35, zero argument/name hallucinations. Beats
+    qwen2.5-7b (rubric 28/35, ref 28/35, fabs 8) on every metric
+    at roughly one-third the footprint. Full row in
+    [`eval/results/summaries/shape-d-2026-05-27.json`](https://github.com/rbentaarit/kubelm/blob/main/eval/results/summaries/shape-d-2026-05-27.json).
 
 ## Out-of-scope
 
@@ -335,8 +346,69 @@ Generated against K8sGPT `0.4.32`, MCP protocol `2025-03-26`, the
 same pins as v0. The trajectories carry the same schema_version 1
 record format.
 
+## v0.2 corpus (2026-05-22)
+
+The corpus `kubelm-edge-v0.3` was trained on. Two changes from v0.1:
+
+1. **System prompt swap.** Every record's `system_prompt` is
+   replaced with the corrected canonical prompt (kubelm-edge's
+   inference-time `DEFAULT_SYSTEM_PROMPT` from
+   [`eval/runner/loop.py`](https://github.com/rbentaarit/kubelm/blob/main/eval/runner/loop.py)).
+   The v0/v0.1 corpora carried an older, under-specified prompt that
+   stopped at top-level status (e.g. "Pending") rather than drilling
+   to the root cause. The corrected prompt instructs resource-aware
+   drill-down (workload→Pods, PVC→StorageClass, scheduling→nodes
+   and taints) and explicit anti-fabrication wording. Applied via
+   [`data/seed/bake_system_prompt.py`](https://github.com/rbentaarit/kubelm/blob/main/data/seed/bake_system_prompt.py),
+   which preserves provenance and re-runs the same record format
+   conversion as v0.1.
+2. **Corrective seed for `pod-insufficient-cpu-001`.** The v0 and
+   v0.1 corpora excluded this scenario because no generator
+   (gpt-5.4, qwen2.5-7b) produced a clean rubric-passing,
+   fabrication-free trajectory for it — the kind cluster's control-
+   plane node was still NotReady at scenario setup time, so the
+   scheduler parked the Pod on a transient `node.kubernetes.io/not-
+   ready` taint instead of surfacing the intended `Insufficient cpu`
+   verdict. The harness was hardened (`kind create --wait 90s` plus
+   a `message_contains` settle matcher targeting the
+   `PodScheduled=False` condition), then qwen2.5:32b was used to
+   generate a single rubric-passing corrective trajectory + 10
+   variants for this scenario. **v0.2 is the first corpus that
+   covers all 33 scenarios from the contemporary library** —
+   v0/v0.1's "32 of 33" gap is closed.
+
+| File | Records | Source | Pass filter |
+|---|---|---|---|
+| `v02/gpt-5.4-2026-05-20.jsonl` | 31 | v01 corpus, prompt swapped | 30 |
+| `varied/v02/gpt-5.4-2026-05-20-varied.jsonl` | 310 | v01 corpus, prompt swapped | 300 |
+| `v02/qwen2.5-7b-2026-05-20.jsonl` | 25 | v01 corpus, prompt swapped | 20 |
+| `varied/v02/qwen2.5-7b-2026-05-20-varied.jsonl` | 250 | v01 corpus, prompt swapped | 200 |
+| `v02/pod-insufficient-cpu-corrective-2026-05-22.jsonl` | 1 | corrective bench (qwen2.5:32b) | 1 |
+| `varied/v02/pod-insufficient-cpu-corrective-2026-05-22-varied.jsonl` | 10 | 10× variants | 10 |
+
+**Training set after filter: 561 records across all 33 scenarios**
+(selection criteria same as v0.1: `conclusion_rubric_passed` +
+`schema_passed` + `termination_label == complete` +
+`grounding_v2_has_fabrication == false`). Same schema_version 1
+record format. Same K8sGPT v0.4.32 / MCP 2025-03-26 pins.
+
+The training configuration used by `kubelm-edge-v0.3` is
+[`training/configs/kubelm-edge-v02-qwen35.yaml`](https://github.com/rbentaarit/kubelm/blob/main/training/configs/kubelm-edge-v02-qwen35.yaml)
+— Qwen3.5-2B base, identical corpus to
+`training/configs/kubelm-edge-v02.yaml`. Both configs trained off
+the same 561 records; the Qwen3.5-2B run shipped (see "Models
+trained on this dataset" above), the Qwen2.5-1.5B run overfit and
+was not released.
+
 ## Changelog
 
+- **v0.2 (2026-05-22):** Third seed cut. System prompt swapped to
+  the corrected `DEFAULT_SYSTEM_PROMPT` across every record;
+  `pod-insufficient-cpu-001` covered via a new qwen2.5:32b
+  corrective seed + 10 variants (the harness was hardened with
+  `kind create --wait 90s` so this scenario is now solvable). 561
+  records after filter, all 33 contemporary scenarios covered.
+  K8sGPT v0.4.32.
 - **v0.1 (2026-05-20):** Second seed cut for the v0.1 training
   iteration. +gpt-5.4 (31) +qwen2.5-7b (25) seeds + 560 variants
   from the Stage 5 bench against the 33-scenario library; 550 pass
