@@ -852,6 +852,60 @@ Append-only log of significant decisions. Update when major direction changes.
   train_on_responses_only masking). Lesson (again): audit before
   concluding applies to *my own* extrapolations, not just metrics.
 
+- **2026-05-27:** **kubelm-edge v0.3 ships — Qwen3.5-2B QLoRA, the new
+  headline deployable.** The gated retrain the 2026-05-23 pivot called
+  for is done; it beats both the prior deployable (v0 + corrected
+  prompt) and the qwen2.5-7b reference on every metric. The pivot had
+  first blocked at the training gate: Unsloth's `FastLanguageModel`
+  patches `apply_chat_template` at the method level, polluting tool
+  calls with `<parameter=X>None</parameter>` for every unused schema
+  param (would have trained None-filled verbose calls; the smoke-test
+  gate caught it before the paid run). Fix (commits `f689b4b` +
+  `9d0b0f4`, gated on `restore_base_chat_template: true` so the Qwen2.5
+  path stays byte-identical): restore the base chat template after
+  load, dictify tool-call args (Qwen3.5's template does
+  `arguments|items`, needs a mapping), and — load-bearing —
+  regex-strip the `None` parameter blocks from rendered text. Gate
+  re-ran clean (96.3% masked, zero `None` lines, only real params in
+  the decoded sample). Trained on an H100 (secure, $3.29/hr) because
+  the RTX 6000 Ada ran ~300s/step on Qwen3.5 (Unsloth fast path
+  unavailable — missing `flash-linear-attention` / `causal-conv1d`
+  force the torch reference impl); H100 brought it to ~80–100s/step,
+  36 steps × 1 epoch, ~50 min, ~$3 (session cloud ~$5.60). train_loss
+  0.331, per-step bottomed ~0.14–0.17 — NOT overfit (contrast v0.2's
+  0.024 overfit that regressed rubric). Eval (bench digests: shape-d
+  `c68fe996` for the clean three-model columns, `d71c61d1` for the
+  v0.3 re-run):
+
+  | model | rubric | ref | fabs | schema | complete |
+  |---|---|---|---|---|---|
+  | qwen2.5-1.5b base | 9/35 | 7/35 | 65 | 31/35 | 10/35 |
+  | qwen2.5-7b (reference) | 28/35 | 28/35 | 8 | 34/35 | 33/35 |
+  | kubelm-edge-v0 + prompt | 29/35 | 27/35 | 21 | 32/35 | 33/35 |
+  | **kubelm-edge-v0.3** | **32/35** | **32/35** | **3** | **35/35** | **35/35** |
+
+  All four are narr_pass 35/35. Wins vs the prior deployable: rubric
+  +3, ref +5, fabs **7× lower** (3 vs 21), complete +2, schema perfect.
+  Wins vs qwen2.5-7b at ~1/3 footprint: rubric +4, ref +4, fabs ~3×
+  lower, **zero arg/name hallucinations**. 3 fabrications over 35
+  trajectories is the cleanest grounded result the project has
+  produced, frontier comparisons included — the render fix plus the
+  natively-grounded Qwen3.5-2B base did what the pivot predicted.
+  Serving config (baked into the model card): `llama-server --jinja
+  -c 16384 -ngl 99` with `chat_template_kwargs: {enable_thinking:
+  false}` in the /v1 payload (`reasoning_effort` is ignored by
+  llama-server's Qwen3.5 path). `-c 16384` matches training
+  `max_seq_length`; the first shape-d run capped at `-c 8192` errored
+  10/35 on long trajectories — the same overflow class as the
+  2026-05-28 0.8B entry below. ollama's `qwen3next` loader rejects the
+  GGUF ("layer 24 missing attn_qkv/attn_gate"); llama.cpp loads it
+  fine, so the GGUF is valid and the Modelfile publish is deferred to
+  an upstream fix. HF release: `rbentaarit/kubelm-edge-v0.3-GGUF`
+  (1.2 GB, commit `865b5075`) + `rbentaarit/kubelm-edge-v0.3-lora`
+  (83 MB adapter); dataset card updated with the v0.2 corpus + v0.3
+  entry. Decision: **v0.3 is the kubelm-edge headline; v0 + corrected
+  prompt is no longer the deployable.**
+
 - **2026-05-28:** **Qwen3.5-0.8B untrained bake-off — clean 35/35
   column; the two HTTP 400s were a serving artifact, not a model
   limit.** The first run (bench `d765b109`) errored on 2/35 scenarios,
