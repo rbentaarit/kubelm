@@ -13,7 +13,9 @@ is not written to the trajectory file.
 
 HTTP errors (4xx/5xx, including rate limits) propagate as
 requests.HTTPError; the runner does not catch them, so the recorder's
-context-manager exit writes end("error", ...). No retries by design.
+context-manager exit writes end("error", ...). The response body is
+folded into the error message so that reason (e.g. context-size
+overflow) survives into the trajectory. No retries by design.
 """
 
 from __future__ import annotations
@@ -105,7 +107,18 @@ class OpenAICompatBackend:
         t0 = time.monotonic()
         resp = self.http.post(url, json=payload, headers=headers, timeout=self.timeout)
         latency_ms = (time.monotonic() - t0) * 1000
-        resp.raise_for_status()
+        try:
+            resp.raise_for_status()
+        except requests.HTTPError as exc:
+            # raise_for_status drops the response body, where llama.cpp/vLLM
+            # put the actual reason (e.g. "request exceeds the available
+            # context size"). Fold it into the message so the recorder's
+            # end("error", ...) is self-diagnosing. Same type, so the
+            # runner's no-catch contract is unchanged.
+            body = resp.text.strip()
+            if body:
+                raise requests.HTTPError(f"{exc} | body: {body[:500]}", response=resp) from exc
+            raise
         data = resp.json()
 
         choice = data["choices"][0]["message"]

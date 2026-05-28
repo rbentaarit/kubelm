@@ -10,9 +10,10 @@ from eval.runner import OpenAICompatBackend
 
 
 class _FakeResponse:
-    def __init__(self, body: dict[str, Any], status: int = 200) -> None:
+    def __init__(self, body: dict[str, Any], status: int = 200, text: str = "") -> None:
         self._body = body
         self.status_code = status
+        self.text = text
         self.headers: dict[str, str] = {"Content-Type": "application/json"}
 
     def raise_for_status(self) -> None:
@@ -157,6 +158,18 @@ def test_url_is_chat_completions_path() -> None:
 def test_http_error_raises() -> None:
     session = _FakeSession(_FakeResponse({}, status=500))
     with pytest.raises(requests.HTTPError):
+        _backend(session).chat([], [])
+
+
+def test_http_error_folds_response_body() -> None:
+    session = _FakeSession(
+        _FakeResponse(
+            {},
+            status=400,
+            text="request exceeds the available context size (16384 tokens)",
+        )
+    )
+    with pytest.raises(requests.HTTPError, match="exceeds the available context size"):
         _backend(session).chat([], [])
 
 
