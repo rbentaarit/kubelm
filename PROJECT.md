@@ -851,3 +851,40 @@ Append-only log of significant decisions. Update when major direction changes.
   checks (FastLanguageModel text load, no-think chat-template render,
   train_on_responses_only masking). Lesson (again): audit before
   concluding applies to *my own* extrapolations, not just metrics.
+
+- **2026-05-28:** **Qwen3.5-0.8B untrained bake-off — clean 35/35
+  column; the two HTTP 400s were a serving artifact, not a model
+  limit.** The first run (bench `d765b109`) errored on 2/35 scenarios,
+  which read like the 0.8B choking on hard cases. It wasn't.
+  `deployment-paused-001` and `job-always-fails-001` are scenarios
+  where `analyze` returns empty (intentional paused state / sparse
+  output), so the untrained base loops without concluding — appending a
+  tool-call/result pair every step until the cumulative prompt exceeds
+  llama-server's `-c 16384` window, returning HTTP 400 on the final
+  call. Same failure class as the v0.3 `-c 8192` overflow. It was opaque
+  because the backend's `raise_for_status` discarded the response body
+  (the "exceeds available context size" reason). Two fixes: surface the
+  body into the trajectory (`eval/runner/openai_backend.py`, commit
+  `c65e433`) and bump the bake-off serve window to `-c 32768` (commit
+  `8e3d33a`). Re-served clean (bench `651e7952`): **0 errored, all 35
+  ran.** `deployment-paused` → `complete`; `job-always-fails` →
+  `no_conclusion` (the larger window lets it finish, but the base still
+  won't commit a conclusion — a real model property, not infra).
+  **Clean untrained, no-think column (`651e7952`):** complete 27/35,
+  ref_pass 30/35, rubric 19/35, schema **35/35**, **0 name/arg
+  hallucinations**, fabs 7, 0 errored. Footprint **553 MB GGUF /
+  ~2–3 GB RAM** (vs 1.2 GB / 6–8 GB for v0.3); llama-server only (same
+  ollama loader incompatibility as v0.3). The partial run's fabs=2 was
+  an artifact — the 2 errored scenarios weren't scored; the honest
+  figure is 7, still far below untrained Qwen2.5-1.5B's 65. Generalized
+  validity rule: trajectory length tracks non-termination, so a
+  too-small `-c` silently converts `no_conclusion` runs into dropped
+  errors and inflates the column — match `-c` to training
+  `max_seq_length` at minimum, and bump higher for an untrained base
+  (which loops more than a fine-tune that terminates early). Decision
+  **OPEN** (no GPU green-lit): the gap to close is rubric (19) and
+  termination (8 `no_conclusion`), against a schema-perfect,
+  zero-hallucination untrained baseline at 1/2 the footprint of v0.3 —
+  a credible ultra-edge tier if a fine-tune closes it. Alternative is
+  to proceed to Phase 6 (Helm) with v0.3 as default, v0 as constrained
+  fallback, and 0.8B as a future candidate.
