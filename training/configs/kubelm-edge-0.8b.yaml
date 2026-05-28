@@ -1,0 +1,122 @@
+# kubelm-edge 0.8B (Qwen3.5-0.8B base) — ultra-edge tier fine-tune
+#
+# Loaded by training/sft.py. Same v0.2 corpus, recipe, and Qwen3.5
+# render-fix path as the shipped v0.3 (kubelm-edge-v02-qwen35.yaml);
+# the only change is the BASE MODEL (2B -> 0.8B).
+#
+# Why (decisions log 2026-05-28): the untrained Qwen3.5-0.8B bake-off
+# (clean bench 651e7952) is schema-perfect and hallucination-free out
+# of the box (schema 35/35, 0 name/arg halluc, fabs 7) at 553 MB GGUF /
+# ~2-3 GB RAM — half v0.3's footprint. The gap a fine-tune targets is
+# rubric (19/35) and termination (8 no_conclusion). If training closes
+# rubric toward v0.3's 32 and restores early termination, this is the
+# ultra-edge tier.
+#
+# ARCHITECTURE NOTE (verified against live config.json 2026-05-28):
+# Qwen/Qwen3.5-0.8B is `Qwen3_5ForConditionalGeneration` / model_type
+# `qwen3_5` — the SAME architecture class as the v0.3 2B, just smaller
+# (24 layers, hybrid: 18 linear_attention / 6 full_attention; NOT MoE;
+# tie_word_embeddings). So the entire v0.3 path is proven on this arch:
+# FastLanguageModel load, restore_base_chat_template render fix, dictify,
+# None-strip, ChatML masking, GGUF export, llama-server serving.
+#
+# === TIER-1 BOX CHECKS (verify on the GPU box BEFORE the full paid run;
+#     silent-corruption risks --dry-run cannot catch) ===
+#   1. FastLanguageModel.from_pretrained loads Qwen3.5-0.8B (it is a VLM;
+#      confirm the text backbone loads and the vision tower isn't pulled,
+#      same as the 2B). If it rejects, use Unsloth's FastModel text path.
+#   2. Decoded sample after restore_base_chat_template has NO
+#      <parameter=X>None</parameter> lines (the Qwen3.5 render bug; the
+#      regex-strip in sft.py is the backstop).
+#   3. train_on_responses_only masking ratio ~90-99% (ChatML markers are
+#      identical to the 2B, so this should pass unchanged).
+#
+# === TIER-2 (won't-start / cost) ===
+#   - Linear-attention layers need `flash-linear-attention` +
+#     `causal-conv1d`. On the v0.3 2B run these were MISSING -> Unsloth
+#     fell back to the torch reference impl (~300s/step on RTX 6000 Ada,
+#     forced the H100). 0.8B is ~40% the params so per-step is faster,
+#     but it is the same fallback regime. INSTALL both libs on the box
+#     this time to attempt the fast path before defaulting to an H100.
+#   - Fine-tune the post-trained `Qwen/Qwen3.5-0.8B` (what the bake-off
+#     benchmarked), NOT `Qwen/Qwen3.5-0.8B-Base` (pretrain only).
+
+base_model: Qwen/Qwen3.5-0.8B
+base_model_revision: main   # bump to a commit SHA before publication
+
+chat_template: qwen3.5      # informational; sft.py uses the tokenizer's bundled template
+# Same Qwen3.5 render bug as the 2B (per-parameter template enumerates
+# unused tool params as literal `None`). Keep the fix on. See sft.py.
+restore_base_chat_template: true
+max_seq_length: 16384       # matches v0.3; the trained model concludes
+                            # early so trajectories fit (the -c 32768
+                            # bake-off bump was only for the LOOPING
+                            # untrained base — fine-tuning should remove
+                            # the need for it).
+
+# Dataset — IDENTICAL to v0.3 (v0.2 corpus, corrected prompt baked in,
+# 561 records after filter, all 33 scenarios covered).
+dataset:
+  format: jsonl
+  sources:
+    - data/seed/v02/gpt-5.4-2026-05-20.jsonl
+    - data/seed/varied/v02/gpt-5.4-2026-05-20-varied.jsonl
+    - data/seed/v02/qwen2.5-7b-2026-05-20.jsonl
+    - data/seed/varied/v02/qwen2.5-7b-2026-05-20-varied.jsonl
+    - data/seed/v02/pod-insufficient-cpu-corrective-2026-05-22.jsonl
+    - data/seed/varied/v02/pod-insufficient-cpu-corrective-2026-05-22-varied.jsonl
+  filter:
+    quality.conclusion_rubric_passed: true
+    quality.schema_passed: true
+    quality.termination_label: complete
+    quality.grounding_v2_has_fabrication: false
+  shuffle_seed: 0xb1ab
+
+# LoRA / QLoRA — recipe held constant from v0.3. target_modules match
+# only the 6 full_attention layers' q/k/v/o_proj plus every layer's FFN
+# (gate/up/down_proj); the 18 linear_attention layers' projections are
+# NOT adapted — same as the 2B v0.3 run (which reached rubric 32), so
+# this is the proven setup, not a gap. Revisit only if the loss curve
+# misbehaves or eval underfits.
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0.0
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  bias: none
+  task_type: CAUSAL_LM
+
+quantization:
+  load_in_4bit: true
+  bnb_4bit_compute_dtype: bfloat16
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_use_double_quant: true
+
+training:
+  # Start at 1 epoch to mirror v0.3 (comparable). RISK: the 0.8B has
+  # less capacity than the 2B on the same ~560-record corpus, so 1 epoch
+  # may UNDERFIT (the opposite of the 2B's 2-epoch overfit). Watch the
+  # per-step loss — if it bottoms high and is still descending at the
+  # end, 2 epochs is the first knob to turn. Do not pre-decide.
+  num_train_epochs: 1
+  per_device_train_batch_size: 8
+  gradient_accumulation_steps: 2
+  learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  optim: paged_adamw_8bit
+  bf16: true
+  fp16: false
+  max_grad_norm: 1.0
+  logging_steps: 5
+  save_strategy: epoch
+  save_total_limit: 3
+  seed: 42
+
+output:
+  adapter_dir: adapter
+  merged_dir: merged
+  log_path: training_log.jsonl
+
+report_to: []
