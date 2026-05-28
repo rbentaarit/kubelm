@@ -1,0 +1,35 @@
+# Qwen3.5-0.8B untrained bake-off (2026-05-27).
+#
+# Purpose: determine whether the untrained Qwen3.5-0.8B base model has
+# viable tool-calling behaviour on the K8sGPT MCP surface before
+# committing any GPU budget to fine-tuning. Methodology mirrors the
+# Qwen3.5-2B no-think confirmation run that preceded v0.3.
+#
+# Serve the GGUF before running:
+#   llama-server \
+#     -m ~/kubelm-0.8b-bakeoff/Qwen_Qwen3.5-0.8B-Q4_K_M.gguf \
+#     --host 127.0.0.1 --port 8089 \
+#     --jinja \
+#     -c 32768 \
+#     -ngl 99
+#
+# Context: -c 16384 (bench d765b109, 2026-05-27) overflowed on the two
+# scenarios where the untrained 0.8B base never terminates and loops to
+# max_steps -- deployment-paused-001 (analyze returns empty for the
+# intentional paused state) and job-always-fails-001 (many failing pods).
+# Both errored HTTP 400 ("request exceeds the available context size") on
+# the final model call. Unlike trained v0.3, the base model doesn't
+# conclude early, so it needs a larger window to complete the run. The
+# KV cache for a 0.8B Q4_K_M is cheap, so -c 32768 is nearly free.
+#
+# Run with:
+#   uv run python -m eval.scenarios bench \
+#       --models-file eval/scenarios/benchmarks/qwen35-0.8b-bakeoff.yaml
+
+- name: qwen3.5-0.8b-base
+  backend_url: http://127.0.0.1:8089/v1
+  model: qwen3.5-0.8b-base
+  temperature: 0.0
+  max_tokens: 2048
+  chat_template_kwargs:
+    enable_thinking: false
