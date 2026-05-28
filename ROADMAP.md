@@ -439,7 +439,7 @@ metrics, don't release. Iterate the data.
       kubelm-standard
 - [ ] Blog post on the fine-tuning process and results
 
-### Post-v0 iteration status (v0.1 / v0.2)
+### Post-v0 iteration log (v0.1 / v0.2 / v0.3)
 
 Iteration on the shipped `kubelm-edge` model + the eval harness, not a
 new phase. Full detail in the PROJECT.md decisions log.
@@ -451,30 +451,87 @@ new phase. Full detail in the PROJECT.md decisions log.
   after `reference_calls` v2, v0's true ref_pass is 31/33 — at parity
   with qwen2.5-7b (32). v0 already matches/beats qwen2.5-7b on every
   metric at ~1/4 the footprint; the core thesis is validated.
-- **v0.2 (prompt + benchmark validity) — in progress.**
-  - Corrected root-cause **system prompt** (commit `b3bb99f`): a free
-    inference-time reliability gain (rubric 24→29, fabrications →11,
-    narrative 33/33) — the "ship the prompt" branch this project
-    anticipated. Baked into the v0.2 corpus (`data/seed/v02/*`).
-  - **Benchmark-validity fixes:** pod-insufficient-cpu-001 was
-    unsolvable (kind started the Pod before the node was Ready);
-    fixed with `kind create --wait` + a `message_contains` settle
-    matcher (commit `03df427`). v0.2 corpus now covers all 33.
-  - **Base-model re-survey + bake-off → PIVOT to Qwen3.5-2B.** Survey
-    excluded Llama/Gemma (license #6) and Kimi/DeepSeek (no small dense
-    models). Bake-off then no-think confirmation: Qwen3-1.7B's lead was
-    thinking-only and collapsed no-think, but **Qwen3.5-2B holds up and
-    improves no-think** — untrained, apples-to-apples it beats
-    Qwen2.5-1.5B on every axis (ref 31 vs 6, rubric 19 vs 8, schema
-    35 vs 29, **0 fabrications vs 59**). Pivot config
-    `training/configs/kubelm-edge-v02-qwen35.yaml` (text Q4_K_M GGUF
-    1.3 GB fits the edge target; Unsloth supports text fine-tuning the
-    family). Qwen2.5-1.5B kept as fallback (identical corpus). Residual
-    risk: 2B per-step latency on a real edge box vs the <5s target —
-    measure at eval.
-  - **Open:** gated v0.2 retrain on Qwen3.5-2B (cloud cost; 3 Tier-1
-    box checks) + 2 multi-hop drill-to-cause eval scenarios (1
-    validated, 1 a K8sGPT MCP readiness blind-spot, held).
+- **v0.2 (Qwen2.5-1.5B retrain on corrected corpus) — overfit, not
+  released.** Trained on the v0.2 corpus (561 records, corrected system
+  prompt baked in, pod-insufficient-cpu corrective seed added). Train
+  loss bottomed at 0.024 — same overfit signal as v0.1's failed
+  3-epoch run. Result: rubric 23 (regressed from v0+prompt's 29),
+  schema 35/35 (perfect), fabs 4. The free corrected prompt at inference
+  beats the retrain on the headline metric. Not released.
+  - Corrected root-cause **system prompt** (commit `b3bb99f`) is the
+    durable win from this cycle: rubric 24→29, fabs →11, narrative
+    33/33 at inference on the shipped v0 GGUF — no retrain needed.
+  - **Base-model pivot to Qwen3.5-2B**: bake-off then no-think
+    confirmation showed Qwen3.5-2B holds up no-think (unlike
+    Qwen3-1.7B, which collapsed) and beats untrained Qwen2.5-1.5B on
+    every axis (ref 31 vs 6, rubric 19 vs 8, **0 fabrications vs 59**).
+    Pivot blocked at the GPU gate due to a None-pollution bug in
+    Unsloth's Qwen3.5 tokenizer path; fixed in v0.3.
+- **v0.3 (Qwen3.5-2B QLoRA) — SHIPPED 2026-05-27.**
+  [`rbentaarit/kubelm-edge-v0.3-GGUF`](https://huggingface.co/rbentaarit/kubelm-edge-v0.3-GGUF) +
+  [`rbentaarit/kubelm-edge-v0.3-lora`](https://huggingface.co/rbentaarit/kubelm-edge-v0.3-lora).
+  Two render-fix mitigations (restore base chat template + regex-strip
+  None-param pollution) gated on `restore_base_chat_template: true`.
+  1 epoch on the v0.2 corpus, train_loss 0.331 (no overfit), ~50 min
+  on 1× H100 SXM (~$3). Served via `llama-server --jinja -c 16384`
+  with `chat_template_kwargs: {enable_thinking: false}`.
+
+  Full bench result (35 scenarios, K8sGPT v0.4.32, MCP 2025-03-26):
+
+  | model | rubric | ref | fabs | schema | complete |
+  |---|---|---|---|---|---|
+  | qwen2.5-7b (reference) | 28/35 | 28/35 | 8 | 34/35 | 33/35 |
+  | kubelm-edge-v0 + prompt | 29/35 | 27/35 | 21 | 32/35 | 33/35 |
+  | **kubelm-edge-v0.3** | **32/35** | **32/35** | **3** | **35/35** | **35/35** |
+
+  Beats qwen2.5-7b on every metric at ~1/3 the footprint. Zero
+  arg/name hallucinations. Digest:
+  `eval/results/summaries/shape-d-2026-05-27.json`.
+
+  Serving constraint: ollama 0.23.1's `qwen3next` loader rejects this
+  GGUF; use `llama-server`. Revisit when ollama's Qwen3.5 loader
+  stabilises.
+- **0.8B ultra-edge candidate (Qwen3.5-0.8B base) — evaluated, not yet
+  trained.** A bake-off to decide whether the smaller base is worth GPU
+  budget. Untrained, no-think (clean bench `651e7952`, 35 scenarios):
+  complete 27/35, ref 30/35, rubric 19/35, schema **35/35**, **0
+  name/arg hallucinations**, fabs 7 — schema-perfect and
+  hallucination-free out of the box at **553 MB GGUF / ~2–3 GB RAM**
+  (half v0.3's footprint; llama-server only). The gap a fine-tune would
+  target is rubric (19) and termination (8 `no_conclusion`). A first
+  run capped at `-c 16384` errored on 2/35 — not a model limit but
+  context overflow: the untrained base loops without concluding until
+  the prompt exceeds the window. Re-serving at `-c 32768` cleared it
+  (the harness now folds the server's error body into the trajectory,
+  commit `c65e433`; serve-window bumped, commit `8e3d33a`). Decision
+  open: fine-tune for an ultra-edge tier, or proceed to Phase 6 with
+  v0.3.
+
+### Edge-tier deployment options
+
+Two GGUFs are now published, targeting different resource floors:
+
+| | kubelm-edge-v0 (Qwen2.5-1.5B) | kubelm-edge-v0.3 (Qwen3.5-2B) |
+|---|---|---|
+| GGUF | ~940 MB | 1.2 GB |
+| RAM | 4 GB | 8 GB |
+| Serving | ollama or llama-server | llama-server only |
+| Rubric | 29/35 (with corrected prompt) | 32/35 |
+| Fabrications | 21 | 3 |
+
+v0 is the right choice for constrained or air-gapped environments
+where ollama is the only available serving layer or RAM is capped at
+4 GB. v0.3 is the right choice whenever the hardware can afford 8 GB.
+
+A third, **ultra-edge** tier (Qwen3.5-0.8B, ~553 MB / 2–3 GB RAM) is
+under evaluation but not yet trained or published — see the 0.8B
+candidate entry above. It would only ship if a fine-tune closes its
+rubric and termination gap.
+
+The Qwen2.5-1.5B line (v0) is not actively retrained on the same
+cadence as the main Qwen3.5 line — it gets a new release when there
+is a specific improvement (corpus addition, prompt fix, recipe change)
+that measurably moves its metrics. Don't retrain it speculatively.
 
 ---
 
@@ -536,6 +593,12 @@ results across the full three-tier ladder.
   cluster" → kubelm-edge ships first as v0 (Phase 5). kubelm-
   standard and kubelm-pro are the "more capability, more memory"
   variants that follow.
+- **Base model per tier is not fixed.** v0.3's Qwen3.5-2B pivot
+  showed that the best base for a given parameter count changes as
+  the model landscape evolves. Re-survey bases at each tier before
+  committing to a training run. The eval-first methodology makes
+  this cheap: bake-off untrained + no-think confirmation before
+  any GPU spend.
 
 ### Phase 7 checklist
 
