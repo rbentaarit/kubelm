@@ -514,25 +514,32 @@ the model that fits their hardware, from the smallest local box up to a
 dev machine. Each tier is judged on **fitness for its own resource
 bracket**, not against the tier above.
 
-| tier | model | GGUF / RAM | rubric | CPU step¹ | serving |
-|---|---|---|---|---|---|
-| ultra-edge | Qwen3.5-0.8B (1ep) | 517 MB / 2–3 GB | 24/35 | ~5.5 s | llama-server |
-| edge | Qwen2.5-1.5B (v0) | 940 MB / 4 GB | 29/35² | ~9.6 s | ollama or llama-server |
-| edge+ | Qwen3.5-2B (v0.3) | 1.2 GB / 8 GB | 32/35 | ~8.7 s | llama-server |
-| standard | ~3B (planned) | larger | — | — | — |
+| tier | model | GGUF | serving RAM¹ | rubric | step @2-core x86² | serving |
+|---|---|---|---|---|---|---|
+| ultra-edge | Qwen3.5-0.8B (1ep) | 517 MB | **~0.9 GB** | 24/35 | ~16–32 s | llama-server |
+| edge | Qwen2.5-1.5B (v0) | 940 MB | ~1.1 GB (est) | 29/35³ | ~20–40 s (est) | ollama or llama-server |
+| edge+ | Qwen3.5-2B (v0.3) | 1.2 GB | **~1.6 GB** | 32/35 | ~29–55 s | llama-server |
+| standard | ~3B (planned) | — | — | — | — | — |
 
-¹ Estimated cached per-step latency, CPU-only on M1 Max (`llama-bench
--ngl 0`; an upper bound — commodity CPUs run several× slower). Full
-data: `eval/results/summaries/cpu-latency-2026-05-29.json`.
-² v0 rubric is with the corrected prompt at inference (fabs 21).
+¹ True serving footprint (`--no-mmap` RSS) at `-c 16384` on real x86
+Linux — measured for 0.8B/2B, interpolated for 1.5B. The hybrid
+linear-attention KV cache is compact; add ~0.5 GB compute headroom for
+a ~4 K-token prompt. **The 8 GB/4 GB figures previously documented were
+~5× too conservative — every tier fits a 4 GB node.**
+² Per-step latency on a **real x86 Linux 2-core / 4 GB pod** (typical →
+heavy prompt; `llama-bench -ngl 0 -t 2`). Full investigation ~1–4 min.
+More cores scale ~linearly. (M1+Accelerate is ~2× faster — an
+optimistic ceiling; kind-on-Mac-VM was ~10× slower — discard.) Data:
+`eval/results/summaries/cpu-latency-2026-05-29.json`.
+³ v0 rubric is with the corrected prompt at inference (fabs 21).
 
-Pick by hardware: **ultra-edge** for the smallest/most constrained
-local box (fastest CPU step, closest to the <5 s/step target);
-**edge** when ollama is the only serving layer or RAM caps at 4 GB;
-**edge+** whenever the box affords 8 GB and wants the best quality.
-Latency surprise: the 2B (Qwen3.5 hybrid linear-attention) processes
-prompts faster than the 1.5B (Qwen2.5 dense), so the ladder is not
-strictly monotonic in params.
+**RAM is not the gate** — all tiers fit ~2 GB. Pick by: **latency**
+(0.8B fastest, ~½ the 2B's per-step), **quality** (2B best rubric), and
+**serving layer** (v0/1.5B run on ollama; the Qwen3.5 tiers need
+llama-server). Latency surprise: the 2B (Qwen3.5 hybrid
+linear-attention) processes prompts faster *per parameter* than the
+1.5B (Qwen2.5 dense), so the ladder is not strictly monotonic in
+params.
 
 The Qwen2.5-1.5B line (v0) is not actively retrained on the same
 cadence as the main Qwen3.5 line — it gets a new release when there
@@ -547,12 +554,15 @@ that measurably moves its metrics. Don't retrain it speculatively.
 deploys kubelm CPU-only behind an OpenAI-compatible endpoint for
 K8sGPT, validated end-to-end on kind (chart-deployed model drove a real
 K8sGPT-MCP investigation to a correct conclusion). Managed-cluster pass
-skipped; screencast optional. **Follow-up (not a blocker):** define the
-optimal/acceptable **CPU+RAM performance envelope per tier** — sweep
-cores × model × prompt size so sizing guidance maps a config →
-expected per-step latency, not just a RAM floor. Today's data is a RAM
-floor + spot latencies (0.8B@2 cores ~15 s/step / ~76 s investigation;
-2B@6 cores ~48 s/step); see `eval/results/summaries/cpu-latency-2026-05-29.json`.
+skipped; screencast optional. **CPU+RAM envelope: DONE (2026-05-29)** —
+measured on a real x86 Linux 2-core/4 GB node (not kind-on-Mac, which
+was a pathological ~10× outlier). Key correction: serving RAM is ~5×
+lower than documented (0.8B ~0.9 GB, 2B ~1.6 GB at `-c 16384`) — **every
+tier fits a 4 GB node; CPU/latency, not RAM, is the constraint.** Real
+2-core latency: 0.8B ~16–32 s/step, 2B ~29–55 s/step (full
+investigation ~1–4 min). Recommended pod specs + data in
+`eval/results/summaries/cpu-latency-2026-05-29.json`; chart resource
+defaults right-sized to match.
 
 **Goal:** Helm chart that deploys kubelm + inference engine alongside
 K8sGPT in a real cluster.

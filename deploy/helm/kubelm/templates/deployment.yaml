@@ -31,7 +31,10 @@ spec:
             - "-c"
             - {{ .Values.server.contextSize | quote }}
             - "-t"
-            - {{ .Values.server.threads | quote }}
+            {{- /* Pin threads to the CPU limit so the server doesn't spawn
+                   more threads than its cgroup quota and get CFS-throttled.
+                   Override with server.threads; requires whole-core limits. */}}
+            - {{ .Values.server.threads | default .Values.resources.limits.cpu | quote }}
             - "--alias"
             - {{ .Values.model.servedName | quote }}
             {{- if .Values.server.disableThinking }}

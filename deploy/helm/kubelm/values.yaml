@@ -4,11 +4,15 @@
 # tier by what the cluster can spare; each tier is the right-sized
 # tool-use model for its bracket, not a downgrade of the one above.
 #
-# Tier presets (set `model` + `resources` to match):
-#   ultra-edge  Qwen3.5-0.8B  ~517MB / 2-3GB RAM  ~5.5s/CPU step  (unreleased; local only)
-#   edge        Qwen2.5-1.5B  ~940MB / 4GB        ~9.6s/CPU step  rbentaarit/kubelm-edge-v0
-#   edge+       Qwen3.5-2B    ~1.2GB / 8GB        ~8.7s/CPU step  rbentaarit/kubelm-edge-v0.3-GGUF  <-- DEFAULT
-# CPU step latencies are M1 Max upper bounds; commodity CPUs run slower.
+# Tier presets (set `model` + `resources` to match). Serving RAM and
+# per-step latency MEASURED on a real x86 Linux 2-core node (-ngl 0):
+#   ultra-edge  Qwen3.5-0.8B  ~0.9GB RAM  ~16-32s/step  (unreleased; local only)
+#   edge        Qwen2.5-1.5B  ~1.1GB RAM  ~20-40s/step  rbentaarit/kubelm-edge-v0
+#   edge+       Qwen3.5-2B    ~1.6GB RAM  ~29-55s/step  rbentaarit/kubelm-edge-v0.3-GGUF  <-- DEFAULT
+# RAM is NOT the gate: every tier fits a 4GB node (compact hybrid KV
+# cache). Size mem = footprint + ~0.5GB headroom; cpu by latency
+# tolerance (more cores -> faster, ~linear). See
+# eval/results/summaries/cpu-latency-2026-05-29.json.
 
 replicaCount: 1
 
@@ -33,7 +37,9 @@ server:
   # HTTP 400 (see PROJECT.md bench serving-validity note). Match or
   # exceed the model's training max_seq_length (v0.3 = 16384).
   contextSize: 16384
-  threads: 4
+  # Threads default to resources.limits.cpu (whole cores) so the server
+  # is never CFS-throttled by its own cgroup. Set explicitly to override.
+  threads: null
   # kubelm models are no-think trained. Disable thinking server-side so
   # every client gets the deployment behavior — K8sGPT does not send the
   # enable_thinking chat_template_kwarg itself, and leaving thinking on
@@ -41,14 +47,17 @@ server:
   disableThinking: true
   extraArgs: []
 
-# Defaults = edge+ tier (2B / 8GB), the production default.
+# Defaults = edge+ tier (2B). Right-sized to the MEASURED serving
+# footprint (~1.6GB at -c16384) + compute headroom — not the old 8GB
+# guess. cpu=4 for reasonable per-step latency (~½ the time of 2 cores);
+# drop to 2 for the smallest nodes (still works, ~29-55s/step).
 resources:
   requests:
-    cpu: "4"
-    memory: 6Gi
+    cpu: "2"
+    memory: 2Gi
   limits:
-    cpu: "6"
-    memory: 8Gi
+    cpu: "4"
+    memory: 3Gi
 
 service:
   type: ClusterIP

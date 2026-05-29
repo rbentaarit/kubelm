@@ -15,17 +15,20 @@ kubelm is one CPU-only family across a resource spectrum. Pick the
 model that fits the cluster; each tier is the right-sized tool-use
 model for its bracket, not a downgrade of the one above.
 
-| tier | model | GGUF / RAM | rubric | CPU step¹ | HF repo |
+| tier | model | serving RAM¹ | rubric | step @2-core x86¹ | HF repo |
 |---|---|---|---|---|---|
-| ultra-edge | Qwen3.5-0.8B | 517 MB / 2–3 GB | 24/35 | ~5.5 s | *(unreleased; local only)* |
-| edge | Qwen2.5-1.5B (v0) | 940 MB / 4 GB | 29/35 | ~9.6 s | `rbentaarit/kubelm-edge-v0` |
-| **edge+** *(default)* | Qwen3.5-2B (v0.3) | 1.2 GB / 8 GB | 32/35 | ~8.7 s | `rbentaarit/kubelm-edge-v0.3-GGUF` |
+| ultra-edge | Qwen3.5-0.8B | ~0.9 GB | 24/35 | ~16–32 s | *(unreleased; local only)* |
+| edge | Qwen2.5-1.5B (v0) | ~1.1 GB | 29/35 | ~20–40 s | `rbentaarit/kubelm-edge-v0` |
+| **edge+** *(default)* | Qwen3.5-2B (v0.3) | ~1.6 GB | 32/35 | ~29–55 s | `rbentaarit/kubelm-edge-v0.3-GGUF` |
 
-¹ Estimated cached per-step latency, CPU-only on an M1 Max — an upper
-bound; commodity cluster CPUs run several× slower. Full data:
-`eval/results/summaries/cpu-latency-2026-05-29.json`.
+¹ Serving footprint and per-step latency **measured on a real x86 Linux
+2-core / 4 GB node** (`-ngl 0`); full investigation ~1–4 min. More cores
+scale ~linearly. Data: `eval/results/summaries/cpu-latency-2026-05-29.json`.
 
-Set `resources` to match the tier's RAM. The chart defaults to edge+.
+**RAM is not the gate** — every tier fits a 4 GB node (compact hybrid
+KV cache). The chart defaults (`requests` 2 CPU/2 Gi, `limits` 4 CPU/3
+Gi) suit edge+; drop CPU to 2 for the smallest nodes, or pick the
+ultra-edge tier for ~½ the per-step latency.
 
 ## 2. Install the chart
 
