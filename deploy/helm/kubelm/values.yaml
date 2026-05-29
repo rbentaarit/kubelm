@@ -1,0 +1,77 @@
+# kubelm Helm chart values.
+#
+# kubelm is one CPU-only model family across a resource spectrum. Pick a
+# tier by what the cluster can spare; each tier is the right-sized
+# tool-use model for its bracket, not a downgrade of the one above.
+#
+# Tier presets (set `model` + `resources` to match):
+#   ultra-edge  Qwen3.5-0.8B  ~517MB / 2-3GB RAM  ~5.5s/CPU step  (unreleased; local only)
+#   edge        Qwen2.5-1.5B  ~940MB / 4GB        ~9.6s/CPU step  rbentaarit/kubelm-edge-v0
+#   edge+       Qwen3.5-2B    ~1.2GB / 8GB        ~8.7s/CPU step  rbentaarit/kubelm-edge-v0.3-GGUF  <-- DEFAULT
+# CPU step latencies are M1 Max upper bounds; commodity CPUs run slower.
+
+replicaCount: 1
+
+model:
+  # GGUF pulled from Hugging Face at pod start via llama.cpp's --hf-repo.
+  # For air-gapped clusters, set cache.persistence + pre-seed the volume
+  # and leave hfRepo empty, then pass model.localPath instead (see README).
+  hfRepo: rbentaarit/kubelm-edge-v0.3-GGUF
+  hfFile: kubelm-edge.Q4_K_M.gguf
+  localPath: ""          # absolute path inside the container; overrides hfRepo if set
+  # Name K8sGPT references when calling the endpoint.
+  servedName: kubelm-edge
+
+server:
+  image:
+    repository: ghcr.io/ggml-org/llama.cpp
+    tag: server
+    pullPolicy: IfNotPresent
+  port: 8080
+  # Context window. Sized generously: long multi-step trajectories can
+  # accumulate context, and a too-small -c turns a long run into an
+  # HTTP 400 (see PROJECT.md bench serving-validity note). Match or
+  # exceed the model's training max_seq_length (v0.3 = 16384).
+  contextSize: 16384
+  threads: 4
+  # enable_thinking:false is a per-request chat_template_kwarg the client
+  # (K8sGPT) sends; the kubelm models are no-think trained, so --jinja is
+  # the only server-side requirement.
+  extraArgs: []
+
+# Defaults = edge+ tier (2B / 8GB), the production default.
+resources:
+  requests:
+    cpu: "4"
+    memory: 6Gi
+  limits:
+    cpu: "6"
+    memory: 8Gi
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# Restrict the model endpoint to K8sGPT pods only (proposes, never
+# exposed broadly). Off by default; enable in shared clusters.
+networkPolicy:
+  enabled: false
+  k8sgptPodSelector:
+    matchLabels:
+      app.kubernetes.io/name: k8sgpt
+
+# HF download cache. emptyDir by default (re-downloads on pod restart);
+# set persistence.enabled for a PVC that survives restarts / air-gap.
+cache:
+  persistence:
+    enabled: false
+    storageClass: ""
+    size: 4Gi
+  emptyDir:
+    medium: ""           # "" = node disk; "Memory" = tmpfs
+    sizeLimit: 4Gi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}

@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubelm.fullname" . }}
+  labels:
+    {{- include "kubelm.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubelm.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kubelm.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      containers:
+        - name: llama-server
+          image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
+          imagePullPolicy: {{ .Values.server.image.pullPolicy }}
+          args:
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - {{ .Values.server.port | quote }}
+            - "--jinja"
+            - "-c"
+            - {{ .Values.server.contextSize | quote }}
+            - "-t"
+            - {{ .Values.server.threads | quote }}
+            - "--alias"
+            - {{ .Values.model.servedName | quote }}
+            {{- if .Values.model.localPath }}
+            - "-m"
+            - {{ .Values.model.localPath | quote }}
+            {{- else }}
+            - "--hf-repo"
+            - {{ .Values.model.hfRepo | quote }}
+            - "--hf-file"
+            - {{ .Values.model.hfFile | quote }}
+            {{- end }}
+            {{- with .Values.server.extraArgs }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.server.port }}
+          env:
+            # llama.cpp caches HF downloads here.
+            - name: LLAMA_CACHE
+              value: /cache
+          volumeMounts:
+            - name: model-cache
+              mountPath: /cache
+          # Model download + load can take minutes on first start; the
+          # startup probe gives it room before liveness/readiness apply.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: model-cache
+          {{- if .Values.cache.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "kubelm.fullname" . }}-cache
+          {{- else }}
+          emptyDir:
+            {{- with .Values.cache.emptyDir.medium }}
+            medium: {{ . }}
+            {{- end }}
+            {{- with .Values.cache.emptyDir.sizeLimit }}
+            sizeLimit: {{ . }}
+            {{- end }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

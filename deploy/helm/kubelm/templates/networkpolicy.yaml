@@ -1,0 +1,23 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "kubelm.fullname" . }}
+  labels:
+    {{- include "kubelm.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "kubelm.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Only K8sGPT may reach the model endpoint. kubelm proposes; it is
+    # not a general-purpose LLM service exposed to the cluster.
+    - from:
+        - podSelector:
+            {{- toYaml .Values.networkPolicy.k8sgptPodSelector | nindent 12 }}
+      ports:
+        - port: http
+          protocol: TCP
+{{- end }}

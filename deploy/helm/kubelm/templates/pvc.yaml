@@ -1,0 +1,17 @@
+{{- if .Values.cache.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "kubelm.fullname" . }}-cache
+  labels:
+    {{- include "kubelm.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- with .Values.cache.persistence.storageClass }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.cache.persistence.size }}
+{{- end }}

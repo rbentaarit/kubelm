@@ -1,0 +1,30 @@
+kubelm ({{ .Chart.AppVersion }}) deployed as release "{{ .Release.Name }}".
+
+The model endpoint (OpenAI-compatible) is reachable in-cluster at:
+
+  http://{{ include "kubelm.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}/v1
+
+Served model name: {{ .Values.model.servedName }}
+
+1. Wait for the model to load (first start pulls the GGUF from Hugging Face):
+
+   kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "kubelm.fullname" . }}
+
+2. Smoke-test the endpoint:
+
+   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "kubelm.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+   curl http://127.0.0.1:{{ .Values.service.port }}/v1/models
+
+3. Point K8sGPT at this endpoint as its OpenAI-compatible backend:
+
+   k8sgpt auth add --backend customrest \
+     --baseurl http://{{ include "kubelm.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}/v1 \
+     --model {{ .Values.model.servedName }}
+
+   (Pinned to K8sGPT v0.4.32 — the version kubelm was validated against.)
+{{- if not .Values.networkPolicy.enabled }}
+
+NOTE: networkPolicy is disabled — the endpoint is reachable by any pod in
+the namespace. Enable networkPolicy.enabled in a shared cluster to restrict
+it to K8sGPT.
+{{- end }}

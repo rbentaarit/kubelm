@@ -1,0 +1,30 @@
+apiVersion: v2
+name: kubelm
+description: >-
+  Deploys a kubelm tool-use model behind an OpenAI-compatible endpoint
+  (llama.cpp server) for K8sGPT to use as its LLM backend. CPU-only;
+  pick a tier by cluster resources (see values.yaml).
+type: application
+
+# Chart version (SemVer) — independent of the model version.
+version: 0.1.0
+
+# The kubelm model line this chart defaults to. Pinned to a specific
+# K8sGPT version: the model + eval scenarios were validated against it.
+appVersion: "kubelm-edge-v0.3"
+
+keywords:
+  - k8sgpt
+  - llm
+  - tool-use
+  - cpu
+  - sre
+
+annotations:
+  kubelm.dev/k8sgpt-version: "0.4.32"
+
+home: https://github.com/rbentaarit/kubelm
+sources:
+  - https://github.com/rbentaarit/kubelm
+maintainers:
+  - name: Ramzi Ben Taarit

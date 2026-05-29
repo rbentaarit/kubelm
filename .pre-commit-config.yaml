@@ -21,6 +21,9 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        # Helm chart templates are Go templates, not valid YAML.
+        # `helm lint` validates them instead.
+        exclude: ^deploy/helm/.*/templates/.*
       - id: check-toml
       - id: check-merge-conflict
       - id: check-added-large-files
