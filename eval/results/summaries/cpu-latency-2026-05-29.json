@@ -39,9 +39,37 @@
       "est_step_latency_s": {"cold_pp2500_gen150": 17.2, "cached_pp1000_gen150": 8.7}
     }
   ],
+  "real_scenario_runs": [
+    {
+      "note": "Full K8sGPT-MCP investigation (not synthetic), llama-server -ngl 0, model latency only (excludes tool/cluster time).",
+      "model": "kubelm-edge-0.8b (1ep)",
+      "scenario": "configmap-missing-001",
+      "threads": 2,
+      "outcome": "complete, rubric PASSED, schema 3/3, refcalls passed (correct conclusion)",
+      "total_model_ms": 75843,
+      "steps": 5,
+      "avg_per_step_s": 15.2,
+      "heaviest_step_s": 52,
+      "heaviest_step_prompt_tokens": 3104,
+      "pp_tps_at_2threads": 72,
+      "tg_tps_at_2threads": 22
+    },
+    {
+      "note": "Earlier in-cluster e2e for contrast.",
+      "model": "kubelm-edge-v0.3 (2B)",
+      "scenario": "configmap-missing-001",
+      "threads": "6 (kind pod, contended)",
+      "outcome": "complete, rubric PASSED",
+      "total_model_ms": 190852,
+      "steps": 4,
+      "avg_per_step_s": 48
+    }
+  ],
   "findings": [
     "0.8B is decisively the fastest CPU tier (~1.6x the 2B's prompt-processing, best token-gen) and the only tier close to the <5s/step target -> validates the ultra-edge rung.",
     "Architectural: Qwen3.5-2B processes prompts FASTER than Qwen2.5-1.5B despite more params (hybrid linear-attention is cheaper on large tool-schema prompts). The ladder is not strictly monotonic in params for prompt-processing.",
-    "No tier achieves <5s on a COLD step even on M1 Max; on weaker CPUs the gap widens -> the latency commitment is real pressure and the ultra-edge tier's reason to exist."
+    "No tier achieves <5s on a COLD step even on M1 Max; on weaker CPUs the gap widens -> the latency commitment is real pressure and the ultra-edge tier's reason to exist.",
+    "Real-scenario proof: 0.8B on 2 cores completes a correct K8sGPT investigation in ~76s (5 steps, ~15s/step) vs 2B on 6 cores at ~191s (4 steps, ~48s/step). Per-step cost is dominated by prompt processing (heaviest step = 52s on a 3104-token prompt), so latency scales with accumulated tool-output size, not step count.",
+    "FOLLOW-UP: define the optimal/acceptable CPU+RAM envelope per tier (sweep cores x model x prompt size) so sizing guidance maps a config -> expected per-step latency, not just RAM floor."
   ]
 }

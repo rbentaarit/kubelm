@@ -543,6 +543,17 @@ that measurably moves its metrics. Don't retrain it speculatively.
 
 ## Phase 6: K8sGPT Integration
 
+**Status: COMPLETE (2026-05-29).** Chart (`deploy/helm/kubelm/`)
+deploys kubelm CPU-only behind an OpenAI-compatible endpoint for
+K8sGPT, validated end-to-end on kind (chart-deployed model drove a real
+K8sGPT-MCP investigation to a correct conclusion). Managed-cluster pass
+skipped; screencast optional. **Follow-up (not a blocker):** define the
+optimal/acceptable **CPU+RAM performance envelope per tier** — sweep
+cores × model × prompt size so sizing guidance maps a config →
+expected per-step latency, not just a RAM floor. Today's data is a RAM
+floor + spot latencies (0.8B@2 cores ~15 s/step / ~76 s investigation;
+2B@6 cores ~48 s/step); see `eval/results/summaries/cpu-latency-2026-05-29.json`.
+
 **Goal:** Helm chart that deploys kubelm + inference engine alongside
 K8sGPT in a real cluster.
 
