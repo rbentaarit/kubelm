@@ -580,8 +580,10 @@ sensible end-to-end behavior on the eval scenarios.
       on a seeded `configmap-missing` scenario to a correct conclusion
       (rubric passed, refcalls passed, schema 2/2, complete; ~48 s/step
       CPU 2B — needed `--timeout` raised, see below).
-- [ ] Tested on a managed K8s cluster (EKS/GKE/AKS) — needs cloud
-      creds/cost; left as a maintainer step
+- [~] Tested on a managed K8s cluster (EKS/GKE/AKS) — **skipped**
+      (2026-05-29): the kind e2e proves the integration; a managed-cluster
+      pass is deferred and not a Phase 6 blocker. Revisit if a real
+      deployment needs it.
 - [x] Sizing guidance documented (`values.yaml` tier presets + guide)
 - [x] Deployment guide in `docs/deploying-kubelm-with-k8sgpt.md`
 - [ ] Demo screencast (optional but high-value)
