@@ -61,6 +61,9 @@ class ModelConfig:
     max_tokens: int = 2048
     reasoning_effort: str | None = None
     chat_template_kwargs: dict[str, Any] | None = None
+    # Per-request HTTP timeout. CPU-served models on large prompts can
+    # exceed the 120s default; raise for slow local/in-cluster backends.
+    request_timeout: float = 120.0
 
     def resolve_api_key(self) -> str | None:
         if self.api_key_env is None:
@@ -76,6 +79,7 @@ class ModelConfig:
             max_tokens=self.max_tokens,
             reasoning_effort=self.reasoning_effort,
             chat_template_kwargs=self.chat_template_kwargs,
+            timeout=self.request_timeout,
         )
 
 
@@ -119,6 +123,7 @@ def _parse_model(raw: Mapping[str, Any], ctx: str) -> ModelConfig:
         max_tokens=int(raw.get("max_tokens") or 2048),
         reasoning_effort=raw.get("reasoning_effort"),
         chat_template_kwargs=ctk,
+        request_timeout=float(raw.get("timeout") or 120.0),
     )
 
 

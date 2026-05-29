@@ -77,6 +77,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     run.add_argument("--max-tokens", type=int, default=2048)
     run.add_argument("--max-steps", type=int, default=16)
     run.add_argument(
+        "--timeout",
+        type=float,
+        default=120.0,
+        help="Per-request HTTP timeout (s). Raise for slow CPU-served backends.",
+    )
+    run.add_argument(
         "--output-dir",
         type=Path,
         default=Path("eval/results"),
@@ -178,6 +184,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         api_key_env=args.api_key_env,
         temperature=args.temperature,
         max_tokens=args.max_tokens,
+        request_timeout=args.timeout,
     )
     run_id = str(uuid.uuid4())
     results = run_one_scenario(

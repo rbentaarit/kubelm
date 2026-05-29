@@ -575,11 +575,11 @@ sensible end-to-end behavior on the eval scenarios.
 - [x] Inference server deployment working — verified on kind: pod Ready,
       `/v1/models` lists `kubelm-edge`, a K8sGPT-style request returns a
       valid `list-resources` tool call (`finish_reason: tool_calls`)
-- [~] K8sGPT integration tested end-to-end on kind — the OpenAI/tool-use
-      serving contract K8sGPT consumes is verified in-cluster, and the
-      eval harness already proves the K8sGPT↔kubelm MCP protocol
-      end-to-end. Remaining: deploy K8sGPT *in-cluster* with `customrest`
-      pointed at the Service + `k8sgpt analyze` on a seeded scenario.
+- [x] K8sGPT integration tested end-to-end on kind — chart-deployed
+      kubelm (v0.3, CPU, no-think) drove a real K8sGPT-MCP investigation
+      on a seeded `configmap-missing` scenario to a correct conclusion
+      (rubric passed, refcalls passed, schema 2/2, complete; ~48 s/step
+      CPU 2B — needed `--timeout` raised, see below).
 - [ ] Tested on a managed K8s cluster (EKS/GKE/AKS) — needs cloud
       creds/cost; left as a maintainer step
 - [x] Sizing guidance documented (`values.yaml` tier presets + guide)
