@@ -556,11 +556,14 @@ K8sGPT in a real cluster.
   `ollama`, or `localai` backend
 - Optional: NetworkPolicy restricting model access to K8sGPT only
 
-**Sizing guidance documented:**
+**Sizing guidance documented** (the CPU-only resource spectrum — see the
+"Tier ladder" section above; `deploy/helm/kubelm/values.yaml` carries the
+presets):
 
-- Tier 1: edge / dev (when `kubelm-edge` ships)
-- Tier 2: production default with `kubelm-standard` (4 cores, 4GB)
-- Tier 3: large / regulated (when `kubelm-pro` ships)
+- ultra-edge: Qwen3.5-0.8B, ~2–3 GB RAM — smallest/most constrained local
+- edge: Qwen2.5-1.5B (v0), ~4 GB — constrained local / ollama-friendly
+- edge+: Qwen3.5-2B (v0.3), ~8 GB — laptop / local dev (chart default)
+- standard: ~3B (planned) — dev workstation
 
 **Test:** deploy to kind + a real managed K8s cluster (EKS / GKE / AKS).
 Verify K8sGPT correctly routes to kubelm and the integration produces
@@ -568,12 +571,19 @@ sensible end-to-end behavior on the eval scenarios.
 
 ### Phase 6 checklist
 
-- [ ] Helm chart skeleton
-- [ ] Inference server deployment working
-- [ ] K8sGPT integration tested end-to-end on kind
-- [ ] Tested on a managed K8s cluster
-- [ ] Sizing guidance documented
-- [ ] Deployment guide in `docs/`
+- [x] Helm chart skeleton (`deploy/helm/kubelm/`; helm lint clean)
+- [x] Inference server deployment working — verified on kind: pod Ready,
+      `/v1/models` lists `kubelm-edge`, a K8sGPT-style request returns a
+      valid `list-resources` tool call (`finish_reason: tool_calls`)
+- [~] K8sGPT integration tested end-to-end on kind — the OpenAI/tool-use
+      serving contract K8sGPT consumes is verified in-cluster, and the
+      eval harness already proves the K8sGPT↔kubelm MCP protocol
+      end-to-end. Remaining: deploy K8sGPT *in-cluster* with `customrest`
+      pointed at the Service + `k8sgpt analyze` on a seeded scenario.
+- [ ] Tested on a managed K8s cluster (EKS/GKE/AKS) — needs cloud
+      creds/cost; left as a maintainer step
+- [x] Sizing guidance documented (`values.yaml` tier presets + guide)
+- [x] Deployment guide in `docs/deploying-kubelm-with-k8sgpt.md`
 - [ ] Demo screencast (optional but high-value)
 - [ ] Blog post on the integration
 
