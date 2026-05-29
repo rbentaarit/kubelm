@@ -34,6 +34,10 @@ spec:
             - {{ .Values.server.threads | quote }}
             - "--alias"
             - {{ .Values.model.servedName | quote }}
+            {{- if .Values.server.disableThinking }}
+            - "--chat-template-kwargs"
+            - {{ "{\"enable_thinking\": false}" | quote }}
+            {{- end }}
             {{- if .Values.model.localPath }}
             - "-m"
             - {{ .Values.model.localPath | quote }}

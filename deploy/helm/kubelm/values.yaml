@@ -34,9 +34,11 @@ server:
   # exceed the model's training max_seq_length (v0.3 = 16384).
   contextSize: 16384
   threads: 4
-  # enable_thinking:false is a per-request chat_template_kwarg the client
-  # (K8sGPT) sends; the kubelm models are no-think trained, so --jinja is
-  # the only server-side requirement.
+  # kubelm models are no-think trained. Disable thinking server-side so
+  # every client gets the deployment behavior — K8sGPT does not send the
+  # enable_thinking chat_template_kwarg itself, and leaving thinking on
+  # produces longer, slower generations on CPU.
+  disableThinking: true
   extraArgs: []
 
 # Defaults = edge+ tier (2B / 8GB), the production default.
