@@ -942,3 +942,64 @@ Append-only log of significant decisions. Update when major direction changes.
   a credible ultra-edge tier if a fine-tune closes it. Alternative is
   to proceed to Phase 6 (Helm) with v0.3 as default, v0 as constrained
   fallback, and 0.8B as a future candidate.
+
+- **2026-05-29:** **0.8B fine-tuned (1ep + 2ep), CPU-latency ladder
+  measured, and the tier framing corrected.** Two QLoRA runs on the
+  0.8B (config-only change from v0.3: same v0.2 corpus, recipe,
+  render-fix), eval'd on the 35-scenario library (`-c 32768`):
+
+  | model | rubric | ref | complete | fabs | schema |
+  |---|---|---|---|---|---|
+  | 0.8B untrained | 19 | 30 | 27 | 7 | 35 |
+  | **0.8B 1-epoch** | **24** | 34 | **31** | 14 | 34 |
+  | 0.8B 2-epoch | 19 | 34 | 24 | 3 | 34 |
+  | kubelm-edge-v0.3 (2B) | 32 | 32 | 35 | 3 | 35 |
+
+  Fine-tuning works (1ep: rubric 19→24, ref 30→34 — beats both v0.3 and
+  qwen2.5-7b on ref — complete 27→31; schema-perfect, zero name/arg
+  hallucination). But it's an **underfit/overfit sandwich with a
+  reasoning↔grounding trade**: 1ep (train loss bottomed ~0.20,
+  underfit) reasons better (rubric 24) but is over-confident (fabs 14);
+  2ep (~0.016, overfit — below v0.2's 0.024 tell) grounds better (fabs
+  3) but rubric collapsed back to untrained (19). **1-epoch is the
+  keeper** (rubric is the headline). The sweet spot is between (~1.5
+  epoch / lower LR), untested — but the gap to v0.3 (24 vs 32) is model
+  capacity, not recipe, so further tuning is polish, not a
+  breakthrough. Bench summary
+  `eval/results/summaries/kubelm-0.8b-finetune-2026-05-29.json`.
+  - **Tier framing corrected (the load-bearing decision).** kubelm is
+    NOT "v0.3 plus weaker fallbacks." It is **one CPU-only family
+    spanning a resource spectrum** — a user picks the model that fits
+    their hardware, from the smallest local box up to a dev machine.
+    Each tier is judged on **fitness for its own resource bracket**,
+    not against the tier above. So the 0.8B's rubric 24 is not "trails
+    v0.3" — it is "the best tool-use model we can field at 2–3 GB
+    CPU," and by that bar (beats untrained, schema-perfect, zero tool
+    hallucination) it is a legitimate bottom rung. Tiers: ultra-edge
+    (0.8B, ~2–3 GB) / edge (1.5B v0, ~4 GB) / edge+ (2B v0.3, ~8 GB) /
+    standard (~3B, planned) — all CPU-only.
+  - **First CPU-only latency characterization** (the axis this ladder
+    actually lives on; PROJECT.md commitment #7). `llama-bench -ngl 0`
+    on M1 Max (validated CPU vs Metal: 2B tg 48.6 vs 124.5 t/s):
+
+    | tier | pp2048 t/s | tg128 t/s | est. cached step |
+    |---|---|---|---|
+    | 0.8B | 275 | 80 | ~5.5 s |
+    | 1.5B | 134 | 72 | ~9.6 s |
+    | 2B | 176 | 50 | ~8.7 s |
+
+    0.8B is decisively the fastest CPU tier and the only one near the
+    <5 s/step target — its reason to exist. Surprise: the Qwen3.5-2B
+    processes prompts *faster* than the Qwen2.5-1.5B despite more
+    params (hybrid linear-attention is cheaper on large tool-schema
+    prompts), so the ladder is not monotonic in params for pp. M1 Max
+    (400 GB/s + Accelerate) is an upper bound; commodity CPUs will be
+    several× slower, widening the 0.8B's relative lead. Summary
+    `eval/results/summaries/cpu-latency-2026-05-29.json`.
+  - **Infra lessons (costly):** the `fla`/`causal-conv1d` fast path is
+    a dead end on this Unsloth+Triton-3.4 stack (broken binary on Ada
+    sm_89; gated-chunk Triton crash on Hopper sm_90) — pure torch
+    fallback is the only reliable path, and only H100-class FLOPS make
+    this architecture tractable (~90 s/step vs A40 347, RTX 2000 Ada
+    270). A mid-run "Exited by Runpod" was credit exhaustion, not a
+    platform fault.

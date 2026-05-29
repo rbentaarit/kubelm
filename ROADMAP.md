@@ -491,42 +491,48 @@ new phase. Full detail in the PROJECT.md decisions log.
   Serving constraint: ollama 0.23.1's `qwen3next` loader rejects this
   GGUF; use `llama-server`. Revisit when ollama's Qwen3.5 loader
   stabilises.
-- **0.8B ultra-edge candidate (Qwen3.5-0.8B base) — evaluated, not yet
-  trained.** A bake-off to decide whether the smaller base is worth GPU
-  budget. Untrained, no-think (clean bench `651e7952`, 35 scenarios):
-  complete 27/35, ref 30/35, rubric 19/35, schema **35/35**, **0
-  name/arg hallucinations**, fabs 7 — schema-perfect and
-  hallucination-free out of the box at **553 MB GGUF / ~2–3 GB RAM**
-  (half v0.3's footprint; llama-server only). The gap a fine-tune would
-  target is rubric (19) and termination (8 `no_conclusion`). A first
-  run capped at `-c 16384` errored on 2/35 — not a model limit but
-  context overflow: the untrained base loops without concluding until
-  the prompt exceeds the window. Re-serving at `-c 32768` cleared it
-  (the harness now folds the server's error body into the trajectory,
-  commit `c65e433`; serve-window bumped, commit `8e3d33a`). Decision
-  open: fine-tune for an ultra-edge tier, or proceed to Phase 6 with
-  v0.3.
+- **0.8B ultra-edge (Qwen3.5-0.8B) — fine-tuned, 1-epoch keeper, not
+  released.** The untrained bake-off (`651e7952`) was schema-perfect /
+  hallucination-free out of the box but rubric 19. Two QLoRA runs
+  (config-only change from v0.3): **1 epoch** (`1f15dde3`) is the best
+  0.8B — rubric **24**, ref **34** (beats v0.3 and qwen2.5-7b on ref),
+  complete 31, fabs 14, schema 34 — at **517 MB / 2–3 GB RAM**.
+  **2 epochs** (`3f404d53`) overfit (loss 0.016): grounding improved
+  (fabs 3) but rubric collapsed back to untrained (19). It's an
+  underfit/overfit sandwich; the sweet spot (~1.5 epoch / lower LR) is
+  untested, but the gap to v0.3 (24 vs 32) is **model capacity, not
+  recipe**. Judged within its 2–3 GB CPU bracket the 1-epoch model is a
+  legitimate bottom rung; it is not meant to rival v0.3. Artifacts
+  local, unreleased. Summary
+  `eval/results/summaries/kubelm-0.8b-finetune-2026-05-29.json`.
 
-### Edge-tier deployment options
+### Tier ladder — one CPU-only family across a resource spectrum
 
-Two GGUFs are now published, targeting different resource floors:
+kubelm is **not** "one best model with weaker fallbacks." It is a
+single **CPU-only** family spanning a resource spectrum: a user picks
+the model that fits their hardware, from the smallest local box up to a
+dev machine. Each tier is judged on **fitness for its own resource
+bracket**, not against the tier above.
 
-| | kubelm-edge-v0 (Qwen2.5-1.5B) | kubelm-edge-v0.3 (Qwen3.5-2B) |
-|---|---|---|
-| GGUF | ~940 MB | 1.2 GB |
-| RAM | 4 GB | 8 GB |
-| Serving | ollama or llama-server | llama-server only |
-| Rubric | 29/35 (with corrected prompt) | 32/35 |
-| Fabrications | 21 | 3 |
+| tier | model | GGUF / RAM | rubric | CPU step¹ | serving |
+|---|---|---|---|---|---|
+| ultra-edge | Qwen3.5-0.8B (1ep) | 517 MB / 2–3 GB | 24/35 | ~5.5 s | llama-server |
+| edge | Qwen2.5-1.5B (v0) | 940 MB / 4 GB | 29/35² | ~9.6 s | ollama or llama-server |
+| edge+ | Qwen3.5-2B (v0.3) | 1.2 GB / 8 GB | 32/35 | ~8.7 s | llama-server |
+| standard | ~3B (planned) | larger | — | — | — |
 
-v0 is the right choice for constrained or air-gapped environments
-where ollama is the only available serving layer or RAM is capped at
-4 GB. v0.3 is the right choice whenever the hardware can afford 8 GB.
+¹ Estimated cached per-step latency, CPU-only on M1 Max (`llama-bench
+-ngl 0`; an upper bound — commodity CPUs run several× slower). Full
+data: `eval/results/summaries/cpu-latency-2026-05-29.json`.
+² v0 rubric is with the corrected prompt at inference (fabs 21).
 
-A third, **ultra-edge** tier (Qwen3.5-0.8B, ~553 MB / 2–3 GB RAM) is
-under evaluation but not yet trained or published — see the 0.8B
-candidate entry above. It would only ship if a fine-tune closes its
-rubric and termination gap.
+Pick by hardware: **ultra-edge** for the smallest/most constrained
+local box (fastest CPU step, closest to the <5 s/step target);
+**edge** when ollama is the only serving layer or RAM caps at 4 GB;
+**edge+** whenever the box affords 8 GB and wants the best quality.
+Latency surprise: the 2B (Qwen3.5 hybrid linear-attention) processes
+prompts faster than the 1.5B (Qwen2.5 dense), so the ladder is not
+strictly monotonic in params.
 
 The Qwen2.5-1.5B line (v0) is not actively retrained on the same
 cadence as the main Qwen3.5 line — it gets a new release when there

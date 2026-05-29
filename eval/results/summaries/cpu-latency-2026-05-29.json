@@ -1,0 +1,47 @@
+{
+  "summary": "CPU-only inference latency across the kubelm tier ladder",
+  "date": "2026-05-29",
+  "rationale": "kubelm is a CPU-only model family spanning a resource spectrum (smallest local box -> dev machine); per-tier CPU latency is a first-class metric (PROJECT.md commitment #7, <5s/step target). Prior benches ran GPU-offloaded; this is the first CPU-only characterization.",
+  "host": {
+    "machine": "MacBookPro18,2",
+    "cpu": "Apple M1 Max",
+    "physical_cores": 10,
+    "note": "M1 Max has ~400GB/s unified memory bandwidth + Accelerate BLAS; an UPPER bound. Commodity/constrained CPUs (the real ultra-edge target) will be several x slower. Relative ordering across tiers holds."
+  },
+  "tool": "llama-bench -ngl 0 -p 2048 -n 128 -r 3 (CPU-only; validated vs -ngl 99: 2B tg 48.6 CPU vs 124.5 Metal, 2.6x => -ngl 0 is genuine CPU)",
+  "quant": "Q4_K_M",
+  "tiers": [
+    {
+      "tier": "ultra-edge",
+      "model": "Qwen3.5-0.8B (kubelm-edge-0.8b, 1-epoch)",
+      "params": "773M",
+      "gguf_mib": 506,
+      "pp2048_tps": 275.3,
+      "tg128_tps": 80.4,
+      "est_step_latency_s": {"cold_pp2500_gen150": 11.0, "cached_pp1000_gen150": 5.5}
+    },
+    {
+      "tier": "edge",
+      "model": "Qwen2.5-1.5B (kubelm-edge-v0 line)",
+      "params": "1.54B",
+      "gguf_mib": 935,
+      "pp2048_tps": 134.0,
+      "tg128_tps": 71.6,
+      "est_step_latency_s": {"cold_pp2500_gen150": 20.7, "cached_pp1000_gen150": 9.6}
+    },
+    {
+      "tier": "edge+",
+      "model": "Qwen3.5-2B (kubelm-edge-v0.3)",
+      "params": "1.94B",
+      "gguf_mib": 1240,
+      "pp2048_tps": 176.0,
+      "tg128_tps": 50.4,
+      "est_step_latency_s": {"cold_pp2500_gen150": 17.2, "cached_pp1000_gen150": 8.7}
+    }
+  ],
+  "findings": [
+    "0.8B is decisively the fastest CPU tier (~1.6x the 2B's prompt-processing, best token-gen) and the only tier close to the <5s/step target -> validates the ultra-edge rung.",
+    "Architectural: Qwen3.5-2B processes prompts FASTER than Qwen2.5-1.5B despite more params (hybrid linear-attention is cheaper on large tool-schema prompts). The ladder is not strictly monotonic in params for prompt-processing.",
+    "No tier achieves <5s on a COLD step even on M1 Max; on weaker CPUs the gap widens -> the latency commitment is real pressure and the ultra-edge tier's reason to exist."
+  ]
+}

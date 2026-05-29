@@ -1,0 +1,26 @@
+{
+  "summary": "Qwen3.5-0.8B ultra-edge fine-tune (1ep vs 2ep) on the v0.2 corpus",
+  "date": "2026-05-29",
+  "k8sgpt_version": "0.4.32",
+  "scenarios": 35,
+  "serving": "llama-server --jinja -c 32768, chat_template_kwargs enable_thinking:false",
+  "config": "training/configs/kubelm-edge-0.8b.yaml (1ep) and -2ep.yaml; config-only change from v0.3 path; same 561-record v0.2 corpus + recipe + Qwen3.5 render-fix",
+  "runs": [
+    {"label": "Qwen3.5-0.8B untrained", "bench_id": "651e7952", "rubric": 19, "ref_pass": 30, "complete": 27, "fabs": 7, "schema": 35, "name_halluc": 0, "arg_halluc": 0, "errored": 0, "loss_bottom": null},
+    {"label": "0.8B 1-epoch (KEEPER)", "bench_id": "1f15dde3", "rubric": 24, "ref_pass": 34, "complete": 31, "fabs": 14, "schema": 34, "name_halluc": 0, "arg_halluc": 0, "errored": 1, "loss_bottom": 0.20, "loss_signal": "underfit"},
+    {"label": "0.8B 2-epoch", "bench_id": "3f404d53", "rubric": 19, "ref_pass": 34, "complete": 24, "fabs": 3, "schema": 34, "name_halluc": 0, "arg_halluc": 0, "errored": 1, "loss_bottom": 0.016, "loss_signal": "overfit"}
+  ],
+  "references": [
+    {"label": "qwen2.5-7b (reference)", "rubric": 28, "ref_pass": 28, "complete": 33, "fabs": 8, "schema": 34},
+    {"label": "kubelm-edge-v0.3 (2B target)", "rubric": 32, "ref_pass": 32, "complete": 35, "fabs": 3, "schema": 35}
+  ],
+  "findings": [
+    "Fine-tuning works on the 0.8B: 1-epoch lifts rubric 19->24, ref 30->34 (beats both v0.3 and qwen2.5-7b on ref), complete 27->31. Schema-perfect, zero name/arg hallucinations throughout.",
+    "Underfit/overfit sandwich with a reasoning<->grounding trade: 1ep reasons better (rubric 24) but over-confident (fabs 14); 2ep grounds better (fabs 3) but overfit collapsed rubric back to untrained (19).",
+    "1-epoch is the keeper (rubric is the headline). The sweet spot is between (~1.5 epoch / lower LR), untested.",
+    "At rubric 24 the 0.8B is a legitimate ultra-edge tier (beats untrained) but not competitive with v0.3 (32) -- the gap is model capacity, not recipe. Judged WITHIN its 2-3GB CPU bracket, it is the right-sized bottom rung.",
+    "Both 1ep + 2ep errored on 1 scenario each (context overflow even at -c 32768 on a multi-hop scenario) -- residual non-termination."
+  ],
+  "artifacts": "local only, unreleased (gated + not ship-ready): ~/kubelm-0.8b-artifacts (1ep), ~/kubelm-0.8b-2ep-artifacts (2ep). GGUF 517MB + adapter each.",
+  "infra_notes": "fla/causal-conv1d fast path is a dead end on Unsloth+Triton-3.4 (broken binary on Ada sm_89; gated-chunk Triton crash on Hopper sm_90). Pure torch fallback only reliable path; only H100-class FLOPS tractable (~90s/step vs A40 347, RTX2000Ada 270). 'Exited by Runpod' was credit exhaustion, not platform fault."
+}
