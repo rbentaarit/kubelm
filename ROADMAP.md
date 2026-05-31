@@ -526,11 +526,15 @@ Linux — measured for 0.8B/2B, interpolated for 1.5B. The hybrid
 linear-attention KV cache is compact; add ~0.5 GB compute headroom for
 a ~4 K-token prompt. **The 8 GB/4 GB figures previously documented were
 ~5× too conservative — every tier fits a 4 GB node.**
-² Per-step latency on a **real x86 Linux 2-core / 4 GB pod** (typical →
-heavy prompt; `llama-bench -ngl 0 -t 2`). Full investigation ~1–4 min.
-More cores scale ~linearly. (M1+Accelerate is ~2× faster — an
-optimistic ceiling; kind-on-Mac-VM was ~10× slower — discard.) Data:
-`eval/results/summaries/cpu-latency-2026-05-29.json`.
+² Per-step latency on a **dedicated** x86 Linux 2-core / 4 GB pod
+(typical → heavy prompt; `llama-bench -ngl 0 -t 2`). Full investigation
+~1–4 min. More cores scale ~linearly. **These are a dedicated-vCPU
+reference, NOT a guarantee — host variance is ~10× and dominates the
+tier choice:** two same-flavor RunPod CPU pods differed ~7–10× (fast
+modern x86 vs a throttled/oversubscribed host), so burstable/contended
+K8s nodes degrade sharply. RAM (host-independent) is unaffected. The
+1.5B latency is **estimated** (its run landed on the throttled host).
+Data: `eval/results/summaries/cpu-latency-2026-05-29.json`.
 ³ v0 rubric is with the corrected prompt at inference (fabs 21).
 
 **RAM is not the gate** — all tiers fit ~2 GB. Pick by: **latency**

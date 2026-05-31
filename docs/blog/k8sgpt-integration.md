@@ -132,11 +132,15 @@ its rubric trails the 2B. Pick by hardware.
 
 ## Caveats (please read before deploying)
 
-- **Latency is the binding constraint, not accuracy.** On commodity
-  cluster CPUs — without an M1 Max's memory bandwidth and Accelerate —
-  per-step latency will be worse than the numbers above. Budget for it,
-  prefer a smaller tier, or give the pod guaranteed cores. K8sGPT
-  investigations are not interactive-chat latency.
+- **Latency is the binding constraint, not accuracy — and it swings
+  ~10× by node.** RAM is not the gate (every tier fits ~2 GB); CPU is.
+  But per-step latency depends far more on the *host* than the tier:
+  two same-spec cloud CPU nodes measured ~7–10× apart (a fast modern
+  x86 vs a throttled/oversubscribed one). The published figures are a
+  *dedicated-vCPU reference*, not a guarantee — give the pod
+  **guaranteed** cores, prefer a smaller tier, and expect multiples on
+  burstable/contended nodes. K8sGPT investigations are not
+  interactive-chat latency.
 - **Not tested on a managed cluster.** The end-to-end validation is on
   kind. EKS/GKE/AKS is deferred; the integration contract is
   cluster-agnostic but a managed-cluster pass is unproven.

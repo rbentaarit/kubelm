@@ -21,9 +21,17 @@ model for its bracket, not a downgrade of the one above.
 | edge | Qwen2.5-1.5B (v0) | ~1.1 GB | 29/35 | ~20–40 s | `rbentaarit/kubelm-edge-v0` |
 | **edge+** *(default)* | Qwen3.5-2B (v0.3) | ~1.6 GB | 32/35 | ~29–55 s | `rbentaarit/kubelm-edge-v0.3-GGUF` |
 
-¹ Serving footprint and per-step latency **measured on a real x86 Linux
-2-core / 4 GB node** (`-ngl 0`); full investigation ~1–4 min. More cores
-scale ~linearly. Data: `eval/results/summaries/cpu-latency-2026-05-29.json`.
+¹ Serving footprint is measured (`--no-mmap` RSS, host-independent).
+Per-step latency is measured on a **dedicated** x86 Linux 2-core node
+(`-ngl 0`); full investigation ~1–4 min. The 1.5B latency is
+**estimated**. Data: `eval/results/summaries/cpu-latency-2026-05-29.json`.
+
+> **⚠️ Latency is host-dependent (~10×), and that dominates the tier
+> choice.** The figures above are a *dedicated-vCPU reference*, not a
+> guarantee — two same-spec cloud CPU nodes measured ~7–10× apart (a
+> fast modern x86 vs a throttled/oversubscribed host). **Give the pod
+> guaranteed (not burstable/shared) CPU**, and expect multiples of the
+> reference latency on contended nodes. RAM is unaffected.
 
 **RAM is not the gate** — every tier fits a 4 GB node (compact hybrid
 KV cache). The chart defaults (`requests` 2 CPU/2 Gi, `limits` 4 CPU/3

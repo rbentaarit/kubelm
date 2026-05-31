@@ -79,12 +79,21 @@
     "findings": [
       "A 2-core / 4GB node runs EVERY tier with headroom: true serving footprint at -c16384 is 0.8B ~892MB, 2B ~1628MB (--no-mmap RSS). RAM is NOT the binding constraint at these model sizes -- CPU/latency is. The prior 4GB/8GB 'RAM floors' were far too conservative (training-era / guesses, not serving). The hybrid linear-attention KV cache is compact.",
       "Real-Linux 2-core per-step latency: 0.8B ~16s typical / ~32s heavy; 2B ~29s / ~55s. Full investigation (4-7 steps): 0.8B ~1-2 min, 2B ~2-4 min -- usable SRE diagnostic on a tiny node.",
-      "Environment swing is ~10x: M1+Accelerate (optimistic) vs kind-on-Mac-VM (pathological) vs real x86 Linux 2-core (the truth). ALWAYS measure on a real Linux node for shipping defaults; kind-on-Mac is not a valid proxy."
+      "HOST VARIANCE IS ~10x AND IS THE DOMINANT CAVEAT: per-step latency depends far more on the CPU host than on the tier. The per-tier latencies above are a DEDICATED-vCPU reference, NOT a guarantee. Two real RunPod CPU pods (same '2 vCPU' flavor) differed ~7-10x: a fast modern x86 host (2B pp 88 / tg 27 t/s) vs a throttled/oversubscribed host (1.5B pp ~12 / tg ~6 t/s). Oversubscribed, burstable, or contended K8s nodes degrade sharply. RAM (host-independent) is unaffected."
     ],
+    "environment_variance": {
+      "note": "Same workload (Qwen3.5/2.5 Q4_K_M, -ngl 0, ~2 threads), wildly different throughput by environment. Size from the dedicated-vCPU reference; treat anything oversubscribed/burstable as much slower.",
+      "points": [
+        {"env": "M1 Max + Accelerate, 8 threads", "twob_pp_tg_tps": "176 / 50", "verdict": "optimistic ceiling -- do NOT ship from this"},
+        {"env": "real x86 Linux, dedicated 2 cores", "twob_pp_tg_tps": "88 / 27", "verdict": "THE REFERENCE for sizing"},
+        {"env": "throttled/oversubscribed RunPod CPU host, 2 vCPU", "twob_pp_tg_tps": "~12 / ~6 (measured on 1.5B proxy)", "verdict": "~10x worse -- burstable/contended nodes"},
+        {"env": "kind on Mac Docker VM", "twob_pp_tg_tps": "38 / 5", "verdict": "pathological (VM-throttled bandwidth) -- discard"}
+      ]
+    },
     "recommended_pod_spec": {
       "ultra-edge_0.8B": "requests cpu 2 / mem 1.5Gi, limits cpu 4 / mem 2Gi (threads=cpu limit)",
       "edge+_2B": "requests cpu 2 / mem 2.5Gi, limits cpu 4 / mem 3Gi",
-      "note": "mem = serving footprint + compute headroom for a ~4K-token prompt; cpu by latency tolerance (more cores -> faster prompt-processing, ~linear). 2 cores is viable; 4+ for snappier."
+      "note": "mem = serving footprint + compute headroom for a ~4K-token prompt (host-independent, reliable). cpu/latency is host-dependent (~10x swing) -- prefer DEDICATED (guaranteed) cores; on burstable/oversubscribed nodes expect multiples of the reference latency. 1.5B latency is ESTIMATED (its real-Linux run landed on a throttled host, non-comparable)."
     }
   },
   "findings": [
