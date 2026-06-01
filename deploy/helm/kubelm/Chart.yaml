@@ -11,7 +11,7 @@ version: 0.1.0
 
 # The kubelm model line this chart defaults to. Pinned to a specific
 # K8sGPT version: the model + eval scenarios were validated against it.
-appVersion: "kubelm-edge-v0.3"
+appVersion: "kubelm-qwen3.5-2b-v1"
 
 keywords:
   - k8sgpt
