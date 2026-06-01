@@ -46,28 +46,28 @@ sd = agg(
 #   category: cloud | generic | kubelm | kubelm-hi
 ROWS = [
     (
-        "qwen2.5-1.5b\n(base, 0.9 GB)",
+        "qwen2.5-1.5b\n(base, ~1.1 GB)",
         "generic",
         sd["qwen2.5-1.5b"]["rubric"],
         35,
         sd["qwen2.5-1.5b"]["fabs"],
     ),
-    ("kubelm-qwen3.5-0.8b\n(0.5 GB)", "kubelm", 24, 35, 14),
+    ("kubelm-qwen3.5-0.8b\n(~0.9 GB)", "kubelm", 24, 35, 14),
     (
-        "kubelm-qwen2.5-1.5b\n(0.9 GB)",
+        "kubelm-qwen2.5-1.5b\n(~1.1 GB)",
         "kubelm",
         sd["kubelm-edge-v0"]["rubric"],
         35,
         sd["kubelm-edge-v0"]["fabs"],
     ),
     (
-        "kubelm-qwen3.5-2b\n(1.6 GB)",
+        "kubelm-qwen3.5-2b\n(~1.6 GB)",
         "kubelm-hi",
         sd["kubelm-edge-v0.3"]["rubric"],
         35,
         sd["kubelm-edge-v0.3"]["fabs"],
     ),
-    ("qwen2.5-7b\n(4.7 GB)", "generic", sd["qwen2.5-7b"]["rubric"], 35, sd["qwen2.5-7b"]["fabs"]),
+    ("qwen2.5-7b\n(~5.5 GB)", "generic", sd["qwen2.5-7b"]["rubric"], 35, sd["qwen2.5-7b"]["fabs"]),
     ("gpt-5.4\n(cloud)", "cloud", gpt["rubric"], gpt["n"], gpt["fabs"]),
 ]
 
@@ -138,7 +138,8 @@ fig.text(
     0.005,
     "gpt-5.4 over 33 scenarios (rate-normalized); others over 35. "
     "CPU-only, no GPU in the kubelm runtime path. "
-    "All kubelm tiers: zero tool-name/argument hallucinations.",
+    "All kubelm tiers: zero tool-name/argument hallucinations. "
+    "Footprint = serving RAM at 16K ctx (0.8B/2B measured on 2-core x86; 1.5B/7B estimated).",
     ha="center",
     fontsize=8,
     color="#555",
