@@ -5,12 +5,18 @@ Deploys a kubelm tool-use model behind an OpenAI-compatible endpoint
 backend. Pinned to K8sGPT **v0.4.32**.
 
 ```bash
+# Model server only (point your own K8sGPT at it):
 helm install kubelm deploy/helm/kubelm -n kubelm --create-namespace
+
+# Turnkey loop (also deploys K8sGPT + an agent; submit a goal, kubelm investigates):
+helm install kubelm deploy/helm/kubelm -n kubelm --create-namespace \
+  --set k8sgpt.enabled=true --set agent.enabled=true
 ```
 
 Pick a tier by cluster resources (see `values.yaml`): ultra-edge
-(0.8B), edge (1.5B), edge+ (2B, default). Full walkthrough — install,
-K8sGPT wiring, air-gapped, NetworkPolicy — in
+(0.8B), edge (1.5B), edge+ (2B, default). **Every tier fits a 4 GB
+node** — size for CPU/latency, not RAM. Full walkthrough — install,
+K8sGPT wiring, the turnkey loop, air-gapped, NetworkPolicy — in
 [`docs/deploying-kubelm-with-k8sgpt.md`](../../../docs/deploying-kubelm-with-k8sgpt.md).
 
 | key | default | purpose |
@@ -19,6 +25,8 @@ K8sGPT wiring, air-gapped, NetworkPolicy — in
 | `model.localPath` | `""` | pre-seeded GGUF path (air-gapped); overrides hfRepo |
 | `model.servedName` | `kubelm-edge` | name K8sGPT references |
 | `server.contextSize` | `16384` | llama-server `-c` |
-| `resources` | edge+ (6–8 Gi) | match the chosen tier |
+| `resources` | req 2 CPU/2 Gi, lim 4 CPU/3 Gi | edge+; matches measured footprint |
 | `networkPolicy.enabled` | `false` | restrict endpoint to K8sGPT |
 | `cache.persistence.enabled` | `false` | PVC for the model (survives restarts / air-gap) |
+| `k8sgpt.enabled` | `false` | deploy K8sGPT MCP server in-cluster (turnkey) |
+| `agent.enabled` | `false` | deploy the agent loop (`POST /investigate`) |

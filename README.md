@@ -5,16 +5,19 @@
 **A small, CPU-only language model specialized for reliable tool-use against
 K8sGPT's MCP server.**
 
-`kubelm` is an open project to build a family of small (1B–7B) language models
+`kubelm` is an open project to build a family of small (0.8B–3B) language models
 fine-tuned for one job: reliably and accurately using
 [K8sGPT](https://k8sgpt.ai)'s Model Context Protocol (MCP) tools without
 hallucinating tool names, fabricating arguments, or inventing cluster state.
 The models target commodity CPU hardware — no GPU required — and follow
 K8sGPT's MCP surface as it evolves.
 
-> **Status:** Early. The benchmark and methodology come first. The models
-> come second. This README describes where the project is heading and how
-> to follow along.
+> **Status:** Working. The eval harness + scenario library are shipped, the
+> baseline benchmark is published, and two models are released on Hugging
+> Face — **`kubelm-edge-v0.3`** (Qwen3.5-2B) is the current headline and
+> beats `qwen2.5:7b` on every reliability metric at ~⅓ the footprint. A
+> **turnkey Helm chart** deploys kubelm + K8sGPT + an MCP agent loop in one
+> `helm install`. See the tier ladder and phase status below.
 
 ---
 
@@ -56,7 +59,10 @@ running on a single CPU node.
 - Trajectory-based training datasets, public on Hugging Face.
 - A family of fine-tuned small models, released open-weight, optimized for
   K8sGPT MCP tool-use on CPU.
-- A Helm-deployable inference stack that K8sGPT can use as a local backend.
+- A Helm-deployable, CPU-only inference stack K8sGPT can use as a local
+  backend — plus an optional turnkey loop (bundled K8sGPT MCP server + an
+  agent that drives kubelm through its tools) so one `helm install` makes a
+  cluster queryable end-to-end.
 
 **kubelm is not:**
 
@@ -123,17 +129,34 @@ is what justifies the project's existence.
 
 ---
 
-## The model ladder (planned)
+## The tier ladder
 
-| Tier              | Size      | Target hardware             | Target latency       | Use case                   |
-|-------------------|-----------|-----------------------------|----------------------|----------------------------|
-| `kubelm-edge`     | 1–1.5B    | 2-core CPU, 2GB RAM         | per-step < 5 sec     | Edge, dev, CI              |
-| `kubelm-standard` | 3B        | 4-core CPU, 4GB RAM         | per-step 10–20 sec   | Production default         |
-| `kubelm-pro`      | 7–8B      | 8-core CPU                  | per-step 15–30 sec   | Large clusters, regulated  |
+kubelm is **one CPU-only family across a resource spectrum** — not one best
+model with weaker fallbacks. Pick the model that fits your hardware, from the
+smallest local box up to a dev machine; each tier is judged on fitness for
+*its own* resource bracket. All numbers below are **measured**, not targets.
 
-Latency is per tool-use step. A typical investigation trajectory is 3–8 steps,
-so end-to-end times are correspondingly higher. These are targets, not
-guarantees — the benchmark will tell us where each tier actually lands.
+| Tier | Model | Rubric¹ | Serving RAM² | Per-step³ | Release |
+|---|---|---|---|---|---|
+| ultra-edge | Qwen3.5-0.8B | 24/35 | ~0.9 GB | ~16–32 s | fine-tuned; not yet on HF |
+| edge | Qwen2.5-1.5B (`kubelm-edge-v0`) | 29/35 | ~1.1 GB | ~20–40 s | on Hugging Face |
+| **edge+** *(default)* | Qwen3.5-2B (`kubelm-edge-v0.3`) | **32/35** | ~1.6 GB | ~29–55 s | on Hugging Face |
+| standard | ~3B | — | — | — | planned |
+
+*For reference, the `qwen2.5:7b` local model scores rubric 28/35 on the same
+suite — so `kubelm-edge-v0.3` beats a 7B generic model at ~⅓ the footprint,
+and even the 0.8B is competitive.*
+
+¹ Conclusion-rubric pass rate over the 35-scenario library (does the model
+reach the correct root cause, grounded in tool results). All tiers are
+schema-perfect with **zero tool-name/argument hallucinations**.
+² True serving footprint (`--no-mmap` RSS at `-c 16384`), measured on real
+x86 Linux. The hybrid linear-attention KV cache is compact — **every tier
+fits a 4 GB node; RAM is not the binding constraint, CPU/latency is.**
+³ Per investigation step on a **dedicated** x86 Linux 2-core node (typical →
+heavy prompt); a full investigation is ~1–4 min. This is a dedicated-vCPU
+reference, **not a guarantee — latency swings ~10× by host**, so give the
+pod guaranteed cores. Full data: `eval/results/summaries/cpu-latency-2026-05-29.json`.
 
 ---
 
@@ -182,36 +205,32 @@ design.
 
 This repo grows in stages. Each stage is a separately-useful artifact:
 
-- [x] **Phase 1: Eval harness skeleton** — Python framework that runs a
-      model as an MCP client against a real K8sGPT MCP server. Records
-      trajectories, measures hallucination metrics. *Shipped.*
-- [x] **Phase 2: Seeded scenario library** — kind-based test scenarios
-      paired with expected investigation trajectories. The benchmark
-      ground truth. *30 scenarios shipped (lower bound of 30–50 target);
-      covers pod-startup, service/networking, scheduling, storage,
-      RBAC, resources, and workload-controller failure modes.*
-- [ ] **Phase 3: Public baseline benchmark** — frontier cloud models, large
-      local models, and small generic local models, all measured against
-      the eval. First blog post. *Two cuts published in
-      `eval/results/summaries/` (2026-05-07, 2026-05-11). Blog post
-      draft exists in `docs/blog/`; final publication pending the
-      GPU-box 70B point and decision-gate run.*
-- [ ] **Phase 4: Trajectory training dataset** — expert-curated multi-step
-      examples on Hugging Face, tied to specific K8sGPT MCP versions.
-- [x] **Phase 5: First fine-tuned model release** — `kubelm-edge` v0
-      (1.5B QLoRA, Qwen 2.5 base). *Retargeted from `kubelm-standard`
-      to `kubelm-edge` on 2026-05-13. Trained + evaluated 2026-05-14;
-      bench summary at `eval/results/summaries/kubelm-edge-v0-2026-05-14.json`
-      clears the release quality bars and lands within 1 point of
-      `qwen2.5:7b` on rubric (23 vs 24) and complete (29 vs 30) at
-      ~1/4 the deployment footprint. Hugging Face publication pending.*
-- [ ] **Phase 6: K8sGPT integration** — Helm chart deploying the model and
-      inference engine as a K8sGPT local backend.
-- [ ] **Phase 7: Model ladder expansion** — `kubelm-standard` (3B) and
-      `kubelm-pro` (7B), evaluated against the same benchmark.
+- [x] **Phase 1: Eval harness skeleton** — runs a model as an MCP client
+      against a real K8sGPT MCP server; records trajectories, scores
+      reliability metrics. *Shipped.*
+- [x] **Phase 2: Seeded scenario library** — 35 kind-based scenarios paired
+      with reference trajectories: pod-startup, service/networking,
+      scheduling, storage, RBAC, resources, workload controllers,
+      multi-hop. *Shipped.*
+- [x] **Phase 3: Public baseline benchmark** — cloud frontier (`gpt-5.4`),
+      large local (`qwen2.5:32b`), and small local models measured against
+      the eval. *Shipped; cuts in `eval/results/summaries/`.*
+- [x] **Phase 4: Trajectory training dataset** — multi-step examples on
+      Hugging Face (`kubelm-seed`), pinned to K8sGPT v0.4.32. *Shipped.*
+- [x] **Phase 5: Fine-tuned model releases** — `kubelm-edge-v0` (1.5B) and
+      `kubelm-edge-v0.3` (Qwen3.5-2B) on Hugging Face; v0.3 beats
+      `qwen2.5:7b` on every metric (rubric 32 vs 28, fabrications 3 vs 8)
+      at ~⅓ the footprint. A Qwen3.5-0.8B ultra-edge tier is fine-tuned
+      (rubric 24, 517 MB) but not yet released. *Shipped.*
+- [x] **Phase 6: K8sGPT integration** — Helm chart (`deploy/helm/kubelm/`)
+      that deploys kubelm CPU-only behind an OpenAI endpoint, plus an
+      optional **turnkey loop** (K8sGPT MCP server + an agent that drives
+      kubelm through its tools). Validated end-to-end on kind; agent image
+      published multi-arch to GHCR. *Shipped.*
+- [ ] **Phase 7: Model ladder expansion** — a `standard` (~3B) tier, and a
+      possible 0.8B release, evaluated against the same benchmark.
 
-Items will be checked off as they land. Each phase is shipped publicly
-before the next begins.
+Each phase shipped publicly before the next began.
 
 ---
 
@@ -219,7 +238,10 @@ before the next begins.
 
 - **GitHub:** This repo is the source of truth for code, datasets, and
   benchmark results.
-- **Hugging Face:** Models and datasets will be published as they're ready.
+- **Hugging Face:** [`kubelm-edge-v0.3-GGUF`](https://huggingface.co/rbentaarit/kubelm-edge-v0.3-GGUF)
+  (current headline) and [`kubelm-edge-v0`](https://huggingface.co/rbentaarit/kubelm-edge-v0)
+  models; the [`kubelm-seed`](https://huggingface.co/datasets/rbentaarit/kubelm-seed)
+  trajectory dataset.
 - **Blog posts:** Major milestones will be written up. Links added here as
   they're published.
 
@@ -227,21 +249,20 @@ before the next begins.
 
 ## Contributing
 
-The eval harness (Phase 1) is published and the seeded scenario library
-(Phase 2) is at its lower-bound coverage of 30 scenarios. The most
-useful contribution today is **additional K8sGPT MCP tool-use
+The harness, the 35-scenario library, the baseline benchmark, the
+released models, and the Helm chart are all shipped. The most useful
+contribution today is still **additional K8sGPT MCP tool-use
 scenarios**: real Kubernetes investigation flows you've encountered,
-with the sequence of tool calls a competent SRE would make.
+with the sequence of tool calls a competent SRE would make. Broader
+scenario coverage improves the eval for every tier and sharpens the
+next training cycle.
 
 See `eval/scenarios/specs/` for the format and existing examples. Each
 scenario is a YAML spec with a kind setup, an investigation goal, a
 list of acceptable reference tool calls (`any_of`), and a substring
 conclusion rubric. New scenarios should be validated end-to-end via
 `uv run python -m eval.scenarios run --scenario-id <id> ...` before
-submission. The decision gate at the end of Phase 3 (whether to
-proceed to fine-tuning, see `ROADMAP.md`) will benefit from broader
-scenario coverage, so scenario PRs are the most impactful contribution
-right now.
+submission.
 
 ---
 
@@ -262,8 +283,8 @@ This project is not affiliated with or endorsed by the K8sGPT project.
 ## License
 
 - **Code:** Apache 2.0
-- **Models (when released):** Apache 2.0
-- **Dataset (when released):** CC BY 4.0
+- **Models:** Apache 2.0
+- **Dataset:** CC BY 4.0
 
 ---
 

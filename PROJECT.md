@@ -12,10 +12,11 @@ understand the project's intent, not just its current state.
 
 ## Core thesis
 
-A small (1B–7B parameter) language model, fine-tuned on K8sGPT MCP tool-use
+A small (0.8B–3B parameter) language model, fine-tuned on K8sGPT MCP tool-use
 trajectories, can match the tool-use reliability of much larger generic
-local models (Llama 3.3 70B, Qwen 2.5 32B) on K8sGPT's MCP surface, while
-running on a single CPU node with no GPU.
+local models on K8sGPT's MCP surface, while running on a single CPU node with
+no GPU. **Validated:** `kubelm-edge-v0.3` (Qwen3.5-2B) beats `qwen2.5:7b` on
+every reliability metric at ~⅓ the footprint.
 
 The differentiator is **reliability on a specific tool surface**, not raw
 intelligence. Generic small models routinely hallucinate tool names,
@@ -185,21 +186,25 @@ prose generation.
 
 ### The model ladder
 
-Three tiers, same training methodology, different base model sizes. Static
-tier selection at install time.
+**One CPU-only family across a resource spectrum** — pick the model that fits
+the hardware; each tier is judged on fitness for its own bracket, not against
+the tier above. All numbers measured (see the 2026-05-29 decisions-log entry
++ `eval/results/summaries/cpu-latency-2026-05-29.json`).
 
-| Tier              | Size      | Hardware              | Per-step latency  | Use case            |
-|-------------------|-----------|-----------------------|-------------------|---------------------|
-| `kubelm-edge`     | 1–1.5B    | 2-core CPU, 2GB RAM   | < 5 sec           | Edge, dev, CI       |
-| `kubelm-standard` | 3B        | 4-core CPU, 4GB RAM   | 10–20 sec         | Production default  |
-| `kubelm-pro`      | 7–8B      | 8-core CPU            | 15–30 sec         | Large/regulated     |
+| Tier | Model | Rubric | Serving RAM | Per-step (2-core x86) | Release |
+|---|---|---|---|---|---|
+| ultra-edge | Qwen3.5-0.8B | 24/35 | ~0.9 GB | ~16–32 s | fine-tuned, unreleased |
+| edge | Qwen2.5-1.5B (`kubelm-edge-v0`) | 29/35 | ~1.1 GB | ~20–40 s | on HF |
+| edge+ *(default)* | Qwen3.5-2B (`kubelm-edge-v0.3`) | 32/35 | ~1.6 GB | ~29–55 s | on HF |
+| standard | ~3B | — | — | — | planned |
 
-End-to-end trajectory time is per-step latency × number of steps. A typical
-investigation runs 3–8 steps, so a `kubelm-standard` trajectory completes
-in roughly 30 seconds to 2 minutes.
-
-**Critical:** ship `kubelm-standard` first. Don't try to launch with the full
-ladder. Prove the methodology works on the centerpiece, then expand.
+Two corrections from the original plan (a static 3-tier `edge`/`standard`/
+`pro` ladder topping out at 7–8B): the `pro` 7B tier was dropped (more params
+past ~2B didn't buy rubric on this surface), and **serving RAM is ~5× lower
+than the early estimates — every tier fits a 4 GB node, so CPU/latency, not
+RAM, is the binding constraint.** Latency is a dedicated-vCPU reference;
+it swings ~10× by host. Original sequencing ("ship `standard` first") was
+also superseded — the edge tiers shipped first and v0.3 is the headline.
 
 ### Performance is a primary design constraint
 
