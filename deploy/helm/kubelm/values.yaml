@@ -112,14 +112,14 @@ k8sgpt:
     limits: {cpu: "1", memory: 512Mi}
 
 # Agent loop: thin service driving kubelm through K8sGPT's MCP tools.
-# Image is built locally + `kind load docker-image` for now (see the
-# deployment guide); not yet published to a registry.
+# Published multi-arch (amd64+arm64) at ghcr.io/rbentaarit/kubelm-agent.
+# For local dev: build + `kind load` and override image.tag (see the guide).
 agent:
   enabled: false
   image:
-    repository: kubelm-agent
-    tag: dev
-    pullPolicy: IfNotPresent  # kind-loaded image; do not pull from a registry
+    repository: ghcr.io/rbentaarit/kubelm-agent
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
   maxSteps: 16
   requestTimeout: 600         # per-step HTTP timeout to kubelm (CPU inference is slow)
   service:

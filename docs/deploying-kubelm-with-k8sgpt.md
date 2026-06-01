@@ -102,15 +102,22 @@ install, enable the bundled K8sGPT MCP server and the **agent** — a thin
 service that drives kubelm through K8sGPT's MCP tools (it reuses the eval
 run-loop; it reimplements nothing).
 
-The agent image isn't published yet, so build it locally and load it into
-your cluster:
+The agent image is published multi-arch (amd64 + arm64) at
+`ghcr.io/rbentaarit/kubelm-agent`, so this is a plain install:
+
+```bash
+helm install kubelm deploy/helm/kubelm -n kubelm --create-namespace \
+  --set k8sgpt.enabled=true --set agent.enabled=true
+```
+
+For local development of the agent, build and override the image:
 
 ```bash
 docker build -f deploy/agent/Dockerfile -t kubelm-agent:dev .
-kind load docker-image kubelm-agent:dev --name <cluster>   # or push to your registry
-
+kind load docker-image kubelm-agent:dev --name <cluster>
 helm install kubelm deploy/helm/kubelm -n kubelm --create-namespace \
-  --set k8sgpt.enabled=true --set agent.enabled=true
+  --set k8sgpt.enabled=true --set agent.enabled=true \
+  --set agent.image.repository=kubelm-agent --set agent.image.tag=dev
 ```
 
 This adds: K8sGPT (`serve --mcp`, pinned v0.4.32, read-only ClusterRole)
