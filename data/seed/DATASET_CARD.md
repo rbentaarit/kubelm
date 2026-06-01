@@ -196,7 +196,7 @@ Each record carries the eval harness's read-outs:
   `kubelm-edge-v0`) — released 2026-05-14. Trained on the 319 positives
   (29 seeds + 290 variants); negatives excluded because all 46 carry
   `review_status: unreviewed`.
-  - GGUF: [`rbentaarit/kubelm-qwen2.5-1.5b-v1`](https://huggingface.co/rbentaarit/kubelm-qwen2.5-1.5b-v1) · LoRA: [`…-1.5b-v1-lora`](https://huggingface.co/rbentaarit/kubelm-qwen2.5-1.5b-v1-lora)
+  - Single repo (GGUF + `adapter/` LoRA): [`rbentaarit/kubelm-qwen2.5-1.5b-v1`](https://huggingface.co/rbentaarit/kubelm-qwen2.5-1.5b-v1) (the old `…-1.5b-v1-lora` repo is deprecated and points here)
   - Eval result vs base 1.5B: `complete` 8→29/30, `rubric_pass`
     10→23/30, `ref_pass` 3→21/30. Full row in
     [`eval/results/summaries/kubelm-edge-v0-2026-05-14.json`](https://github.com/rbentaarit/kubelm/blob/main/eval/results/summaries/kubelm-edge-v0-2026-05-14.json).
