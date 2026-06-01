@@ -203,7 +203,7 @@ Each record carries the eval harness's read-outs:
 - **`kubelm-qwen3.5-2b-v1`** (Qwen3.5-2B base; formerly
   `kubelm-edge-v0.3`) — released 2026-05-27. Trained on the v0.2 corpus
   (561 records, see below). The headline deployable.
-  - GGUF: [`rbentaarit/kubelm-qwen3.5-2b-v1`](https://huggingface.co/rbentaarit/kubelm-qwen3.5-2b-v1) · LoRA: [`…-2b-v1-lora`](https://huggingface.co/rbentaarit/kubelm-qwen3.5-2b-v1-lora)
+  - Single repo (GGUF + `adapter/` LoRA): [`rbentaarit/kubelm-qwen3.5-2b-v1`](https://huggingface.co/rbentaarit/kubelm-qwen3.5-2b-v1) (the old `…-2b-v1-lora` repo is deprecated and points here)
   - Eval result on the 35-scenario library: `rubric_pass` 32/35,
     `ref_pass` 32/35, `fabrications` 3, `schema_pass` 35/35,
     `complete` 35/35, zero argument/name hallucinations. Beats
