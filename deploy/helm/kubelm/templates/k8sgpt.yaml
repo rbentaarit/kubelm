@@ -1,0 +1,128 @@
+{{- if .Values.k8sgpt.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kubelm.fullname" . }}-k8sgpt-config
+  labels:
+    {{- include "kubelm.labels" . | nindent 4 }}
+data:
+  # Read by K8sGPT via XDG_CONFIG_HOME=/config. Backend points at kubelm
+  # to satisfy `serve`'s startup check (the agent drives the MCP tools).
+  k8sgpt.yaml: |
+    ai:
+      providers:
+        - name: {{ .Values.k8sgpt.backend }}
+          model: {{ .Values.model.servedName }}
+          password: noop
+          baseurl: http://{{ include "kubelm.fullname" . }}:{{ .Values.service.port }}/v1
+      defaultprovider: {{ .Values.k8sgpt.backend }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kubelm.fullname" . }}-k8sgpt
+  labels:
+    {{- include "kubelm.labels" . | nindent 4 }}
+---
+# Read-only cluster access for the resource types K8sGPT's MCP surface
+# inspects (v0.4.32). No write verbs — kubelm proposes, it never mutates.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kubelm.fullname" . }}-k8sgpt
+  labels:
+    {{- include "kubelm.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [pods, services, configmaps, secrets, nodes, events, namespaces, persistentvolumeclaims, persistentvolumes, replicationcontrollers]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [deployments, statefulsets, daemonsets, replicasets]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses, networkpolicies]
+    verbs: [get, list, watch]
+  - apiGroups: [autoscaling]
+    resources: [horizontalpodautoscalers]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kubelm.fullname" . }}-k8sgpt
+  labels:
+    {{- include "kubelm.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kubelm.fullname" . }}-k8sgpt
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kubelm.fullname" . }}-k8sgpt
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubelm.fullname" . }}-k8sgpt
+  labels:
+    {{- include "kubelm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: k8sgpt
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "kubelm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: k8sgpt
+  template:
+    metadata:
+      labels:
+        {{- include "kubelm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: k8sgpt
+    spec:
+      serviceAccountName: {{ include "kubelm.fullname" . }}-k8sgpt
+      containers:
+        - name: k8sgpt
+          image: "{{ .Values.k8sgpt.image.repository }}:{{ .Values.k8sgpt.image.tag }}"
+          imagePullPolicy: {{ .Values.k8sgpt.image.pullPolicy }}
+          # The image is distroless (no shell). `serve` requires an AI
+          # provider at startup, so we supply it via a mounted config file
+          # (XDG_CONFIG_HOME) rather than `k8sgpt auth add`. The backend
+          # points at kubelm; the agent drives the MCP tools regardless.
+          args:
+            {{- toYaml .Values.k8sgpt.args | nindent 12 }}
+          env:
+            - name: XDG_CONFIG_HOME
+              value: /config
+          ports:
+            - name: mcp
+              containerPort: {{ .Values.k8sgpt.port }}
+          volumeMounts:
+            - name: k8sgpt-config
+              mountPath: /config/k8sgpt
+          resources:
+            {{- toYaml .Values.k8sgpt.resources | nindent 12 }}
+      volumes:
+        - name: k8sgpt-config
+          configMap:
+            name: {{ include "kubelm.fullname" . }}-k8sgpt-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubelm.fullname" . }}-k8sgpt
+  labels:
+    {{- include "kubelm.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "kubelm.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: k8sgpt
+  ports:
+    - name: mcp
+      port: {{ .Values.k8sgpt.port }}
+      targetPort: mcp
+{{- end }}

@@ -86,3 +86,45 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 podAnnotations: {}
+
+# --- Turnkey "query K8sGPT, kubelm investigates" loop ---
+# With the model server above, enabling both of these makes the chart a
+# self-contained install: K8sGPT runs its MCP server in-cluster, and the
+# agent drives kubelm through those tools. Disabled by default — the base
+# chart ships just the model server (point an external K8sGPT at it).
+
+# K8sGPT MCP server (the canonical tool surface; kubelm never reimplements it).
+k8sgpt:
+  enabled: false
+  image:
+    repository: ghcr.io/k8sgpt-ai/k8sgpt
+    tag: v0.4.32              # pinned: the version kubelm was trained/evaluated against
+    pullPolicy: IfNotPresent
+  port: 8089
+  # --backend selects the provider from the mounted config (serve else
+  # defaults to 'openai' and fails the startup check).
+  args: [serve, --mcp, --mcp-http, --mcp-port, "8089", --backend, customrest]
+  # K8sGPT requires an AI provider at startup; point it at kubelm. The
+  # agent drives the MCP tools regardless, so this is just to satisfy serve.
+  backend: customrest
+  resources:
+    requests: {cpu: "100m", memory: 128Mi}
+    limits: {cpu: "1", memory: 512Mi}
+
+# Agent loop: thin service driving kubelm through K8sGPT's MCP tools.
+# Image is built locally + `kind load docker-image` for now (see the
+# deployment guide); not yet published to a registry.
+agent:
+  enabled: false
+  image:
+    repository: kubelm-agent
+    tag: dev
+    pullPolicy: IfNotPresent  # kind-loaded image; do not pull from a registry
+  maxSteps: 16
+  requestTimeout: 600         # per-step HTTP timeout to kubelm (CPU inference is slow)
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests: {cpu: "100m", memory: 128Mi}
+    limits: {cpu: "500m", memory: 256Mi}

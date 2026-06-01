@@ -1003,3 +1003,30 @@ Append-only log of significant decisions. Update when major direction changes.
     this architecture tractable (~90 s/step vs A40 347, RTX 2000 Ada
     270). A mid-run "Exited by Runpod" was credit exhaustion, not a
     platform fault.
+
+- **2026-05-31:** **Turnkey MCP-agent integration added to the chart —
+  a deliberate extension of the Phase 6 design.** Phase 6 originally
+  specified the *analyze-backend* model (K8sGPT uses kubelm as its
+  single-shot `customrest` LLM). That under-uses kubelm, which is
+  trained for *multi-step MCP tool-use*. The chart now optionally
+  deploys the full loop: K8sGPT's MCP server (`serve --mcp`, pinned
+  v0.4.32, read-only ClusterRole) + a thin **agent** service
+  (`deploy/agent/`) that drives kubelm through those MCP tools and
+  exposes `POST /investigate`. Both gated off by default
+  (`k8sgpt.enabled`/`agent.enabled`); the base chart still ships just
+  the model server. **Methodology held:** the agent *reuses* the eval
+  run-loop (`eval.runner.loop.run_trajectory` + `eval.client.mcp` +
+  `eval.runner.openai_backend`) — it reimplements no analysis, K8sGPT's
+  MCP surface stays canonical, kubelm proposes and the operator
+  disposes. Validated end-to-end on kind: a single `helm install` +
+  `POST /investigate` ran agent → kubelm → K8sGPT MCP tools
+  (`get-resource`, `list-events`) → a grounded conclusion citing real
+  cluster state (`termination: complete`). Integration gotchas worth
+  keeping: the K8sGPT image is distroless (no shell — configure its
+  backend via a mounted config file + `XDG_CONFIG_HOME`, not
+  `auth add`), and `serve` defaults to the `openai` provider so it
+  needs an explicit `--backend`. The agent image is built locally +
+  `kind load`ed for now (not yet published to a registry). Caveat: in
+  the kind smoke run the 2B stopped at the deployment-level symptom
+  rather than the root-cause ConfigMap — a model-depth matter on that
+  run, not an integration failure.

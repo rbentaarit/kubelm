@@ -9,10 +9,12 @@ spec:
   selector:
     matchLabels:
       {{- include "kubelm.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: model
   template:
     metadata:
       labels:
         {{- include "kubelm.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: model
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}

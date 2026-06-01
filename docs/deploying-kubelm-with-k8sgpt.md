@@ -94,6 +94,45 @@ helm upgrade kubelm deploy/helm/kubelm -n kubelm \
 Adjust `networkPolicy.k8sgptPodSelector` to match your K8sGPT pod labels
 (requires a NetworkPolicy-enforcing CNI, e.g. Calico/Cilium).
 
+## 5. Turnkey: full in-cluster loop (K8sGPT + agent)
+
+Sections 1–4 deploy the **model server** and expect you to bring your own
+K8sGPT. To get a self-contained "submit a goal, kubelm investigates"
+install, enable the bundled K8sGPT MCP server and the **agent** — a thin
+service that drives kubelm through K8sGPT's MCP tools (it reuses the eval
+run-loop; it reimplements nothing).
+
+The agent image isn't published yet, so build it locally and load it into
+your cluster:
+
+```bash
+docker build -f deploy/agent/Dockerfile -t kubelm-agent:dev .
+kind load docker-image kubelm-agent:dev --name <cluster>   # or push to your registry
+
+helm install kubelm deploy/helm/kubelm -n kubelm --create-namespace \
+  --set k8sgpt.enabled=true --set agent.enabled=true
+```
+
+This adds: K8sGPT (`serve --mcp`, pinned v0.4.32, read-only ClusterRole)
+and the agent (`POST /investigate`). Query it:
+
+```bash
+kubectl -n kubelm port-forward svc/kubelm-agent 8088:8080
+curl -s http://127.0.0.1:8088/investigate \
+  -H 'Content-Type: application/json' \
+  -d '{"goal":"Why is the web deployment in namespace prod not starting?"}'
+# -> {"conclusion": "...", "termination": "complete", "steps": N,
+#     "tool_calls": [{"name":"get-resource", ...}]}
+```
+
+Notes:
+- The agent's per-step timeout (`agent.requestTimeout`, default 600 s)
+  must comfortably exceed kubelm's CPU per-step latency — see the
+  envelope summary. Investigations take ~1–4 min on a dedicated node.
+- K8sGPT's `serve` requires an AI provider at startup; the chart points
+  its backend at kubelm to satisfy that. The agent drives the tools
+  regardless.
+
 ## Notes
 
 - **Why llama-server, not ollama:** the Qwen3.5 tiers (0.8B, v0.3) load
