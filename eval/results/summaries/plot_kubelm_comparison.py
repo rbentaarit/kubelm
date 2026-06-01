@@ -112,6 +112,7 @@ for bar, v in zip(b2, fabs, strict=True):
 
 for ax in (ax1, ax2):
     ax.tick_params(axis="x", labelsize=8)
+    plt.setp(ax.get_xticklabels(), rotation=14, ha="right", rotation_mode="anchor")
     ax.spines[["top", "right"]].set_visible(False)
 
 handles = [
