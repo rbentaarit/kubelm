@@ -193,7 +193,7 @@ the tier above. All numbers measured (see the 2026-05-29 decisions-log entry
 
 | Tier | Model | Rubric | Serving RAM | Per-step (2-core x86) | Release |
 |---|---|---|---|---|---|
-| ultra-edge | `kubelm-qwen3.5-0.8b-v1` | 24/35 | ~0.9 GB | ~16–32 s | fine-tuned, unreleased |
+| ultra-edge | `kubelm-qwen3.5-0.8b-v1` | 24/35 | ~0.9 GB | ~16–32 s | on HF |
 | edge | `kubelm-qwen2.5-1.5b-v1` | 29/35 | ~1.1 GB | ~20–40 s | on HF |
 | edge+ *(default)* | `kubelm-qwen3.5-2b-v1` | 32/35 | ~1.6 GB | ~29–55 s | on HF |
 | standard | ~3B | — | — | — | planned |
@@ -229,7 +229,7 @@ as-run benchmark records — those are historical and not rewritten):
 |---|---|
 | `kubelm-edge-v0` (Qwen2.5-1.5B) | `kubelm-qwen2.5-1.5b-v1` |
 | `kubelm-edge-v0.3` (Qwen3.5-2B) | `kubelm-qwen3.5-2b-v1` |
-| 0.8B fine-tune (unreleased) | `kubelm-qwen3.5-0.8b-v1` |
+| 0.8B fine-tune | `kubelm-qwen3.5-0.8b-v1` |
 | HF `…-v0.3-GGUF` + `…-v0.3-lora` | `kubelm-qwen3.5-2b-v1` (GGUF) + `…-v1-lora` (single-repo merge pending) |
 
 ### Performance is a primary design constraint
@@ -1061,3 +1061,24 @@ Append-only log of significant decisions. Update when major direction changes.
   the kind smoke run the 2B stopped at the deployment-level symptom
   rather than the root-cause ConfigMap — a model-depth matter on that
   run, not an integration failure.
+
+- **2026-06-01:** **0.8B ultra-edge released as the 1-epoch keeper;
+  1.5-epoch "sweet-spot" hypothesis tested and falsified.** Closed the
+  open 0.8B question by training the untested intermediate point
+  (`67f8376d`, 1.5 epoch, lr 2e-4) to see whether the
+  reasoning↔grounding trade between the 1-epoch (rubric 24 / fabs 14)
+  and 2-epoch (rubric 19 / fabs 3) runs had a hump that Pareto-dominated
+  either endpoint. It did not: 1.5ep slid monotonically along the same
+  curve — fabs improved (14→9) but rubric stayed flat (24) and
+  completion regressed (31→25, toward 2ep's 24). The release gate (beat
+  1ep on **both** rubric >24 and fabs <14) was not cleared, so 1.5ep was
+  not shipped. **Decision: publish the 1-epoch keeper** as
+  `rbentaarit/kubelm-qwen3.5-0.8b-v1` (single repo: Q4_K_M GGUF + LoRA
+  adapter + card) — it beats the untrained base (rubric 19→24,
+  completion 27→31) and tops both qwen2.5-7b and the 2B on
+  reference-call accuracy (34/35), a legitimate bottom rung judged
+  within its bracket. The remaining lever for a future 0.8B version is
+  **lower LR at 1 epoch** (flatten the trade), not intermediate epochs —
+  there is no free lunch between the two schedules. Methodology held:
+  the non-improvement is published as a negative result, not hidden.
+  Row added to `kubelm-0.8b-finetune-2026-05-29.json`.

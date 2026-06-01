@@ -148,9 +148,10 @@ its rubric trails the 2B. Pick by hardware.
   `qwen3next` loader rejects the v0.3/0.8B GGUFs; llama.cpp loads them
   fine. The v0 (1.5B) tier works under either. The chart uses
   llama-server throughout.
-- **The 0.8B is unreleased.** It's a validated local artifact, not yet
-  on Hugging Face — the chart defaults to v0.3 (edge+). The 0.8B row
-  above is from local evaluation.
+- **The 0.8B (ultra-edge) is on Hugging Face** as the 1-epoch keeper
+  (`rbentaarit/kubelm-qwen3.5-0.8b-v1`); the chart still defaults to the
+  2B (edge+). Point `model.hfRepo`/`model.hfFile` at the 0.8B repo for
+  the tightest-hardware tier.
 - **K8sGPT version pin.** kubelm was trained and evaluated against
   K8sGPT v0.4.32. Other versions are untested.
 

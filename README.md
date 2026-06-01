@@ -138,7 +138,7 @@ smallest local box up to a dev machine; each tier is judged on fitness for
 
 | Tier | Model | Rubric¹ | Serving RAM² | Per-step³ | Release |
 |---|---|---|---|---|---|
-| ultra-edge | `kubelm-qwen3.5-0.8b-v1` | 24/35 | ~0.9 GB | ~16–32 s | fine-tuned; not yet on HF |
+| ultra-edge | `kubelm-qwen3.5-0.8b-v1` | 24/35 | ~0.9 GB | ~16–32 s | on Hugging Face |
 | edge | `kubelm-qwen2.5-1.5b-v1` | 29/35 | ~1.1 GB | ~20–40 s | on Hugging Face |
 | **edge+** *(default)* | `kubelm-qwen3.5-2b-v1` | **32/35** | ~1.6 GB | ~29–55 s | on Hugging Face |
 | standard | ~3B | — | — | — | planned |
@@ -220,15 +220,15 @@ This repo grows in stages. Each stage is a separately-useful artifact:
 - [x] **Phase 5: Fine-tuned model releases** — `kubelm-qwen2.5-1.5b-v1` and
       `kubelm-qwen3.5-2b-v1` (the headline) on Hugging Face; the 2B beats
       `qwen2.5:7b` on every metric (rubric 32 vs 28, fabrications 3 vs 8)
-      at ~⅓ the footprint. A Qwen3.5-0.8B ultra-edge tier is fine-tuned
-      (rubric 24, 517 MB) but not yet released. *Shipped.*
+      at ~⅓ the footprint. A Qwen3.5-0.8B ultra-edge tier (rubric 24,
+      517 MB, the 1-epoch keeper) is also on Hugging Face. *Shipped.*
 - [x] **Phase 6: K8sGPT integration** — Helm chart (`deploy/helm/kubelm/`)
       that deploys kubelm CPU-only behind an OpenAI endpoint, plus an
       optional **turnkey loop** (K8sGPT MCP server + an agent that drives
       kubelm through its tools). Validated end-to-end on kind; agent image
       published multi-arch to GHCR. *Shipped.*
-- [ ] **Phase 7: Model ladder expansion** — a `standard` (~3B) tier, and a
-      possible 0.8B release, evaluated against the same benchmark.
+- [ ] **Phase 7: Model ladder expansion** — a `standard` (~3B) tier,
+      evaluated against the same benchmark.
 
 Each phase shipped publicly before the next began.
 

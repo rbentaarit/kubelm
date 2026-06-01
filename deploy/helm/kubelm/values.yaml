@@ -6,7 +6,7 @@
 #
 # Tier presets (set `model` + `resources` to match). Serving RAM and
 # per-step latency MEASURED on a real x86 Linux 2-core node (-ngl 0):
-#   ultra-edge  Qwen3.5-0.8B  ~0.9GB RAM  ~16-32s/step  rbentaarit/kubelm-qwen3.5-0.8b-v1 (unreleased)
+#   ultra-edge  Qwen3.5-0.8B  ~0.9GB RAM  ~16-32s/step  rbentaarit/kubelm-qwen3.5-0.8b-v1
 #   edge        Qwen2.5-1.5B  ~1.1GB RAM  ~20-40s/step  rbentaarit/kubelm-qwen2.5-1.5b-v1
 #   edge+       Qwen3.5-2B    ~1.6GB RAM  ~29-55s/step  rbentaarit/kubelm-qwen3.5-2b-v1  <-- DEFAULT
 # RAM is NOT the gate: every tier fits a 4GB node (compact hybrid KV

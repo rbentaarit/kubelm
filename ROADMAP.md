@@ -491,20 +491,24 @@ new phase. Full detail in the PROJECT.md decisions log.
   Serving constraint: ollama 0.23.1's `qwen3next` loader rejects this
   GGUF; use `llama-server`. Revisit when ollama's Qwen3.5 loader
   stabilises.
-- **0.8B ultra-edge (Qwen3.5-0.8B) — fine-tuned, 1-epoch keeper, not
-  released.** The untrained bake-off (`651e7952`) was schema-perfect /
-  hallucination-free out of the box but rubric 19. Two QLoRA runs
-  (config-only change from v0.3): **1 epoch** (`1f15dde3`) is the best
-  0.8B — rubric **24**, ref **34** (beats v0.3 and qwen2.5-7b on ref),
-  complete 31, fabs 14, schema 34 — at **517 MB / 2–3 GB RAM**.
+- **0.8B ultra-edge (Qwen3.5-0.8B) — RELEASED as the 1-epoch keeper**
+  (`rbentaarit/kubelm-qwen3.5-0.8b-v1`, 2026-06-01). The untrained
+  bake-off (`651e7952`) was schema-perfect / hallucination-free out of
+  the box but rubric 19. **1 epoch** (`1f15dde3`) is the keeper —
+  rubric **24**, ref **34** (beats v0.3 and qwen2.5-7b on ref),
+  complete 31, fabs 14, schema 34 — at **517 MB / ~0.9 GB RAM**.
   **2 epochs** (`3f404d53`) overfit (loss 0.016): grounding improved
-  (fabs 3) but rubric collapsed back to untrained (19). It's an
-  underfit/overfit sandwich; the sweet spot (~1.5 epoch / lower LR) is
-  untested, but the gap to v0.3 (24 vs 32) is **model capacity, not
-  recipe**. Judged within its 2–3 GB CPU bracket the 1-epoch model is a
-  legitimate bottom rung; it is not meant to rival v0.3. Artifacts
-  local, unreleased. Summary
-  `eval/results/summaries/kubelm-0.8b-finetune-2026-05-29.json`.
+  (fabs 3) but rubric collapsed back to untrained (19). A **1.5-epoch
+  sweet-spot** run (`67f8376d`, 2026-06-01) tested whether the
+  reasoning↔grounding trade had a hump between the endpoints — it did
+  **not**: fabs improved (14→9) but rubric stayed flat (24) and
+  completion regressed (31→25), a monotonic slide along the same curve.
+  It **failed the release gate** (must beat 1ep on both rubric and fabs)
+  and was not shipped; the remaining lever for a future version is
+  lower LR at 1 epoch, not more epochs. The gap to v0.3 (24 vs 32) is
+  **model capacity, not recipe**; judged within its CPU bracket the
+  1-epoch model is a legitimate bottom rung, not meant to rival v0.3.
+  Summary `eval/results/summaries/kubelm-0.8b-finetune-2026-05-29.json`.
 
 ### Tier ladder — one CPU-only family across a resource spectrum
 

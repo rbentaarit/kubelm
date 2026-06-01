@@ -17,7 +17,7 @@ model for its bracket, not a downgrade of the one above.
 
 | tier | model | serving RAM¹ | rubric | step @2-core x86¹ | HF repo |
 |---|---|---|---|---|---|
-| ultra-edge | Qwen3.5-0.8B | ~0.9 GB | 24/35 | ~16–32 s | `kubelm-qwen3.5-0.8b-v1` *(unreleased)* |
+| ultra-edge | Qwen3.5-0.8B | ~0.9 GB | 24/35 | ~16–32 s | `rbentaarit/kubelm-qwen3.5-0.8b-v1` |
 | edge | Qwen2.5-1.5B | ~1.1 GB | 29/35 | ~20–40 s | `rbentaarit/kubelm-qwen2.5-1.5b-v1` |
 | **edge+** *(default)* | Qwen3.5-2B | ~1.6 GB | 32/35 | ~29–55 s | `rbentaarit/kubelm-qwen3.5-2b-v1` |
 
