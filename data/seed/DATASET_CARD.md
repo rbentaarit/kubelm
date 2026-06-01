@@ -192,20 +192,18 @@ Each record carries the eval harness's read-outs:
 
 ### Models trained on this dataset
 
-- **`kubelm-edge-v0`** (1.5B, Qwen 2.5 base) — released
-  2026-05-14. Trained on the 319 positives (29 seeds + 290
-  variants); negatives excluded for v0 because all 46 carry
+- **`kubelm-qwen2.5-1.5b-v1`** (Qwen2.5-1.5B base; formerly
+  `kubelm-edge-v0`) — released 2026-05-14. Trained on the 319 positives
+  (29 seeds + 290 variants); negatives excluded because all 46 carry
   `review_status: unreviewed`.
-  - LoRA adapter: [`rbentaarit/kubelm-edge-v0-lora`](https://huggingface.co/rbentaarit/kubelm-edge-v0-lora)
-  - Q4_K_M GGUF: [`rbentaarit/kubelm-edge-v0-GGUF`](https://huggingface.co/rbentaarit/kubelm-edge-v0-GGUF)
+  - One repo (GGUF + LoRA): [`rbentaarit/kubelm-qwen2.5-1.5b-v1`](https://huggingface.co/rbentaarit/kubelm-qwen2.5-1.5b-v1)
   - Eval result vs base 1.5B: `complete` 8→29/30, `rubric_pass`
     10→23/30, `ref_pass` 3→21/30. Full row in
     [`eval/results/summaries/kubelm-edge-v0-2026-05-14.json`](https://github.com/rbentaarit/kubelm/blob/main/eval/results/summaries/kubelm-edge-v0-2026-05-14.json).
-- **`kubelm-edge-v0.3`** (2B, Qwen 3.5 base) — released
-  2026-05-27. Trained on the v0.2 corpus (561 records, see below).
-  Supersedes `kubelm-edge-v0` as the headline deployable.
-  - LoRA adapter: [`rbentaarit/kubelm-edge-v0.3-lora`](https://huggingface.co/rbentaarit/kubelm-edge-v0.3-lora)
-  - Q4_K_M GGUF: [`rbentaarit/kubelm-edge-v0.3-GGUF`](https://huggingface.co/rbentaarit/kubelm-edge-v0.3-GGUF)
+- **`kubelm-qwen3.5-2b-v1`** (Qwen3.5-2B base; formerly
+  `kubelm-edge-v0.3`) — released 2026-05-27. Trained on the v0.2 corpus
+  (561 records, see below). The headline deployable.
+  - One repo (GGUF + LoRA): [`rbentaarit/kubelm-qwen3.5-2b-v1`](https://huggingface.co/rbentaarit/kubelm-qwen3.5-2b-v1)
   - Eval result on the 35-scenario library: `rubric_pass` 32/35,
     `ref_pass` 32/35, `fabrications` 3, `schema_pass` 35/35,
     `complete` 35/35, zero argument/name hallucinations. Beats

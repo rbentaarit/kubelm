@@ -17,9 +17,9 @@ model for its bracket, not a downgrade of the one above.
 
 | tier | model | serving RAM¹ | rubric | step @2-core x86¹ | HF repo |
 |---|---|---|---|---|---|
-| ultra-edge | Qwen3.5-0.8B | ~0.9 GB | 24/35 | ~16–32 s | *(unreleased; local only)* |
-| edge | Qwen2.5-1.5B (v0) | ~1.1 GB | 29/35 | ~20–40 s | `rbentaarit/kubelm-edge-v0` |
-| **edge+** *(default)* | Qwen3.5-2B (v0.3) | ~1.6 GB | 32/35 | ~29–55 s | `rbentaarit/kubelm-edge-v0.3-GGUF` |
+| ultra-edge | Qwen3.5-0.8B | ~0.9 GB | 24/35 | ~16–32 s | `kubelm-qwen3.5-0.8b-v1` *(unreleased)* |
+| edge | Qwen2.5-1.5B | ~1.1 GB | 29/35 | ~20–40 s | `rbentaarit/kubelm-qwen2.5-1.5b-v1` |
+| **edge+** *(default)* | Qwen3.5-2B | ~1.6 GB | 32/35 | ~29–55 s | `rbentaarit/kubelm-qwen3.5-2b-v1` |
 
 ¹ Serving footprint is measured (`--no-mmap` RSS, host-independent).
 Per-step latency is measured on a **dedicated** x86 Linux 2-core node
@@ -62,7 +62,7 @@ Pre-seed the GGUF onto a PersistentVolume and point the chart at it:
 helm install kubelm deploy/helm/kubelm -n kubelm --create-namespace \
   --set cache.persistence.enabled=true \
   --set model.hfRepo="" \
-  --set model.localPath=/cache/kubelm-edge.Q4_K_M.gguf
+  --set model.localPath=/cache/kubelm-qwen3.5-2b-v1.Q4_K_M.gguf
 ```
 
 (Copy the GGUF into the PVC out-of-band, e.g. a one-shot loader Job.)
@@ -74,12 +74,12 @@ Point K8sGPT's OpenAI-compatible backend at the in-cluster Service:
 ```bash
 k8sgpt auth add --backend customrest \
   --baseurl http://kubelm.kubelm.svc:8080/v1 \
-  --model kubelm-edge
+  --model kubelm-qwen3.5-2b
 k8sgpt analyze --explain --backend customrest
 ```
 
 The served model name (`--model`) must match `model.servedName` in
-values (default `kubelm-edge`).
+values (default `kubelm-qwen3.5-2b`).
 
 ## 4. Restrict access (shared clusters)
 

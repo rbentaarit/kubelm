@@ -193,9 +193,9 @@ the tier above. All numbers measured (see the 2026-05-29 decisions-log entry
 
 | Tier | Model | Rubric | Serving RAM | Per-step (2-core x86) | Release |
 |---|---|---|---|---|---|
-| ultra-edge | Qwen3.5-0.8B | 24/35 | ~0.9 GB | ~16–32 s | fine-tuned, unreleased |
-| edge | Qwen2.5-1.5B (`kubelm-edge-v0`) | 29/35 | ~1.1 GB | ~20–40 s | on HF |
-| edge+ *(default)* | Qwen3.5-2B (`kubelm-edge-v0.3`) | 32/35 | ~1.6 GB | ~29–55 s | on HF |
+| ultra-edge | `kubelm-qwen3.5-0.8b-v1` | 24/35 | ~0.9 GB | ~16–32 s | fine-tuned, unreleased |
+| edge | `kubelm-qwen2.5-1.5b-v1` | 29/35 | ~1.1 GB | ~20–40 s | on HF |
+| edge+ *(default)* | `kubelm-qwen3.5-2b-v1` | 32/35 | ~1.6 GB | ~29–55 s | on HF |
 | standard | ~3B | — | — | — | planned |
 
 Two corrections from the original plan (a static 3-tier `edge`/`standard`/
@@ -205,6 +205,32 @@ than the early estimates — every tier fits a 4 GB node, so CPU/latency, not
 RAM, is the binding constraint.** Latency is a dedicated-vCPU reference;
 it swings ~10× by host. Original sequencing ("ship `standard` first") was
 also superseded — the edge tiers shipped first and v0.3 is the headline.
+
+### Model & artifact naming convention
+
+Canonical form: **`kubelm-<base>-<size>-v<n>`** — e.g. `kubelm-qwen3.5-2b-v1`.
+
+- `<base>` is the base model (`qwen3.5`, `qwen2.5`) — changes only when the
+  base changes (a re-base resets `-v` to 1).
+- `<size>` is the parameter count (`0.8b`, `1.5b`, `2b`, `3b`) — what users
+  pick by; tier words (ultra-edge/edge/edge+/standard) are docs labels only.
+- `-v<n>` is kubelm's release version of that base+size (bump per retrain),
+  distinct from the base's own version.
+- Dashes separate fields; dots only ever live *inside* a number
+  (`qwen3.5`, `0.8b`) — `split("-")` is unambiguous, matching the ecosystem.
+- **One Hugging Face repo per version**, holding the GGUF + LoRA adapter +
+  card; the format lives in the *filename* (`*.Q4_K_M.gguf`), not a `-GGUF`
+  repo suffix. GGUF is the deployable; the adapter is for re-merging.
+
+Old → new mapping (the old names remain in dated decisions-log entries and
+as-run benchmark records — those are historical and not rewritten):
+
+| old | new |
+|---|---|
+| `kubelm-edge-v0` (Qwen2.5-1.5B) | `kubelm-qwen2.5-1.5b-v1` |
+| `kubelm-edge-v0.3` (Qwen3.5-2B) | `kubelm-qwen3.5-2b-v1` |
+| 0.8B fine-tune (unreleased) | `kubelm-qwen3.5-0.8b-v1` |
+| HF `…-v0.3-GGUF` + `…-v0.3-lora` | one repo `kubelm-qwen3.5-2b-v1` |
 
 ### Performance is a primary design constraint
 

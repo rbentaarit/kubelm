@@ -14,7 +14,7 @@ K8sGPT's MCP surface as it evolves.
 
 > **Status:** Working. The eval harness + scenario library are shipped, the
 > baseline benchmark is published, and two models are released on Hugging
-> Face — **`kubelm-edge-v0.3`** (Qwen3.5-2B) is the current headline and
+> Face — **`kubelm-qwen3.5-2b-v1`** (Qwen3.5-2B) is the current headline and
 > beats `qwen2.5:7b` on every reliability metric at ~⅓ the footprint. A
 > **turnkey Helm chart** deploys kubelm + K8sGPT + an MCP agent loop in one
 > `helm install`. See the tier ladder and phase status below.
@@ -138,13 +138,13 @@ smallest local box up to a dev machine; each tier is judged on fitness for
 
 | Tier | Model | Rubric¹ | Serving RAM² | Per-step³ | Release |
 |---|---|---|---|---|---|
-| ultra-edge | Qwen3.5-0.8B | 24/35 | ~0.9 GB | ~16–32 s | fine-tuned; not yet on HF |
-| edge | Qwen2.5-1.5B (`kubelm-edge-v0`) | 29/35 | ~1.1 GB | ~20–40 s | on Hugging Face |
-| **edge+** *(default)* | Qwen3.5-2B (`kubelm-edge-v0.3`) | **32/35** | ~1.6 GB | ~29–55 s | on Hugging Face |
+| ultra-edge | `kubelm-qwen3.5-0.8b-v1` | 24/35 | ~0.9 GB | ~16–32 s | fine-tuned; not yet on HF |
+| edge | `kubelm-qwen2.5-1.5b-v1` | 29/35 | ~1.1 GB | ~20–40 s | on Hugging Face |
+| **edge+** *(default)* | `kubelm-qwen3.5-2b-v1` | **32/35** | ~1.6 GB | ~29–55 s | on Hugging Face |
 | standard | ~3B | — | — | — | planned |
 
 *For reference, the `qwen2.5:7b` local model scores rubric 28/35 on the same
-suite — so `kubelm-edge-v0.3` beats a 7B generic model at ~⅓ the footprint,
+suite — so `kubelm-qwen3.5-2b-v1` beats a 7B generic model at ~⅓ the footprint,
 and even the 0.8B is competitive.*
 
 ¹ Conclusion-rubric pass rate over the 35-scenario library (does the model
@@ -217,8 +217,8 @@ This repo grows in stages. Each stage is a separately-useful artifact:
       the eval. *Shipped; cuts in `eval/results/summaries/`.*
 - [x] **Phase 4: Trajectory training dataset** — multi-step examples on
       Hugging Face (`kubelm-seed`), pinned to K8sGPT v0.4.32. *Shipped.*
-- [x] **Phase 5: Fine-tuned model releases** — `kubelm-edge-v0` (1.5B) and
-      `kubelm-edge-v0.3` (Qwen3.5-2B) on Hugging Face; v0.3 beats
+- [x] **Phase 5: Fine-tuned model releases** — `kubelm-qwen2.5-1.5b-v1` and
+      `kubelm-qwen3.5-2b-v1` (the headline) on Hugging Face; the 2B beats
       `qwen2.5:7b` on every metric (rubric 32 vs 28, fabrications 3 vs 8)
       at ~⅓ the footprint. A Qwen3.5-0.8B ultra-edge tier is fine-tuned
       (rubric 24, 517 MB) but not yet released. *Shipped.*
@@ -238,8 +238,8 @@ Each phase shipped publicly before the next began.
 
 - **GitHub:** This repo is the source of truth for code, datasets, and
   benchmark results.
-- **Hugging Face:** [`kubelm-edge-v0.3-GGUF`](https://huggingface.co/rbentaarit/kubelm-edge-v0.3-GGUF)
-  (current headline) and [`kubelm-edge-v0`](https://huggingface.co/rbentaarit/kubelm-edge-v0)
+- **Hugging Face:** [`kubelm-qwen3.5-2b-v1`](https://huggingface.co/rbentaarit/kubelm-qwen3.5-2b-v1)
+  (current headline) and [`kubelm-qwen2.5-1.5b-v1`](https://huggingface.co/rbentaarit/kubelm-qwen2.5-1.5b-v1)
   models; the [`kubelm-seed`](https://huggingface.co/datasets/rbentaarit/kubelm-seed)
   trajectory dataset.
 - **Blog posts:** Major milestones will be written up. Links added here as

@@ -516,9 +516,9 @@ bracket**, not against the tier above.
 
 | tier | model | GGUF | serving RAM¹ | rubric | step @2-core x86² | serving |
 |---|---|---|---|---|---|---|
-| ultra-edge | Qwen3.5-0.8B (1ep) | 517 MB | **~0.9 GB** | 24/35 | ~16–32 s | llama-server |
-| edge | Qwen2.5-1.5B (v0) | 940 MB | ~1.1 GB (est) | 29/35³ | ~20–40 s (est) | ollama or llama-server |
-| edge+ | Qwen3.5-2B (v0.3) | 1.2 GB | **~1.6 GB** | 32/35 | ~29–55 s | llama-server |
+| ultra-edge | `kubelm-qwen3.5-0.8b-v1` | 517 MB | **~0.9 GB** | 24/35 | ~16–32 s | llama-server |
+| edge | `kubelm-qwen2.5-1.5b-v1` | 940 MB | ~1.1 GB (est) | 29/35³ | ~20–40 s (est) | ollama or llama-server |
+| edge+ | `kubelm-qwen3.5-2b-v1` | 1.2 GB | **~1.6 GB** | 32/35 | ~29–55 s | llama-server |
 | standard | ~3B (planned) | — | — | — | — | — |
 
 ¹ True serving footprint (`--no-mmap` RSS) at `-c 16384` on real x86

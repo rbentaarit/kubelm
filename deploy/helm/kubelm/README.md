@@ -21,9 +21,9 @@ K8sGPT wiring, the turnkey loop, air-gapped, NetworkPolicy — in
 
 | key | default | purpose |
 |---|---|---|
-| `model.hfRepo` / `model.hfFile` | `rbentaarit/kubelm-edge-v0.3-GGUF` | GGUF pulled at pod start |
+| `model.hfRepo` / `model.hfFile` | `rbentaarit/kubelm-qwen3.5-2b-v1` | GGUF pulled at pod start |
 | `model.localPath` | `""` | pre-seeded GGUF path (air-gapped); overrides hfRepo |
-| `model.servedName` | `kubelm-edge` | name K8sGPT references |
+| `model.servedName` | `kubelm-qwen3.5-2b` | name K8sGPT references |
 | `server.contextSize` | `16384` | llama-server `-c` |
 | `resources` | req 2 CPU/2 Gi, lim 4 CPU/3 Gi | edge+; matches measured footprint |
 | `networkPolicy.enabled` | `false` | restrict endpoint to K8sGPT |
