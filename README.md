@@ -240,7 +240,7 @@ Each phase shipped publicly before the next began.
   benchmark results.
 - **Hugging Face:** [`kubelm-qwen3.5-2b-v1`](https://huggingface.co/rbentaarit/kubelm-qwen3.5-2b-v1)
   (current headline) and [`kubelm-qwen2.5-1.5b-v1`](https://huggingface.co/rbentaarit/kubelm-qwen2.5-1.5b-v1)
-  models; the [`kubelm-seed`](https://huggingface.co/datasets/rbentaarit/kubelm-seed)
+  models; the [`kubelm-seed-v0`](https://huggingface.co/datasets/rbentaarit/kubelm-seed-v0)
   trajectory dataset.
 - **Blog posts:** Major milestones will be written up. Links added here as
   they're published.

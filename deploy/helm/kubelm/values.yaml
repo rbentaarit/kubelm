@@ -21,7 +21,9 @@ model:
   # For air-gapped clusters, set cache.persistence + pre-seed the volume
   # and leave hfRepo empty, then pass model.localPath instead (see README).
   hfRepo: rbentaarit/kubelm-qwen3.5-2b-v1
-  hfFile: kubelm-qwen3.5-2b-v1.Q4_K_M.gguf
+  # The repo was renamed in place; the file keeps its original name
+  # (renaming a 1.2 GB file = full reupload). Normalize on the next release.
+  hfFile: kubelm-edge.Q4_K_M.gguf
   localPath: ""          # absolute path inside the container; overrides hfRepo if set
   # Name K8sGPT references when calling the endpoint.
   servedName: kubelm-qwen3.5-2b

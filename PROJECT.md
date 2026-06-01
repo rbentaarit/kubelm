@@ -230,7 +230,7 @@ as-run benchmark records — those are historical and not rewritten):
 | `kubelm-edge-v0` (Qwen2.5-1.5B) | `kubelm-qwen2.5-1.5b-v1` |
 | `kubelm-edge-v0.3` (Qwen3.5-2B) | `kubelm-qwen3.5-2b-v1` |
 | 0.8B fine-tune (unreleased) | `kubelm-qwen3.5-0.8b-v1` |
-| HF `…-v0.3-GGUF` + `…-v0.3-lora` | one repo `kubelm-qwen3.5-2b-v1` |
+| HF `…-v0.3-GGUF` + `…-v0.3-lora` | `kubelm-qwen3.5-2b-v1` (GGUF) + `…-v1-lora` (single-repo merge pending) |
 
 ### Performance is a primary design constraint
 
